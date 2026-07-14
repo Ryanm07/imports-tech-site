@@ -76,17 +76,12 @@
       "indexes": {
         "replies_topic_idx": {
           "name": "replies_topic_idx",
-          "columns": [
-            "topic_id",
-            "created_at"
-          ],
+          "columns": ["topic_id", "created_at"],
           "isUnique": false
         },
         "replies_author_idx": {
           "name": "replies_author_idx",
-          "columns": [
-            "author_email"
-          ],
+          "columns": ["author_email"],
           "isUnique": false
         }
       },
@@ -95,12 +90,8 @@
           "name": "community_replies_topic_id_community_topics_id_fk",
           "tableFrom": "community_replies",
           "tableTo": "community_topics",
-          "columnsFrom": [
-            "topic_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["topic_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -108,12 +99,8 @@
           "name": "community_replies_author_email_profiles_email_fk",
           "tableFrom": "community_replies",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "author_email"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["author_email"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -186,10 +173,7 @@
       "indexes": {
         "reports_status_idx": {
           "name": "reports_status_idx",
-          "columns": [
-            "status",
-            "created_at"
-          ],
+          "columns": ["status", "created_at"],
           "isUnique": false
         }
       },
@@ -198,12 +182,8 @@
           "name": "community_reports_reporter_email_profiles_email_fk",
           "tableFrom": "community_reports",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "reporter_email"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["reporter_email"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -299,24 +279,17 @@
       "indexes": {
         "topics_category_idx": {
           "name": "topics_category_idx",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "topics_status_created_idx": {
           "name": "topics_status_created_idx",
-          "columns": [
-            "status",
-            "created_at"
-          ],
+          "columns": ["status", "created_at"],
           "isUnique": false
         },
         "topics_author_idx": {
           "name": "topics_author_idx",
-          "columns": [
-            "author_email"
-          ],
+          "columns": ["author_email"],
           "isUnique": false
         }
       },
@@ -325,12 +298,8 @@
           "name": "community_topics_author_email_profiles_email_fk",
           "tableFrom": "community_topics",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "author_email"
-          ],
-          "columnsTo": [
-            "email"
-          ],
+          "columnsFrom": ["author_email"],
+          "columnsTo": ["email"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -418,18 +387,12 @@
       "indexes": {
         "content_type_slug_unique": {
           "name": "content_type_slug_unique",
-          "columns": [
-            "type",
-            "slug"
-          ],
+          "columns": ["type", "slug"],
           "isUnique": true
         },
         "content_status_idx": {
           "name": "content_status_idx",
-          "columns": [
-            "status",
-            "type"
-          ],
+          "columns": ["status", "type"],
           "isUnique": false
         }
       },
@@ -501,17 +464,12 @@
       "indexes": {
         "moderation_target_idx": {
           "name": "moderation_target_idx",
-          "columns": [
-            "target_type",
-            "target_id"
-          ],
+          "columns": ["target_type", "target_id"],
           "isUnique": false
         },
         "moderation_created_idx": {
           "name": "moderation_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },

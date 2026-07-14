@@ -1,14 +1,21 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
-import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
+import {
+  handleImageOptimization,
+  DEFAULT_DEVICE_SIZES,
+  DEFAULT_IMAGE_SIZES,
+} from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
 interface Env {
-  ASSETS: Fetcher;
+  ASSETS?: Fetcher;
   DB: D1Database;
-  IMAGES: {
+  IMAGES?: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
-        output(options: { format: string; quality: number }): Promise<{ response(): Response }>;
+        output(options: {
+          format: string;
+          quality: number;
+        }): Promise<{ response(): Response }>;
       };
     };
   };
@@ -26,22 +33,93 @@ interface ExecutionContext {
 // const imageConfig: ImageConfig = { dangerouslyAllowSVG: true };
 
 const worker = {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === "/_vinext/image") {
-      const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
-      return handleImageOptimization(request, {
-        fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
-        transformImage: async (body, { width, format, quality }) => {
-          const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
-          return result.response();
+      const intrinsicAssetWidths = [44, 58, 1546, 2120];
+      const allowedWidths = [
+        ...new Set([
+          ...DEFAULT_DEVICE_SIZES,
+          ...DEFAULT_IMAGE_SIZES,
+          ...intrinsicAssetWidths,
+        ]),
+      ];
+      const imageResponse = await handleImageOptimization(
+        request,
+        {
+          fetchAsset: (path) => {
+            const assetRequest = new Request(new URL(path, request.url));
+            return env.ASSETS
+              ? env.ASSETS.fetch(assetRequest)
+              : fetch(assetRequest);
+          },
+          ...(env.IMAGES
+            ? {
+                transformImage: async (
+                  body: ReadableStream,
+                  {
+                    width,
+                    format,
+                    quality,
+                  }: { width: number; format: string; quality: number },
+                ) => {
+                  const result = await env
+                    .IMAGES!.input(body)
+                    .transform(width > 0 ? { width } : {})
+                    .output({ format, quality });
+                  return result.response();
+                },
+              }
+            : {}),
         },
-      }, allowedWidths);
+        allowedWidths,
+      );
+      return withSecurityHeaders(imageResponse, url);
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    return withSecurityHeaders(response, url);
   },
 };
+
+function withSecurityHeaders(response: Response, url: URL) {
+  const secured = new Response(response.body, response);
+  secured.headers.set("X-Content-Type-Options", "nosniff");
+  secured.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  secured.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  );
+  secured.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "form-action 'self'",
+      "frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com",
+      "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com",
+      "img-src 'self' data: blob: https://i.ytimg.com",
+      "media-src 'self' https://www.youtube.com",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline'",
+      "connect-src 'self' https://www.googleapis.com https://www.youtube.com",
+      "upgrade-insecure-requests",
+    ].join("; "),
+  );
+  if (url.protocol === "https:") {
+    secured.headers.set(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
+  return secured;
+}
 
 export default worker;

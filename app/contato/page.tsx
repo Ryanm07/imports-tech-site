@@ -1,1 +1,38 @@
-export default function ContactPage(){return <main id="conteudo" className="page-main"><header className="page-hero"><span className="eyebrow-v2">FALE COM O IMPORTS TECH</span><h1>Contato direto, sem formulário invasivo.</h1><p>Para colaboração, correção editorial, privacidade ou exclusão de dados, use o canal adequado.</p></header><div className="contact-grid"><a href="mailto:imports.tech.contact@gmail.com"><span>E-MAIL</span><strong>imports.tech.contact@gmail.com</strong><p>Parcerias, contato editorial e solicitações de privacidade.</p></a><a href="https://www.youtube.com/@Imports_Tech" target="_blank" rel="noreferrer"><span>YOUTUBE</span><strong>@Imports_Tech</strong><p>Vídeos, comentários e publicações do canal.</p></a></div></main>}
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contato",
+  description: "Canais oficiais para falar com o Imports Tech.",
+  alternates: { canonical: "/contato" },
+};
+
+export default function ContactPage() {
+  return (
+    <main id="conteudo" className="page-main">
+      <header className="page-hero">
+        <span className="eyebrow-v2">FALE COM O IMPORTS TECH</span>
+        <h1>Contato direto, sem formulário invasivo.</h1>
+        <p>
+          Para colaboração, correção editorial, privacidade ou exclusão de
+          dados, use o canal adequado.
+        </p>
+      </header>
+      <div className="contact-grid">
+        <a href="mailto:imports.tech.contact@gmail.com">
+          <span>E-MAIL</span>
+          <strong>imports.tech.contact@gmail.com</strong>
+          <p>Parcerias, contato editorial e solicitações de privacidade.</p>
+        </a>
+        <a
+          href="https://www.youtube.com/@Imports_Tech"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <span>YOUTUBE</span>
+          <strong>@Imports_Tech</strong>
+          <p>Vídeos, comentários e publicações do canal.</p>
+        </a>
+      </div>
+    </main>
+  );
+}

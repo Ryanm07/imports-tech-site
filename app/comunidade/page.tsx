@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import { communityCategories } from "@/lib/site-data";
+import { chatGPTSignInPath, getChatGPTUser } from "@/app/chatgpt-auth";
+import { CommunityClient } from "@/components/community-client";
+export const dynamic = "force-dynamic";
+export const metadata: Metadata = { title: "Comunidade Beta", description: "Espaço organizado para dúvidas, garimpos e conversas sobre tecnologia." };
+export default async function CommunityPage(){const enabled=process.env.COMMUNITY_ENABLED==="true"; const user=enabled?await getChatGPTUser():null; if(!enabled)return <main id="conteudo" className="page-main"><div className="feature-soon"><span>BETA CONTROLADO</span><h1>Comunidade em breve.</h1><p>Estamos preparando um espaço de tópicos e respostas com moderação, privacidade e proteção contra spam. Nada de chat aberto sem controle.</p><div className="category-pills">{communityCategories.map((item)=><span key={item}>{item}</span>)}</div><a className="button primary" href="https://www.youtube.com/@Imports_Tech/community" target="_blank" rel="noreferrer">Acompanhar no YouTube ↗</a></div></main>;
+return <main id="conteudo" className="page-main"><header className="page-hero"><span className="eyebrow-v2">COMUNIDADE BETA</span><h1>Pergunte. Responda. Compartilhe o garimpo.</h1><p>Fórum modular do Imports Tech, com moderação e o mínimo de dados pessoais.</p></header>{!user?<div className="auth-card"><h2>Entre para participar</h2><p>Para ler, criar tópicos, responder ou denunciar conteúdo, identifique-se com segurança.</p><a className="button primary" href={chatGPTSignInPath("/comunidade")}>Entrar com ChatGPT</a></div>:<CommunityClient categories={communityCategories} userName={user.displayName}/>}</main>}

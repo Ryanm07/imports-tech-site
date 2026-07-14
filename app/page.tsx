@@ -1,5 +1,8 @@
-import { ChannelDashboard } from "./channel-dashboard";
+import { HomePage } from "./home-page";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function Home() {
-  return <ChannelDashboard />;
+  return <HomePage/>;
 }

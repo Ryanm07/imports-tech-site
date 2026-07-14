@@ -1,87 +1,36 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
+import { normalizeSearch, searchVideos, sortVideos } from "../lib/search.ts";
+import { sanitizePlainText, validateCommunityPost } from "../lib/security.ts";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-const templateRoot = new URL("../", import.meta.url);
-const previewRoot = new URL("../app/_sites-preview/", import.meta.url);
-
-async function render() {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
-}
-
-test("server-renders the starter loading skeleton", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(html, developmentPreviewMeta);
-  assert.match(html, /<title>Your site is taking shape<\/title>/i);
-  assert.match(html, /Codex is working/);
-  assert.match(html, /Your site is taking shape/);
-  assert.match(html, /Codex is building the first version/);
-  assert.match(html, /react-loading-skeleton/);
-  assert.match(html, /role="status"/);
+test("gera o worker e mantém as rotas públicas essenciais", async () => {
+  await access(new URL("../dist/server/index.js", import.meta.url));
+  const routes = [["../app/home-page.tsx", "Tecnologia testada"], ["../app/videos/page.tsx", "BIBLIOTECA DO CANAL"], ["../app/reviews/page.tsx", "CENTRAL DE REVIEWS"], ["../app/garimpos/page.tsx", "GARIMPOS E REPAROS"]];
+  for (const [path, content] of routes) assert.match(await readFile(new URL(path, import.meta.url), "utf8"), new RegExp(content, "i"), path);
 });
 
-test("keeps the loading skeleton scoped and disposable", async () => {
-  const [preview, css, page, layout, packageJson, files] = await Promise.all([
-    readFile(new URL("SkeletonPreview.tsx", previewRoot), "utf8"),
-    readFile(new URL("preview.css", previewRoot), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readdir(previewRoot),
-  ]);
+test("mantém recursos sensíveis desativados por padrão", async () => {
+  const community = await readFile(new URL("../app/comunidade/page.tsx", import.meta.url), "utf8"); assert.match(community, /COMMUNITY_ENABLED/); assert.match(community, /Comunidade em breve/i);
+  const admin = await readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"); assert.match(admin, /ADMIN_ENABLED/); assert.match(admin, /Painel administrativo desativado/i);
+  const env = await readFile(new URL("../.env.example", import.meta.url), "utf8"); assert.match(env, /COMMUNITY_ENABLED=false/); assert.match(env, /ADMIN_ENABLED=false/);
+});
 
-  assert.deepEqual(files.sort(), ["SkeletonPreview.tsx", "preview.css"]);
-  assert.match(preview, /from "react-loading-skeleton"/);
-  assert.match(preview, /baseColor="#eceae7"/);
-  assert.match(preview, /highlightColor="#f9f8f6"/);
-  assert.match(preview, /duration=\{2\.8\}/);
-  assert.match(preview, /sites-skeleton-search-placeholder/);
-  assert.match(packageJson, /"react-loading-skeleton": "3\.5\.0"/);
+test("pesquisa e ordena vídeos sem rede", () => {
+  const videos = [{ id:"1",title:"iPhone 12 usado",category:"Smartphones",views:10,publishedAt:"2026-01-01" },{ id:"2",title:"Notebook da OLX",category:"Garimpos",views:50,publishedAt:"2026-02-01" }];
+  assert.equal(normalizeSearch("  Câmera "), "camera");
+  assert.equal(searchVideos(videos, "iphone", "Todos")[0].id, "1");
+  assert.equal(searchVideos(videos, "olx", "Garimpos")[0].id, "2");
+  assert.equal(sortVideos(videos, "vistos")[0].id, "2");
+});
 
-  const shellIndex = preview.indexOf('className="sites-skeleton-shell"');
-  const statusIndex = preview.indexOf('className="sites-skeleton-status"');
-  assert.ok(shellIndex >= 0 && statusIndex > shellIndex);
-  assert.match(css, /position:\s*fixed/);
-  assert.match(css, /inset:\s*0/);
-  assert.match(css, /opacity:\s*0\.52/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
-  assert.doesNotMatch(css, /#020617|canvas|pets|progress/i);
-  assert.doesNotMatch(
-    preview,
-    /loading-spinner|status-mark|status-progress|canvas|cookie|random/i,
-  );
+test("sanitiza e valida publicações", () => {
+  assert.equal(sanitizePlainText("<script>alert(1)</script> Texto", 100), "alert(1) Texto");
+  assert.ok(validateCommunityPost("curto", "também curto").errors.length >= 2);
+  assert.ok(validateCommunityPost("Título válido", "Texto útil com https://a.com https://b.com https://c.com").errors.some((item) => /dois links/.test(item)));
+});
 
-  assert.match(page, /export const metadata:\s*Metadata/);
-  assert.match(page, /"codex-preview": "development"/);
-  assert.match(page, /<SkeletonPreview \/>/);
-  assert.match(layout, /title:\s*"Starter Project"/);
-  assert.doesNotMatch(layout, /codex-preview|_sites-preview|themeColor|\bViewport\b/);
-  assert.doesNotMatch(css, /(^|\s)(html|body)\s*\{/m);
-
-  await assert.rejects(
-    access(new URL("public/_sites-preview", templateRoot)),
-  );
+test("rotas administrativas validam autorização no servidor", async () => {
+  const source = await readFile(new URL("../app/api/admin/content/route.ts", import.meta.url), "utf8");
+  assert.match(source, /requireAdminApi/); assert.match(source, /sameOriginRequest/); assert.match(source, /moderationActions/);
 });

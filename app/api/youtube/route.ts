@@ -1,4 +1,4 @@
-const CHANNEL_ID = "UCzCdaGidi49uW9eJEXs9M4A";
+const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || "UCzCdaGidi49uW9eJEXs9M4A";
 const CHANNEL_URL = "https://www.youtube.com/@Imports_Tech";
 
 const snapshotVideos = [
@@ -8,6 +8,10 @@ const snapshotVideos = [
   { id: "cbodYFxeINo", title: "Paguei R$2.500 no MacBook Mais Vendido do Brasil... Valeu a Pena?", views: 11000, publishedAt: "2026-06-23", duration: "13:32", category: "Notebooks" },
   { id: "ScBB5TZ-Py8", title: "Achei um S21 Ultra por R$502,89 na OLX… Eu tive que Arriscar", views: 76000, publishedAt: "2026-06-16", duration: "14:21", category: "Garimpos" },
   { id: "Y1nStLptXY0", title: "Paguei R$1.200 no notebook gamer mais vendido do Brasil... valeu a pena?", views: 243000, publishedAt: "2026-06-10", duration: "19:07", category: "Notebooks" },
+  { id: "4gf5vtyihyU", title: "O Notebook Gamer de R$961,89 que NINGUÉM teria coragem de comprar… (eu comprei)", views: 35000, publishedAt: "2026-06-03", duration: "Vídeo", category: "Garimpos" },
+  { id: "WMQfOCaop-w", title: "Comprei uma Lucky Box de Fones no AliExpress… Tomei golpe?", views: 477, publishedAt: "2026-05-27", duration: "Vídeo", category: "Periféricos" },
+  { id: "UtcI5DhUlaQ", title: "Usei um iPhone XR em pleno 2026… não foi o que eu esperava", views: 8600, publishedAt: "2026-05-20", duration: "Vídeo", category: "Smartphones" },
+  { id: "Omm5Leo1WMM", title: "Comprei um iPhone 11 BARATO… e deu MUITO errado", views: 5600, publishedAt: "2026-05-13", duration: "Vídeo", category: "Garimpos" },
 ].map((video) => ({ ...video, thumbnail: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg` }));
 
 function snapshot() {
@@ -70,7 +74,7 @@ async function publicChannelData() {
   ]);
 
   const [feed, videosHtml, aboutHtml] = await Promise.all([feedResponse.text(), videosResponse.text(), aboutResponse.text()]);
-  const entries = [...feed.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6);
+  const entries = [...feed.matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 15);
   const liveVideos = entries.map((entry) => {
     const block = entry[1];
     const id = tag(block, "yt:videoId");
@@ -83,6 +87,8 @@ async function publicChannelData() {
       duration: "NOVO",
       thumbnail: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
       category: categoryFor(title),
+      description: tag(block, "media:description"),
+      keywords: title.split(/\s+/).filter((word) => word.length > 3),
     };
   }).filter((video) => video.id);
 
@@ -135,6 +141,8 @@ async function apiChannelData(apiKey: string) {
       duration: isoDuration(video.contentDetails.duration),
       thumbnail: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.medium?.url,
       category: categoryFor(video.snippet.title),
+      description: video.snippet.title,
+      keywords: video.snippet.title.split(/\s+/).filter((word) => word.length > 3),
     })),
   };
 }

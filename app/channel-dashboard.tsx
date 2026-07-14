@@ -27,33 +27,25 @@ type ChannelData = {
 };
 
 const fallbackData: ChannelData = {
-  channelName: "Seu Canal",
-  handle: "@seucanal",
-  description: "Vídeos novos, boas histórias e ideias que merecem ser compartilhadas.",
-  subscribers: 128400,
-  totalViews: 8420000,
-  videoCount: 184,
-  monthlyGrowth: 12.8,
-  channelUrl: "https://youtube.com",
+  channelName: "Imports Tech!",
+  handle: "@Imports_Tech",
+  description: "Tecnologia de verdade, sem enrolação: reviews, usados, garimpos e as melhores escolhas em custo-benefício.",
+  subscribers: 3340,
+  totalViews: 610472,
+  videoCount: 80,
+  monthlyGrowth: 0,
+  channelUrl: "https://www.youtube.com/@Imports_Tech",
   syncedAt: new Date().toISOString(),
-  isDemo: true,
+  isDemo: false,
   videos: [
-    { id: "v1", title: "A descoberta que mudou tudo", views: 284000, publishedAt: "2026-07-11", duration: "12:48", category: "Histórias" },
-    { id: "v2", title: "7 coisas que ninguém te conta", views: 196000, publishedAt: "2026-07-06", duration: "09:32", category: "Curiosidades" },
-    { id: "v3", title: "Fui até o fim para descobrir", views: 143000, publishedAt: "2026-06-29", duration: "16:04", category: "Experimentos" },
-    { id: "v4", title: "O detalhe escondido à vista de todos", views: 98000, publishedAt: "2026-06-22", duration: "11:17", category: "Curiosidades" },
-    { id: "v5", title: "24 horas fazendo só isso", views: 87000, publishedAt: "2026-06-15", duration: "18:21", category: "Desafios" },
-    { id: "v6", title: "Respondendo o que vocês sempre perguntam", views: 64000, publishedAt: "2026-06-08", duration: "14:09", category: "Comunidade" },
+    { id: "fnD2R4YoJ8k", title: "Velho, mas não obsoleto! Será que o iPhone 12 Ainda Vale a Pena em 2026?", views: 1100, publishedAt: "2026-07-10", duration: "14:08", category: "Smartphones" },
+    { id: "i4LXDsWlc8Q", title: "Comprei um iPhone 12 por R$650… Me Dei Bem?", views: 5400, publishedAt: "2026-07-02", duration: "5:04", category: "Garimpos" },
+    { id: "biatbb6rvwU", title: "Usei o Galaxy S21 Ultra em 2026… Ele Ainda é ABSURDO?", views: 5100, publishedAt: "2026-06-30", duration: "11:03", category: "Smartphones" },
+    { id: "cbodYFxeINo", title: "Paguei R$2.500 no MacBook Mais Vendido do Brasil... Valeu a Pena?", views: 11000, publishedAt: "2026-06-23", duration: "13:32", category: "Notebooks" },
+    { id: "ScBB5TZ-Py8", title: "Achei um S21 Ultra por R$502,89 na OLX… Eu tive que Arriscar", views: 76000, publishedAt: "2026-06-16", duration: "14:21", category: "Garimpos" },
+    { id: "Y1nStLptXY0", title: "Paguei R$1.200 no notebook gamer mais vendido do Brasil... valeu a pena?", views: 243000, publishedAt: "2026-06-10", duration: "19:07", category: "Notebooks" },
   ],
 };
-
-const curiosities = [
-  "Se cada inscrito assistisse a apenas 1 minuto, seriam quase 90 dias de conteúdo sem parar.",
-  "O vídeo mais visto do canal representa sozinho uma pequena cidade reunida na mesma tela.",
-  "A comunidade já passou tempo suficiente assistindo para dar centenas de voltas ao redor do Sol — em minutos.",
-];
-
-const weeklyData = [42, 58, 51, 76, 68, 92, 84];
 
 function compact(value: number) {
   return new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
@@ -95,6 +87,22 @@ export function ChannelDashboard() {
     return data.videos;
   }, [data.videos, filter]);
 
+  const chartData = useMemo(() => {
+    const recent = data.videos.slice(0, 6).reverse();
+    const largest = Math.max(...recent.map((video) => video.views), 1);
+    return recent.map((video) => ({
+      label: video.title,
+      value: video.views,
+      height: Math.max(8, (video.views / largest) * 100),
+    }));
+  }, [data.videos]);
+
+  const curiosities = useMemo(() => [
+    `O Imports Tech já soma ${compact(data.totalViews)} visualizações em análises e garimpos de tecnologia.`,
+    `São ${data.videoCount} vídeos publicados desde setembro de 2025 — conteúdo novo quase toda semana.`,
+    `A comunidade já reúne ${compact(data.subscribers)} pessoas interessadas em tecnologia e compra inteligente.`,
+  ], [data]);
+
   function submitNewsletter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubscribed(true);
@@ -106,8 +114,8 @@ export function ChannelDashboard() {
       <div className="noise" aria-hidden="true" />
       <header className="site-header">
         <a className="brand" href="#inicio" aria-label="Voltar ao início">
-          <span className="brand-mark">SC</span>
-          <span>SEU CANAL<span className="brand-dot">.</span></span>
+          <span className="brand-mark">IT</span>
+          <span>IMPORTS TECH<span className="brand-dot">.</span></span>
         </a>
         <nav className={menuOpen ? "nav open" : "nav"} aria-label="Navegação principal">
           <a href="#inicio" onClick={() => setMenuOpen(false)}>Início</a>
@@ -125,8 +133,8 @@ export function ChannelDashboard() {
 
       <section className="hero" id="inicio">
         <div className="hero-copy">
-          <div className="eyebrow"><span className="live-dot" /> NOVO VÍDEO TODA SEMANA</div>
-          <h1>Ideias que começam<br />com um <em>play.</em></h1>
+          <div className="eyebrow"><span className="live-dot" /> REVIEWS · GARIMPOS · CUSTO-BENEFÍCIO</div>
+          <h1>Tecnologia real.<br /><em>Sem enrolação.</em></h1>
           <p>{data.description}</p>
           <div className="hero-actions">
             <a className="primary-button" href="#videos"><span>▶</span> Assistir agora</a>
@@ -142,7 +150,7 @@ export function ChannelDashboard() {
             <span className="sphere-handle">{data.handle}</span>
           </div>
           <div className="floating-note note-one"><strong>{compact(data.subscribers)}</strong><span>inscritos</span></div>
-          <div className="floating-note note-two"><strong>+{data.monthlyGrowth}%</strong><span>este mês</span></div>
+          <div className="floating-note note-two"><strong>{data.videoCount}</strong><span>vídeos publicados</span></div>
         </div>
         <div className="scroll-cue"><span>ROLE PARA DESCOBRIR</span><i>↓</i></div>
       </section>
@@ -150,14 +158,14 @@ export function ChannelDashboard() {
       <section className="metrics-section" id="numeros">
         <div className="section-heading">
           <div><span className="kicker">POR TRÁS DOS VÍDEOS</span><h2>O canal em números</h2></div>
-          <div className="sync-status"><span /> Atualizado {data.isDemo ? "em modo demonstração" : "automaticamente"}</div>
+          <div className="sync-status"><span /> Sincronizado automaticamente com o YouTube</div>
         </div>
         <div className="metric-grid">
           <article className="metric-card accent-card">
             <span className="metric-icon">↗</span>
             <strong>{compact(data.subscribers)}</strong>
             <p>inscritos na comunidade</p>
-            <small>+{data.monthlyGrowth}% nos últimos 30 dias</small>
+            <small>número público atualizado pelo canal</small>
           </article>
           <article className="metric-card"><span className="metric-number">01</span><strong>{compact(data.totalViews)}</strong><p>visualizações totais</p><div className="mini-line" /></article>
           <article className="metric-card"><span className="metric-number">02</span><strong>{data.videoCount}</strong><p>histórias publicadas</p><div className="stack-lines"><i/><i/><i/></div></article>
@@ -188,9 +196,9 @@ export function ChannelDashboard() {
 
       <section className="insights-section">
         <div className="growth-panel">
-          <div className="panel-top"><div><span className="kicker">RITMO DO CANAL</span><h2>Uma semana em alta</h2></div><strong>+18,4% <small>vs. semana anterior</small></strong></div>
-          <div className="chart" aria-label="Gráfico de visualizações nos últimos sete dias">
-            {weeklyData.map((value, index) => <div className="bar-wrap" key={index}><i style={{ height: `${value}%` }}><span>{value}k</span></i><small>{["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"][index]}</small></div>)}
+          <div className="panel-top"><div><span className="kicker">DESEMPENHO RECENTE</span><h2>Vídeos que estão rodando</h2></div><strong>{compact(Math.max(...data.videos.map((video) => video.views), 0))} <small>maior alcance recente</small></strong></div>
+          <div className="chart" aria-label="Comparação de visualizações dos vídeos recentes">
+            {chartData.map((item, index) => <div className="bar-wrap" key={item.label} title={`${item.label}: ${compact(item.value)} visualizações`}><i style={{ height: `${item.height}%` }}><span>{compact(item.value)}</span></i><small>V{index + 1}</small></div>)}
           </div>
         </div>
         <div className="curiosity-panel">
@@ -220,7 +228,7 @@ export function ChannelDashboard() {
         {subscribed ? <div className="success-message"><span>✓</span><strong>Você está na lista!</strong><p>Até a próxima história.</p></div> : <form onSubmit={submitNewsletter}><label htmlFor="email">Seu melhor e-mail</label><div><input id="email" type="email" required placeholder="voce@email.com"/><button type="submit" aria-label="Inscrever-se">→</button></div><small>Uma mensagem por semana. Sem spam, prometido.</small></form>}
       </section>
 
-      <footer><a className="brand" href="#inicio"><span className="brand-mark">SC</span><span>SEU CANAL<span className="brand-dot">.</span></span></a><p>© 2026 — Conteúdo para gente curiosa.</p><div><a href="#videos">YouTube ↗</a><a href="#comunidade">Comunidade</a></div></footer>
+      <footer><a className="brand" href="#inicio"><span className="brand-mark">IT</span><span>IMPORTS TECH<span className="brand-dot">.</span></span></a><p>© 2026 — Tecnologia de verdade, sem enrolação.</p><div><a href={data.channelUrl} target="_blank" rel="noreferrer">YouTube ↗</a><a href="#comunidade">Comunidade</a></div></footer>
     </main>
   );
 }

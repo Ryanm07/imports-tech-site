@@ -12,16 +12,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = incoming.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
   return {
-    title: "Seu Canal — Ideias que começam com um play",
-    description: "Vídeos, métricas, curiosidades e tudo o que acontece por trás do canal.",
+    title: "Imports Tech — Tecnologia de verdade, sem enrolação",
+    description: "Reviews, usados, garimpos, celulares, notebooks e compra inteligente no mundo da tecnologia.",
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
     openGraph: {
-      title: "Seu Canal — Ideias que começam com um play",
-      description: "Vídeos, métricas, curiosidades e tudo o que acontece por trás do canal.",
+      title: "Imports Tech — Tecnologia de verdade, sem enrolação",
+      description: "Reviews, usados, garimpos, celulares, notebooks e compra inteligente no mundo da tecnologia.",
       type: "website",
-      images: [{ url: `${origin}/og.png`, width: 1200, height: 630, alt: "Seu Canal" }],
+      images: [{ url: `${origin}/og-imports-tech.png`, width: 1200, height: 630, alt: "Imports Tech" }],
     },
-    twitter: { card: "summary_large_image", images: [`${origin}/og.png`] },
+    twitter: { card: "summary_large_image", images: [`${origin}/og-imports-tech.png`] },
   };
 }
 

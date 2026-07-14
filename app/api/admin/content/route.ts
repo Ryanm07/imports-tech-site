@@ -1,17 +1,17 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import { contentEntries, moderationActions } from "@/db/schema";
+import { contentEntries, ownerActions } from "@/db/schema";
 import {
   explicitContentPatch,
   sanitizeSlug,
   type ContentType,
   validateContentPayload,
 } from "@/lib/content-schemas";
-import { canManageSettings } from "@/lib/community-domain";
 import { privateJson } from "@/lib/http";
+import { ownerRateLimitIdentity } from "@/lib/owner-domain";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { sameOriginRequest, sanitizePlainText } from "@/lib/security";
-import { requireStaffApi } from "@/lib/server-auth";
+import { requireOwnerApi, type OwnerAccount } from "@/lib/server-auth";
 
 const CONTENT_TYPES: ContentType[] = [
   "review",
@@ -19,6 +19,7 @@ const CONTENT_TYPES: ContentType[] = [
   "video",
   "category",
   "setting",
+  "timeline",
 ];
 const CONTENT_STATUSES = ["draft", "published", "archived", "removed"] as const;
 
@@ -29,9 +30,8 @@ function disabled() {
 export async function GET(request: Request) {
   if (disabled())
     return privateJson({ error: "Painel desativado." }, { status: 503 });
-  const auth = await requireStaffApi();
+  const auth = await requireOwnerApi();
   if (auth.kind === "error") return auth.error;
-
   const page = positiveInteger(
     new URL(request.url).searchParams.get("page"),
     1,
@@ -47,33 +47,23 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (disabled())
-    return privateJson({ error: "Painel desativado." }, { status: 503 });
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireStaffApi();
-  if (auth.kind === "error") return auth.error;
-  const limited = await adminRateLimit(auth.user.email);
-  if (limited) return limited;
-
-  const input = await request.json().catch(() => ({}));
-  const type = CONTENT_TYPES.includes(input.type) ? input.type : null;
+  const owner = await authorizeMutation(request);
+  if (owner instanceof Response) return owner;
+  const input = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
+  const type = CONTENT_TYPES.includes(input.type as ContentType)
+    ? (input.type as ContentType)
+    : null;
   const title = sanitizePlainText(input.title, 160);
   const slug = sanitizeSlug(input.slug);
   if (!type || title.length < 3 || slug.length < 3) {
     return privateJson({ error: "Conteúdo inválido." }, { status: 400 });
   }
-  if (type === "setting" && !canManageSettings(auth.profile.role)) {
-    return privateJson(
-      { error: "Apenas administradores gerenciam configurações." },
-      { status: 403 },
-    );
-  }
   const validated = validateContentPayload(type, input.payload);
-  if (!validated.ok) {
+  if (!validated.ok)
     return privateJson({ errors: validated.errors }, { status: 400 });
-  }
 
   const now = new Date().toISOString();
   const entry: typeof contentEntries.$inferInsert = {
@@ -84,53 +74,41 @@ export async function POST(request: Request) {
     payload: JSON.stringify(validated.payload),
     status: "draft",
     featured: false,
-    createdById: auth.profile.id,
-    updatedById: auth.profile.id,
+    createdById: null,
+    updatedById: null,
     createdAt: now,
     updatedAt: now,
     publishedAt: null,
     deletedAt: null,
   };
-  const db = getDb();
-  await db.insert(contentEntries).values(entry);
-  await auditContent(auth.profile, "content.create", type, entry.id, { slug });
+  await getDb().insert(contentEntries).values(entry);
+  await audit(owner, "content.create", type, entry.id, { slug });
   return privateJson({ entry }, { status: 201 });
 }
 
 export async function PATCH(request: Request) {
-  if (disabled())
-    return privateJson({ error: "Painel desativado." }, { status: 503 });
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireStaffApi();
-  if (auth.kind === "error") return auth.error;
-  const limited = await adminRateLimit(auth.user.email);
-  if (limited) return limited;
-
-  const input = await request.json().catch(() => ({}));
+  const owner = await authorizeMutation(request);
+  if (owner instanceof Response) return owner;
+  const input = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
   const patch = explicitContentPatch(input);
   const id = sanitizePlainText(input.id, 80);
   if (!id) return privateJson({ error: "ID obrigatório." }, { status: 400 });
 
   const db = getDb();
-  const existing = await db
+  const existingRows = await db
     .select()
     .from(contentEntries)
     .where(eq(contentEntries.id, id))
     .limit(1);
-  if (!existing[0]) {
+  const existing = existingRows[0];
+  if (!existing)
     return privateJson({ error: "Conteúdo não encontrado." }, { status: 404 });
-  }
-  if (existing[0].type === "setting" && !canManageSettings(auth.profile.role)) {
-    return privateJson(
-      { error: "Apenas administradores gerenciam configurações." },
-      { status: 403 },
-    );
-  }
 
   const changes: Partial<typeof contentEntries.$inferInsert> = {
-    updatedById: auth.profile.id,
+    updatedById: null,
     updatedAt: new Date().toISOString(),
   };
   if (Object.hasOwn(patch, "title")) {
@@ -146,7 +124,10 @@ export async function PATCH(request: Request) {
     changes.slug = slug;
   }
   if (Object.hasOwn(patch, "payload")) {
-    const validated = validateContentPayload(existing[0].type, patch.payload);
+    const validated = validateContentPayload(
+      existing.type as ContentType,
+      patch.payload,
+    );
     if (!validated.ok)
       return privateJson({ errors: validated.errors }, { status: 400 });
     changes.payload = JSON.stringify(validated.payload);
@@ -158,28 +139,31 @@ export async function PATCH(request: Request) {
     changes.featured = patch.featured;
   }
   if (Object.hasOwn(patch, "status")) {
-    const status = patch.status;
     if (
-      typeof status !== "string" ||
-      !CONTENT_STATUSES.includes(status as (typeof CONTENT_STATUSES)[number])
+      typeof patch.status !== "string" ||
+      !CONTENT_STATUSES.includes(
+        patch.status as (typeof CONTENT_STATUSES)[number],
+      )
     ) {
       return privateJson({ error: "Status inválido." }, { status: 400 });
     }
-    const validStatus = status as (typeof CONTENT_STATUSES)[number];
+    const status = patch.status as (typeof CONTENT_STATUSES)[number];
     const payload = Object.hasOwn(patch, "payload")
       ? patch.payload
-      : JSON.parse(existing[0].payload);
-    const validated = validateContentPayload(existing[0].type, payload);
-    if (validStatus === "published" && !validated.ok) {
+      : JSON.parse(existing.payload);
+    const validated = validateContentPayload(
+      existing.type as ContentType,
+      payload,
+    );
+    if (status === "published" && !validated.ok) {
       return privateJson({ errors: validated.errors }, { status: 400 });
     }
-    changes.status = validStatus;
+    changes.status = status;
     changes.publishedAt =
-      validStatus === "published"
-        ? existing[0].publishedAt || new Date().toISOString()
-        : existing[0].publishedAt;
-    changes.deletedAt =
-      validStatus === "removed" ? new Date().toISOString() : null;
+      status === "published"
+        ? existing.publishedAt || new Date().toISOString()
+        : existing.publishedAt;
+    changes.deletedAt = status === "removed" ? new Date().toISOString() : null;
   }
 
   const updated = await db
@@ -187,26 +171,21 @@ export async function PATCH(request: Request) {
     .set(changes)
     .where(eq(contentEntries.id, id))
     .returning();
-  if (!updated.length) {
-    return privateJson({ error: "Conteúdo não encontrado." }, { status: 404 });
-  }
-  await auditContent(auth.profile, "content.update", updated[0].type, id, {
+  await audit(owner, "content.update", existing.type, id, {
     changedFields: Object.keys(changes).filter(
-      (key) => key !== "updatedAt" && key !== "updatedById",
+      (key) => !["updatedAt", "updatedById"].includes(key),
     ),
   });
   return privateJson({ entry: updated[0] });
 }
 
 export async function DELETE(request: Request) {
-  if (disabled())
-    return privateJson({ error: "Painel desativado." }, { status: 503 });
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireStaffApi();
-  if (auth.kind === "error") return auth.error;
-  const input = await request.json().catch(() => ({}));
+  const owner = await authorizeMutation(request);
+  if (owner instanceof Response) return owner;
+  const input = (await request.json().catch(() => ({}))) as Record<
+    string,
+    unknown
+  >;
   const id = sanitizePlainText(input.id, 80);
   const reason = sanitizePlainText(input.reason, 500);
   if (!id || reason.length < 8) {
@@ -222,40 +201,44 @@ export async function DELETE(request: Request) {
       status: "removed",
       deletedAt: now,
       updatedAt: now,
-      updatedById: auth.profile.id,
+      updatedById: null,
     })
     .where(eq(contentEntries.id, id))
     .returning();
-  if (!updated.length) {
+  if (!updated[0])
     return privateJson({ error: "Conteúdo não encontrado." }, { status: 404 });
-  }
-  await auditContent(
-    auth.profile,
-    "content.remove",
-    updated[0].type,
-    id,
-    {},
-    reason,
-  );
+  await audit(owner, "content.remove", updated[0].type, id, {}, reason);
   return privateJson({ entry: updated[0] });
 }
 
-async function adminRateLimit(email: string) {
-  const limit = await consumeRateLimit(email, "admin");
-  if (limit.allowed) return null;
-  return privateJson(
-    {
-      error:
-        limit.reason === "unavailable"
-          ? "Banco temporariamente indisponível."
-          : "Limite administrativo atingido.",
-    },
-    { status: limit.reason === "unavailable" ? 503 : 429 },
-  );
+async function authorizeMutation(
+  request: Request,
+): Promise<OwnerAccount | Response> {
+  if (disabled())
+    return privateJson({ error: "Painel desativado." }, { status: 503 });
+  if (!sameOriginRequest(request)) {
+    return privateJson({ error: "Origem inválida." }, { status: 403 });
+  }
+  const auth = await requireOwnerApi();
+  if (auth.kind === "error") return auth.error;
+  const identity = await ownerRateLimitIdentity(auth.owner.id);
+  const limit = await consumeRateLimit(identity, "admin");
+  if (!limit.allowed) {
+    return privateJson(
+      {
+        error:
+          limit.reason === "unavailable"
+            ? "Banco temporariamente indisponível."
+            : "Limite administrativo atingido.",
+      },
+      { status: limit.reason === "unavailable" ? 503 : 429 },
+    );
+  }
+  return auth.owner;
 }
 
-async function auditContent(
-  profile: { id: string; role: "user" | "moderator" | "admin" },
+async function audit(
+  owner: OwnerAccount,
   action: string,
   targetType: string,
   targetId: string,
@@ -263,11 +246,10 @@ async function auditContent(
   reason: string | null = null,
 ) {
   await getDb()
-    .insert(moderationActions)
+    .insert(ownerActions)
     .values({
       id: crypto.randomUUID(),
-      actorId: profile.id,
-      actorRole: profile.role === "admin" ? "admin" : "moderator",
+      actorOwnerId: owner.id,
       action,
       targetType,
       targetId,

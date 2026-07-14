@@ -1,73 +1,39 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
-import {
-  communityReplies,
-  communityReports,
-  communityTopics,
-} from "@/db/schema";
+import { wallReplies, wallReports, wallTopics } from "@/db/schema";
 import { privateJson } from "@/lib/http";
-import { getWritableProfile } from "@/lib/profiles";
-import { consumeRateLimit } from "@/lib/rate-limit";
-import { sameOriginRequest, validateReportInput } from "@/lib/security";
-import { requireApiUser } from "@/lib/server-auth";
+import { validateWallReport } from "@/lib/wall-domain";
+import { prepareWallMutation } from "@/lib/wall-request";
 
 export async function POST(request: Request) {
-  if (process.env.COMMUNITY_ENABLED !== "true") {
-    return privateJson({ error: "Comunidade em breve." }, { status: 503 });
+  const prepared = await prepareWallMutation(request, "report");
+  if (!prepared.ok) return prepared.response;
+  const validated = validateWallReport(prepared.input);
+  if (!validated.targetType || validated.errors.length) {
+    return privateJson({ errors: validated.errors }, { status: 400 });
   }
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireApiUser();
-  if (auth.kind === "error") return auth.error;
-
-  const limit = await consumeRateLimit(auth.user.email, "report");
-  if (!limit.allowed) {
-    return privateJson(
-      {
-        error:
-          limit.reason === "unavailable"
-            ? "Denúncias temporariamente indisponíveis."
-            : "Limite de denúncias atingido.",
-      },
-      { status: limit.reason === "unavailable" ? 503 : 429 },
-    );
-  }
-
-  const profile = await getWritableProfile(auth.user);
-  if (!profile) {
-    return privateJson(
-      { error: "Conta impedida de denunciar." },
-      { status: 403 },
-    );
-  }
-
-  const input = await request.json().catch(() => ({}));
-  const { targetType, targetId, reason, errors } = validateReportInput(input);
-  if (!targetType || errors.length) {
-    return privateJson({ error: "Denúncia inválida." }, { status: 400 });
-  }
+  const targetType = validated.targetType as "topic" | "reply";
 
   const db = getDb();
   const target =
     targetType === "topic"
       ? await db
-          .select({ id: communityTopics.id })
-          .from(communityTopics)
+          .select({ id: wallTopics.id })
+          .from(wallTopics)
           .where(
             and(
-              eq(communityTopics.id, targetId),
-              ne(communityTopics.status, "removed"),
+              eq(wallTopics.id, validated.targetId),
+              eq(wallTopics.status, "published"),
             ),
           )
           .limit(1)
       : await db
-          .select({ id: communityReplies.id })
-          .from(communityReplies)
+          .select({ id: wallReplies.id })
+          .from(wallReplies)
           .where(
             and(
-              eq(communityReplies.id, targetId),
-              ne(communityReplies.status, "removed"),
+              eq(wallReplies.id, validated.targetId),
+              eq(wallReplies.status, "published"),
             ),
           )
           .limit(1);
@@ -76,41 +42,41 @@ export async function POST(request: Request) {
   }
 
   const duplicate = await db
-    .select({ id: communityReports.id })
-    .from(communityReports)
+    .select({ id: wallReports.id })
+    .from(wallReports)
     .where(
       and(
-        eq(communityReports.reporterId, profile.id),
-        eq(communityReports.targetType, targetType),
-        eq(communityReports.targetId, targetId),
-        eq(communityReports.status, "open"),
+        eq(wallReports.reporterHash, prepared.identityHash),
+        eq(wallReports.targetType, targetType),
+        eq(wallReports.targetId, validated.targetId),
+        eq(wallReports.status, "open"),
       ),
     )
     .limit(1);
   if (duplicate[0]) {
     return privateJson(
-      { error: "Você já possui uma denúncia aberta para este conteúdo." },
+      { error: "Uma denúncia para este conteúdo já está em análise." },
       { status: 409 },
     );
   }
 
   const now = new Date().toISOString();
   try {
-    await db.insert(communityReports).values({
+    await db.insert(wallReports).values({
       id: crypto.randomUUID(),
-      reporterId: profile.id,
+      reporterHash: prepared.identityHash,
       targetType,
-      targetId,
-      reason,
+      targetId: validated.targetId,
+      reason: validated.reason,
       status: "open",
       createdAt: now,
       updatedAt: now,
       resolvedAt: null,
-      resolvedById: null,
+      resolvedByOwnerId: null,
     });
   } catch {
     return privateJson(
-      { error: "Você já possui uma denúncia aberta para este conteúdo." },
+      { error: "Uma denúncia para este conteúdo já está em análise." },
       { status: 409 },
     );
   }

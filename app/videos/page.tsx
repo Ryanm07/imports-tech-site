@@ -12,7 +12,11 @@ export default function VideosPage() {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const [sync, setSync] = useState<Pick<
     YouTubeData,
-    "source" | "isStale" | "isPartial" | "lastSuccessfulSyncAt"
+    | "videoCatalogSource"
+    | "videoCatalogStale"
+    | "videoCatalogPartial"
+    | "videoCatalogUpdatedAt"
+    | "indexedVideoCount"
   > | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Todos");
@@ -60,15 +64,18 @@ export default function VideosPage() {
         </p>
         {sync && (
           <p className="sync-notice" role="status">
-            {sync.isStale
+            {sync.videoCatalogStale
               ? "Exibindo o último retrato disponível."
-              : sync.isPartial
-                ? "Catálogo recente parcial; configure a API do YouTube para carregar todos os vídeos."
+              : sync.videoCatalogPartial
+                ? "Catálogo parcial persistido; a sincronização completa continua no servidor."
                 : "Catálogo completo sincronizado com a API do YouTube."}
-            {sync.lastSuccessfulSyncAt && (
+            {sync.videoCatalogUpdatedAt && (
               <>
                 {" "}
-                Última sincronização: {formatSync(sync.lastSuccessfulSyncAt)}.
+                Catálogo atualizado em {formatSync(
+                  sync.videoCatalogUpdatedAt,
+                )}{" "}
+                · {sync.indexedVideoCount} vídeos indexados.
               </>
             )}
           </p>

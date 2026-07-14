@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_LINKS } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "Contato",
@@ -23,11 +24,7 @@ export default function ContactPage() {
           <strong>imports.tech.contact@gmail.com</strong>
           <p>Parcerias, contato editorial e solicitações de privacidade.</p>
         </a>
-        <a
-          href="https://www.youtube.com/@Imports_Tech"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">
           <span>YOUTUBE</span>
           <strong>@Imports_Tech</strong>
           <p>Vídeos, comentários e publicações do canal.</p>

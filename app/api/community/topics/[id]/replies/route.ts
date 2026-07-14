@@ -1,126 +1,121 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { communityReplies, communityTopics, profiles } from "@/db/schema";
-import { toPublicReply } from "@/lib/community-domain";
+import { wallReplies, wallTopics } from "@/db/schema";
 import { privateJson } from "@/lib/http";
-import { getWritableProfile } from "@/lib/profiles";
-import { consumeRateLimit } from "@/lib/rate-limit";
 import {
-  countLinks,
-  sameOriginRequest,
-  sanitizePlainText,
-} from "@/lib/security";
-import { requireApiUser } from "@/lib/server-auth";
+  statusForRisk,
+  toPublicWallReply,
+  validateWallReply,
+  wallContentHash,
+} from "@/lib/wall-domain";
+import { prepareWallMutation, wallIsEnabled } from "@/lib/wall-request";
 
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(_: Request, { params }: Context) {
-  if (process.env.COMMUNITY_ENABLED !== "true") {
-    return privateJson({ error: "Comunidade em breve." }, { status: 503 });
+  if (!wallIsEnabled()) {
+    return privateJson({ error: "Mural em breve." }, { status: 503 });
   }
   const { id } = await params;
-  const replies = await getDb()
+  const rows = await getDb()
     .select({
-      id: communityReplies.id,
-      topicId: communityReplies.topicId,
-      body: communityReplies.body,
-      authorId: profiles.id,
-      authorDisplayName: profiles.displayName,
-      createdAt: communityReplies.createdAt,
-      updatedAt: communityReplies.updatedAt,
+      id: wallReplies.id,
+      topicId: wallReplies.topicId,
+      displayName: wallReplies.displayName,
+      body: wallReplies.body,
+      isOfficial: wallReplies.isOfficial,
+      createdAt: wallReplies.createdAt,
+      updatedAt: wallReplies.updatedAt,
     })
-    .from(communityReplies)
-    .innerJoin(profiles, eq(communityReplies.authorId, profiles.id))
+    .from(wallReplies)
     .where(
-      and(
-        eq(communityReplies.topicId, id),
-        eq(communityReplies.status, "published"),
-      ),
-    );
-  return Response.json({ replies: replies.map(toPublicReply) });
+      and(eq(wallReplies.topicId, id), eq(wallReplies.status, "published")),
+    )
+    .orderBy(wallReplies.createdAt);
+  return privateJson({ replies: rows.map(toPublicWallReply) });
 }
 
 export async function POST(request: Request, { params }: Context) {
-  if (process.env.COMMUNITY_ENABLED !== "true") {
-    return privateJson({ error: "Comunidade em breve." }, { status: 503 });
-  }
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireApiUser();
-  if (auth.kind === "error") return auth.error;
-
-  const limit = await consumeRateLimit(auth.user.email, "reply");
-  if (!limit.allowed) {
-    return privateJson(
-      {
-        error:
-          limit.reason === "unavailable"
-            ? "Respostas temporariamente indisponíveis."
-            : "Limite temporário atingido.",
-      },
-      { status: limit.reason === "unavailable" ? 503 : 429 },
-    );
+  const prepared = await prepareWallMutation(request, "reply");
+  if (!prepared.ok) return prepared.response;
+  const validated = validateWallReply(prepared.input);
+  if (!validated.ok) {
+    return privateJson({ errors: validated.errors }, { status: 400 });
   }
 
-  const profile = await getWritableProfile(auth.user);
-  if (!profile) {
-    return privateJson(
-      { error: "Sua conta não pode responder no momento." },
-      { status: 403 },
-    );
-  }
-
-  const { id } = await params;
-  const input = await request.json().catch(() => ({}));
-  const body = sanitizePlainText(input.body, 2000);
-  if (body.length < 4 || countLinks(body) > 2) {
-    return privateJson(
-      { error: "Resposta inválida ou com links demais." },
-      { status: 400 },
-    );
-  }
-
+  const { id: topicId } = await params;
   const db = getDb();
   const topics = await db
-    .select({ id: communityTopics.id })
-    .from(communityTopics)
-    .where(
-      and(eq(communityTopics.id, id), eq(communityTopics.status, "published")),
-    )
+    .select({ id: wallTopics.id, closedAt: wallTopics.closedAt })
+    .from(wallTopics)
+    .where(and(eq(wallTopics.id, topicId), eq(wallTopics.status, "published")))
     .limit(1);
   if (!topics[0]) {
-    return privateJson({ error: "Tópico não encontrado." }, { status: 404 });
+    return privateJson(
+      { error: "Publicação não encontrada." },
+      { status: 404 },
+    );
+  }
+  if (topics[0].closedAt) {
+    return privateJson(
+      { error: "Esta conversa está encerrada." },
+      { status: 409 },
+    );
+  }
+
+  const contentHash = await wallContentHash(topicId, validated.value.body);
+  const duplicate = await db
+    .select({ id: wallReplies.id })
+    .from(wallReplies)
+    .where(
+      and(
+        eq(wallReplies.contentHash, contentHash),
+        gt(
+          wallReplies.createdAt,
+          new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
+        ),
+      ),
+    )
+    .limit(1);
+  if (duplicate[0]) {
+    return privateJson(
+      { error: "Uma resposta igual já foi enviada recentemente." },
+      { status: 409 },
+    );
   }
 
   const now = new Date().toISOString();
+  const status = statusForRisk(validated.risk);
   const reply = {
     id: crypto.randomUUID(),
-    topicId: id,
-    body,
-    authorId: profile.id,
-    status: "published" as const,
-    likeCount: 0,
+    topicId,
+    displayName: validated.value.displayName,
+    body: validated.value.body,
+    status,
+    isOfficial: false,
+    identityHash: prepared.identityHash,
+    contentHash,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
-  };
-  await db.insert(communityReplies).values(reply);
-  await db
-    .update(communityTopics)
-    .set({
-      replyCount: sql`${communityTopics.replyCount} + 1`,
-      updatedAt: now,
-    })
-    .where(eq(communityTopics.id, id));
+  } as const;
+  await db.insert(wallReplies).values(reply);
+  if (status === "published") {
+    await db
+      .update(wallTopics)
+      .set({ replyCount: sql`${wallTopics.replyCount} + 1`, updatedAt: now })
+      .where(eq(wallTopics.id, topicId));
+  }
 
-  return privateJson(
-    {
-      reply: toPublicReply({
-        ...reply,
-        authorDisplayName: profile.displayName,
-      }),
-    },
-    { status: 201 },
-  );
+  if (status !== "published") {
+    return privateJson(
+      {
+        accepted: true,
+        status: "pending",
+        message: "Resposta recebida para análise.",
+      },
+      { status: 202 },
+    );
+  }
+  return privateJson({ reply: toPublicWallReply(reply) }, { status: 201 });
 }

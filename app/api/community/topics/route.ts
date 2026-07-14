@@ -1,107 +1,185 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, like, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
-import { communityTopics, profiles } from "@/db/schema";
-import { toPublicTopic } from "@/lib/community-domain";
+import { wallCategories, wallTopics } from "@/db/schema";
 import { privateJson } from "@/lib/http";
-import { consumeRateLimit } from "@/lib/rate-limit";
-import { sameOriginRequest, validateCommunityPost } from "@/lib/security";
-import { requireApiUser } from "@/lib/server-auth";
-import { communityCategories } from "@/lib/site-data";
-import { getWritableProfile } from "@/lib/profiles";
+import {
+  statusForRisk,
+  toPublicWallTopic,
+  validateWallTopic,
+  wallContentHash,
+} from "@/lib/wall-domain";
+import { prepareWallMutation, wallIsEnabled } from "@/lib/wall-request";
 
+const PAGE_SIZE = 20;
 const publicTopicColumns = {
-  id: communityTopics.id,
-  category: communityTopics.category,
-  title: communityTopics.title,
-  body: communityTopics.body,
-  authorId: profiles.id,
-  authorDisplayName: profiles.displayName,
-  replyCount: communityTopics.replyCount,
-  createdAt: communityTopics.createdAt,
-  updatedAt: communityTopics.updatedAt,
+  id: wallTopics.id,
+  categoryId: wallCategories.id,
+  categoryName: wallCategories.name,
+  categoryDescription: wallCategories.description,
+  categoryStatus: wallCategories.status,
+  displayName: wallTopics.displayName,
+  title: wallTopics.title,
+  body: wallTopics.body,
+  isOfficial: wallTopics.isOfficial,
+  replyCount: wallTopics.replyCount,
+  closedAt: wallTopics.closedAt,
+  pinnedAt: wallTopics.pinnedAt,
+  createdAt: wallTopics.createdAt,
+  updatedAt: wallTopics.updatedAt,
 };
 
-function disabled() {
-  return process.env.COMMUNITY_ENABLED !== "true";
-}
-
-export async function GET() {
-  if (disabled()) {
-    return privateJson({ error: "Comunidade em breve." }, { status: 503 });
+export async function GET(request: Request) {
+  if (!wallIsEnabled()) {
+    return privateJson({ error: "Mural em breve." }, { status: 503 });
   }
-  const rows = await getDb()
-    .select(publicTopicColumns)
-    .from(communityTopics)
-    .innerJoin(profiles, eq(communityTopics.authorId, profiles.id))
-    .where(eq(communityTopics.status, "published"))
-    .orderBy(desc(communityTopics.createdAt))
-    .limit(50);
-  return Response.json({ topics: rows.map(toPublicTopic) });
-}
-
-export async function POST(request: Request) {
-  if (disabled()) {
-    return privateJson({ error: "Comunidade em breve." }, { status: 503 });
-  }
-  if (!sameOriginRequest(request)) {
-    return privateJson({ error: "Origem inválida." }, { status: 403 });
-  }
-  const auth = await requireApiUser();
-  if (auth.kind === "error") return auth.error;
-
-  const input = await request.json().catch(() => ({}));
-  const validated = validateCommunityPost(input.title, input.body);
-  if (validated.errors.length) {
-    return privateJson({ errors: validated.errors }, { status: 400 });
-  }
-  if (!communityCategories.includes(input.category)) {
-    return privateJson({ error: "Categoria inválida." }, { status: 400 });
-  }
-
-  const limit = await consumeRateLimit(auth.user.email, "topic");
-  if (!limit.allowed) {
-    return privateJson(
-      {
-        error:
-          limit.reason === "unavailable"
-            ? "Publicação temporariamente indisponível."
-            : "Limite temporário atingido. Tente novamente mais tarde.",
-      },
-      { status: limit.reason === "unavailable" ? 503 : 429 },
+  const url = new URL(request.url);
+  const page = positiveInteger(url.searchParams.get("page"), 1);
+  const category = cleanFilter(url.searchParams.get("category"), 80);
+  const query = cleanFilter(url.searchParams.get("q"), 80);
+  const sort =
+    url.searchParams.get("sort") === "replied" ? "replied" : "recent";
+  const conditions = [eq(wallTopics.status, "published")];
+  if (category) conditions.push(eq(wallTopics.categoryId, category));
+  if (query) {
+    const pattern = `%${query.replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
+    conditions.push(
+      or(
+        like(wallTopics.title, pattern),
+        like(wallTopics.body, pattern),
+        like(wallTopics.displayName, pattern),
+      )!,
     );
   }
 
-  const profile = await getWritableProfile(auth.user);
-  if (!profile) {
+  try {
+    const rows = await getDb()
+      .select(publicTopicColumns)
+      .from(wallTopics)
+      .innerJoin(wallCategories, eq(wallTopics.categoryId, wallCategories.id))
+      .where(and(...conditions))
+      .orderBy(
+        sql`${wallTopics.pinnedAt} is not null desc`,
+        sort === "replied"
+          ? desc(wallTopics.replyCount)
+          : desc(wallTopics.createdAt),
+      )
+      .limit(PAGE_SIZE)
+      .offset((page - 1) * PAGE_SIZE);
+    return privateJson({
+      topics: rows.map(toPublicWallTopic),
+      page,
+      hasMore: rows.length === PAGE_SIZE,
+    });
+  } catch {
     return privateJson(
-      { error: "Sua conta não pode publicar no momento." },
-      { status: 403 },
+      { error: "Não foi possível carregar o mural agora." },
+      { status: 503 },
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  const prepared = await prepareWallMutation(request, "topic");
+  if (!prepared.ok) return prepared.response;
+
+  const validated = validateWallTopic(prepared.input);
+  if (!validated.ok) {
+    return privateJson({ errors: validated.errors }, { status: 400 });
+  }
+
+  const db = getDb();
+  const categoryRows = await db
+    .select()
+    .from(wallCategories)
+    .where(eq(wallCategories.id, validated.value.categoryId))
+    .limit(1);
+  const category = categoryRows[0];
+  if (!category || category.status !== "active") {
+    return privateJson(
+      { error: "Essa categoria não aceita novas publicações." },
+      { status: 400 },
+    );
+  }
+
+  const contentHash = await wallContentHash(
+    validated.value.title,
+    validated.value.body,
+  );
+  const duplicate = await db
+    .select({ id: wallTopics.id })
+    .from(wallTopics)
+    .where(
+      and(
+        eq(wallTopics.contentHash, contentHash),
+        gt(
+          wallTopics.createdAt,
+          new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
+        ),
+      ),
+    )
+    .limit(1);
+  if (duplicate[0]) {
+    return privateJson(
+      { error: "Uma publicação igual já foi enviada recentemente." },
+      { status: 409 },
     );
   }
 
   const now = new Date().toISOString();
+  const status = statusForRisk(validated.risk);
   const topic = {
     id: crypto.randomUUID(),
-    category: input.category,
-    title: validated.title,
-    body: validated.body,
-    authorId: profile.id,
-    status: "published" as const,
+    categoryId: category.id,
+    displayName: validated.value.displayName,
+    title: validated.value.title,
+    body: validated.value.body,
+    status,
+    isOfficial: false,
+    identityHash: prepared.identityHash,
+    contentHash,
     replyCount: 0,
-    likeCount: 0,
+    closedAt: null,
+    pinnedAt: null,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
-  };
-  await getDb().insert(communityTopics).values(topic);
+  } as const;
+  await db.insert(wallTopics).values(topic);
 
+  if (status !== "published") {
+    return privateJson(
+      {
+        accepted: true,
+        status: "pending",
+        message: "Publicação recebida para análise.",
+      },
+      { status: 202 },
+    );
+  }
   return privateJson(
     {
-      topic: toPublicTopic({
+      topic: toPublicWallTopic({
         ...topic,
-        authorDisplayName: profile.displayName,
+        categoryName: category.name,
+        categoryDescription: category.description,
+        categoryStatus: category.status,
       }),
     },
     { status: 201 },
   );
+}
+
+function positiveInteger(value: string | null, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 && parsed <= 100
+    ? parsed
+    : fallback;
+}
+
+function cleanFilter(value: string | null, max: number) {
+  return (value ?? "")
+    .normalize("NFKC")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, max);
 }

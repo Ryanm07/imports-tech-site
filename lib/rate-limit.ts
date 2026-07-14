@@ -9,10 +9,11 @@ export type D1DatabaseLike = {
 };
 
 export const RATE_LIMITS = {
-  topic: { max: 5, windowMinutes: 10 },
-  reply: { max: 20, windowMinutes: 10 },
+  topic: { max: 3, windowMinutes: 60 },
+  reply: { max: 12, windowMinutes: 60 },
   report: { max: 10, windowMinutes: 60 },
   admin: { max: 60, windowMinutes: 10 },
+  youtubeSync: { max: 6, windowMinutes: 60 },
 } as const;
 
 export type RateLimitAction = keyof typeof RATE_LIMITS;
@@ -23,6 +24,8 @@ export type RateLimitResult =
 type RateLimitOptions = {
   db?: D1DatabaseLike;
   now?: Date;
+  // Explicit injection for isolated tests and migrations only. Production
+  // callers pass a pre-hashed identity and never receive a fallback salt.
   salt?: string;
 };
 
@@ -36,13 +39,14 @@ export async function consumeRateLimit(
   const windowMs = policy.windowMinutes * 60_000;
   const bucketStart = Math.floor(now.getTime() / windowMs) * windowMs;
   const expiresAt = new Date(bucketStart + windowMs);
-  const identityHash = await hashIdentity(
-    identity,
-    options.salt ??
-      process.env.RATE_LIMIT_SALT ??
-      process.env.SITE_URL ??
-      "imports-tech-local-only",
-  );
+  // `identity` is already an irreversible hash created with RATE_LIMIT_SALT.
+  // Hashing it again is unnecessary and previously encouraged unsafe fallback salts.
+  const identityHash = options.salt
+    ? await hashIdentityForTest(identity, options.salt)
+    : identity;
+  if (!/^[a-f0-9]{64}$/u.test(identityHash)) {
+    return { allowed: false, reason: "unavailable" };
+  }
   const key = `${action}:${identityHash}:${bucketStart}`;
 
   try {
@@ -81,11 +85,11 @@ export async function consumeRateLimit(
   }
 }
 
-async function hashIdentity(identity: string, salt: string) {
-  const bytes = new TextEncoder().encode(
-    `${salt}:${identity.trim().toLowerCase()}`,
+async function hashIdentityForTest(identity: string, salt: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${salt}:${identity.trim().toLowerCase()}`),
   );
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (byte) =>
     byte.toString(16).padStart(2, "0"),
   ).join("");

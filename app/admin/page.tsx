@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { requireChatGPTUser } from "@/app/chatgpt-auth";
 import { AdminPanel } from "@/components/admin-panel";
-import { authorizeStaffUser } from "@/lib/server-auth";
+import { authorizeOwnerUser } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Painel administrativo",
-  description: "Área administrativa protegida do Imports Tech.",
+  title: "Painel do proprietário",
+  description: "Área privada do proprietário do Imports Tech.",
   robots: { index: false, follow: false },
 };
 
@@ -15,12 +15,11 @@ export default async function AdminPage() {
     return (
       <main id="conteudo" className="page-main">
         <div className="feature-soon">
-          <span>ÁREA PROTEGIDA</span>
+          <span>ÁREA PRIVADA</span>
           <h1>Painel administrativo desativado.</h1>
           <p>
-            A interface e as operações administrativas permanecem indisponíveis
-            até a configuração explícita da feature flag e da primeira conta
-            administrativa.
+            A interface permanece indisponível até a ativação explícita da
+            feature flag e a configuração segura do proprietário.
           </p>
         </div>
       </main>
@@ -28,14 +27,14 @@ export default async function AdminPage() {
   }
 
   const user = await requireChatGPTUser("/admin");
-  const profile = await authorizeStaffUser(user).catch(() => null);
-  if (!profile) {
+  const owner = await authorizeOwnerUser(user).catch(() => null);
+  if (!owner) {
     return (
       <main id="conteudo" className="page-main">
         <div className="feature-soon">
           <span>ACESSO NEGADO</span>
           <h1>Você não tem permissão.</h1>
-          <p>A autorização persistida foi validada no servidor.</p>
+          <p>A autorização do proprietário foi validada no servidor.</p>
         </div>
       </main>
     );
@@ -44,16 +43,14 @@ export default async function AdminPage() {
   return (
     <main id="conteudo" className="page-main">
       <header className="page-hero">
-        <span className="eyebrow-v2">PAINEL ADMINISTRATIVO</span>
-        <h1>Conteúdo e moderação.</h1>
+        <span className="eyebrow-v2">PAINEL DO PROPRIETÁRIO</span>
+        <h1>Conteúdo, mural e sincronização.</h1>
         <p>
-          Sessão ativa como {profile.displayName}. Todas as gravações passam por
-          autorização persistida e auditoria.
+          Sessão privada ativa. Todas as gravações passam por autorização e
+          histórico de auditoria.
         </p>
       </header>
-      <AdminPanel
-        currentRole={profile.role === "admin" ? "admin" : "moderator"}
-      />
+      <AdminPanel />
     </main>
   );
 }

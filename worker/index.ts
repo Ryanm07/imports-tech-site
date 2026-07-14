@@ -9,6 +9,8 @@ import handler from "vinext/server/app-router-entry";
 interface Env {
   ASSETS?: Fetcher;
   DB: D1Database;
+  YOUTUBE_API_KEY?: string;
+  YOUTUBE_CHANNEL_ID?: string;
   IMAGES?: {
     input(stream: ReadableStream): {
       transform(options: Record<string, unknown>): {
@@ -85,6 +87,24 @@ const worker = {
     const response = await handler.fetch(request, env, ctx);
     return withSecurityHeaders(response, url);
   },
+  async scheduled(
+    controller: { cron: string; scheduledTime: number },
+    env: Env,
+    ctx: ExecutionContext,
+  ) {
+    const mode = controller.cron === "15 3 * * *" ? "full" : "incremental";
+    ctx.waitUntil(
+      import("../lib/youtube-service").then(({ runYouTubeSync }) =>
+        runYouTubeSync({
+          trigger: "cron",
+          mode,
+          apiKey: env.YOUTUBE_API_KEY,
+          channelId: env.YOUTUBE_CHANNEL_ID,
+          now: new Date(controller.scheduledTime),
+        }),
+      ),
+    );
+  },
 };
 
 function withSecurityHeaders(response: Response, url: URL) {
@@ -103,13 +123,13 @@ function withSecurityHeaders(response: Response, url: URL) {
       "object-src 'none'",
       "form-action 'self'",
       "frame-ancestors 'self' https://chatgpt.com https://*.chatgpt.com",
-      "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com",
+      "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://challenges.cloudflare.com",
       "img-src 'self' data: blob: https://i.ytimg.com",
       "media-src 'self' https://www.youtube.com",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline'",
-      "connect-src 'self' https://www.googleapis.com https://www.youtube.com",
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+      "connect-src 'self' https://challenges.cloudflare.com",
       "upgrade-insecure-requests",
     ].join("; "),
   );

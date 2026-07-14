@@ -4,9 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { VideoCard } from "@/components/video-card";
+import { TelegramSection } from "@/components/telegram-section";
+import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import type { Category, Find, Review } from "@/lib/site-data";
 import { money } from "@/lib/site-data";
 import type { YouTubeData } from "@/lib/youtube-service";
+import type { TelegramLinks } from "@/lib/telegram";
 
 const fallback: YouTubeData = {
   channelName: "Imports Tech!",
@@ -16,7 +19,19 @@ const fallback: YouTubeData = {
   totalViews: 610472,
   videoCount: 80,
   monthlyGrowth: 0,
-  channelUrl: "https://www.youtube.com/@Imports_Tech",
+  channelUrl: BRAND_LINKS.youtube,
+  videoCatalogSource: "snapshot",
+  videoCatalogUpdatedAt: "2026-07-10T00:00:00.000Z",
+  videoCatalogPartial: true,
+  videoCatalogStale: true,
+  channelMetricsSource: "snapshot",
+  channelMetricsUpdatedAt: "2026-07-10T00:00:00.000Z",
+  channelMetricsStale: true,
+  indexedVideoCount: 0,
+  syncStatus: "idle",
+  lastAttemptAt: "2026-07-10T00:00:00.000Z",
+  lastFullSyncAt: null,
+  lastError: null,
   source: "snapshot",
   isStale: true,
   isPartial: true,
@@ -29,10 +44,14 @@ export function HomePage({
   reviews,
   finds,
   categories,
+  featuredVideoId,
+  telegram,
 }: {
   reviews: Review[];
   finds: Find[];
   categories: Category[];
+  featuredVideoId?: string;
+  telegram: TelegramLinks;
 }) {
   const [data, setData] = useState<YouTubeData>(fallback);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -60,9 +79,10 @@ export function HomePage({
   const featured = useMemo(
     () =>
       data.videos.length
-        ? [...data.videos].sort((a, b) => b.views - a.views)[0]
+        ? data.videos.find((video) => video.id === featuredVideoId) ||
+          [...data.videos].sort((a, b) => b.views - a.views)[0]
         : null,
-    [data.videos],
+    [data.videos, featuredVideoId],
   );
   const catalogedProducts = new Set([
     ...reviews.map((item) => item.videoId),
@@ -70,21 +90,21 @@ export function HomePage({
   ]).size;
   const orbitMetrics = [
     {
-      value: compact(data.subscribers),
+      value: metricValue(data.subscribers, data.channelMetricsSource),
       label: "inscritos",
-      detail: "Pessoas acompanhando o canal",
+      detail: metricsDetail(data),
     },
     {
-      value: String(data.videoCount),
-      label: "vídeos",
-      detail: data.isPartial
-        ? "Total público; catálogo local parcial"
-        : "Catálogo sincronizado",
+      value: String(data.indexedVideoCount),
+      label: "vídeos indexados",
+      detail: data.videoCatalogPartial
+        ? "Catálogo local parcial"
+        : "Catálogo local completo",
     },
     {
-      value: compact(data.totalViews),
+      value: metricValue(data.totalViews, data.channelMetricsSource),
       label: "visualizações",
-      detail: "Alcance público total",
+      detail: metricsDetail(data),
     },
     {
       value: String(catalogedProducts),
@@ -138,7 +158,7 @@ export function HomePage({
           <div className="orbit-line orbit-c" aria-hidden="true" />
           <div className="orbit-logo">
             <Image
-              src="/brand/imports-tech-logo.jpg"
+              src={BRAND_ASSETS.logo}
               alt="Logo oficial Imports Tech"
               fill
               sizes="255px"
@@ -163,7 +183,9 @@ export function HomePage({
         <div className="hero-proof" role="status" aria-live="polite">
           <span
             className={
-              status === "ready" && !data.isStale
+              status === "ready" &&
+              !data.videoCatalogStale &&
+              !data.channelMetricsStale
                 ? "status-dot online"
                 : "status-dot"
             }
@@ -321,18 +343,24 @@ export function HomePage({
         </div>
       </section>
 
+      <TelegramSection links={telegram} />
+
       <section className="metrics-strip">
         <div>
           <span>Inscritos</span>
-          <strong>{compact(data.subscribers)}</strong>
+          <strong>
+            {metricValue(data.subscribers, data.channelMetricsSource)}
+          </strong>
         </div>
         <div>
           <span>Vídeos publicados</span>
-          <strong>{data.videoCount}</strong>
+          <strong>{data.indexedVideoCount}</strong>
         </div>
         <div>
           <span>Visualizações</span>
-          <strong>{compact(data.totalViews)}</strong>
+          <strong>
+            {metricValue(data.totalViews, data.channelMetricsSource)}
+          </strong>
         </div>
         <Link href="/metricas">
           Abrir painel público <span>↗</span>
@@ -342,7 +370,7 @@ export function HomePage({
       <section className="about-home">
         <div className="about-image">
           <Image
-            src="/brand/imports-tech-banner.jpg"
+            src={BRAND_ASSETS.banner}
             alt="Banner oficial Imports Tech — Reviews, Garimpos, Tecnologia"
             width={2120}
             height={373}
@@ -370,10 +398,33 @@ function syncLabel(status: "loading" | "ready" | "error", data: YouTubeData) {
   if (status === "loading") return "Sincronizando com o canal…";
   if (status === "error")
     return "Falha completa: não foi possível carregar o retrato disponível";
-  if (data.source === "snapshot" || data.isStale)
-    return "Último retrato disponível";
-  if (data.isPartial) return "Catálogo recente parcial";
-  return "Catálogo completo sincronizado";
+  const catalog = data.videoCatalogStale
+    ? "Catálogo: último retrato disponível"
+    : data.videoCatalogPartial
+      ? "Catálogo: sincronização parcial"
+      : "Catálogo: sincronização completa";
+  const metrics = data.channelMetricsStale
+    ? "métricas históricas"
+    : data.channelMetricsSource === "unavailable"
+      ? "métricas indisponíveis"
+      : "métricas atualizadas";
+  return `${catalog} · ${metrics}`;
+}
+
+function metricValue(
+  value: number,
+  source: YouTubeData["channelMetricsSource"],
+) {
+  return source === "unavailable" ? "Indisponível" : compact(value);
+}
+
+function metricsDetail(data: YouTubeData) {
+  if (data.channelMetricsSource === "unavailable") {
+    return "Métrica pública temporariamente indisponível";
+  }
+  return data.channelMetricsStale
+    ? "Último retrato público disponível"
+    : "Métrica pública atualizada pela API oficial";
 }
 
 function compact(value: number) {

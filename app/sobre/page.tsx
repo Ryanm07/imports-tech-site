@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
+import { getTimeline } from "@/lib/content-repository";
 
 export const metadata: Metadata = {
   title: "Sobre",
@@ -8,7 +11,19 @@ export const metadata: Metadata = {
   alternates: { canonical: "/sobre" },
 };
 
-export default function AboutPage() {
+const truthfulFallback = [
+  {
+    year: "Hoje",
+    title: "Tecnologia testada no uso real",
+    description:
+      "O canal publica reviews, garimpos e reparos com contexto de compra, condição e custo.",
+    position: 1,
+  },
+];
+
+export default async function AboutPage() {
+  const storedTimeline = await getTimeline();
+  const timeline = storedTimeline.length ? storedTimeline : truthfulFallback;
   return (
     <main id="conteudo" className="page-main">
       <header className="page-hero">
@@ -21,7 +36,7 @@ export default function AboutPage() {
       </header>
       <section className="about-story">
         <Image
-          src="/brand/imports-tech-banner.jpg"
+          src={BRAND_ASSETS.banner}
           alt="Banner oficial do canal Imports Tech"
           width={1546}
           height={423}
@@ -32,48 +47,59 @@ export default function AboutPage() {
           <p>
             O Imports Tech é um canal brasileiro focado em aparelhos usados,
             celulares, notebooks, consoles, periféricos, reparos e comparações.
-            A ideia é colocar o produto no uso real e falar de preço, condição e
-            risco com honestidade.
           </p>
           <p>
             Nas histórias de garimpo, o caminho completo importa: anúncio,
-            negociação, diagnóstico, manutenção e situação atual. Nas reviews, a
-            experiência pesa mais do que uma lista de especificações.
+            negociação, diagnóstico, manutenção e situação atual.
           </p>
-          <a
-            className="button primary"
-            href="https://www.youtube.com/@Imports_Tech"
-            target="_blank"
-            rel="noreferrer"
-          >
-            ▶ Conhecer o canal
-          </a>
+          <div className="hero-buttons">
+            <a
+              className="button primary"
+              href={BRAND_LINKS.youtube}
+              target="_blank"
+              rel="noreferrer"
+            >
+              ▶ Conhecer o canal
+            </a>
+            <Link className="button secondary" href="/?intro=replay">
+              Rever abertura
+            </Link>
+          </div>
         </div>
+      </section>
+      <section
+        className="timeline-section about-timeline"
+        aria-label="Trajetória do canal"
+      >
+        <div>
+          <span className="eyebrow-v2">TRAJETÓRIA</span>
+          <h2>Marcos do Imports Tech</h2>
+        </div>
+        <ol>
+          {timeline.map((item) => (
+            <li key={`${item.position}-${item.title}`}>
+              <span>{item.year}</span>
+              <strong>{item.title}</strong>
+              <p>{item.description}</p>
+            </li>
+          ))}
+        </ol>
       </section>
       <section className="principles" aria-label="Princípios editoriais">
         <article>
           <span>01</span>
           <h3>Preço com contexto</h3>
-          <p>
-            Um produto só é bom negócio quando condição, risco e custo total
-            entram na conta.
-          </p>
+          <p>Condição, risco e custo total entram na conta.</p>
         </article>
         <article>
           <span>02</span>
           <h3>Teste no uso real</h3>
-          <p>
-            Ficha técnica ajuda, mas não substitui bateria, calor, câmera e
-            desempenho no dia a dia.
-          </p>
+          <p>Ficha técnica não substitui a experiência no dia a dia.</p>
         </article>
         <article>
           <span>03</span>
           <h3>Transparência</h3>
-          <p>
-            Dados não confirmados são marcados como pendentes. Links de afiliado
-            sempre recebem aviso.
-          </p>
+          <p>Dados não confirmados são marcados; afiliados recebem aviso.</p>
         </article>
       </section>
     </main>

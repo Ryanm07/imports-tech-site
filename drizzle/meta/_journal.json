@@ -15,6 +15,13 @@
       "when": 1784042135082,
       "tag": "0001_privacy-hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784052000000,
+      "tag": "0002_owner_wall_youtube",
+      "breakpoints": true
     }
   ]
 }

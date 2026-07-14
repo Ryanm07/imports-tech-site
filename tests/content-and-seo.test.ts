@@ -134,3 +134,43 @@ test("sitemap usa datas editoriais e exclui recursos desativados", () => {
   );
   assert.ok(items.every((item) => item.lastModified instanceof Date));
 });
+
+test("tombstones arquivados e removidos não reaparecem pelo fallback versionado", () => {
+  const base = {
+    id: "entry-tombstone",
+    type: "review" as const,
+    slug: reviews[0].slug,
+    title: reviews[0].name,
+    payload: "{}",
+    featured: false,
+    createdById: null,
+    updatedById: null,
+    createdAt: "2026-07-14T00:00:00.000Z",
+    updatedAt: "2026-07-14T00:00:00.000Z",
+    publishedAt: null,
+    deletedAt: null,
+  };
+  for (const status of ["archived", "removed"] as const) {
+    const merged = publishedReviewsFromEntries([{ ...base, status }]);
+    assert.equal(
+      merged.some((item) => item.slug === reviews[0].slug),
+      false,
+    );
+  }
+});
+
+test("timeline editorial exige campos estruturados e posição inteira", () => {
+  assert.equal(
+    validateContentPayload("timeline", {
+      year: "2026",
+      title: "Novo marco",
+      description: "Um marco verdadeiro e suficientemente explicado.",
+      position: 2,
+    }).ok,
+    true,
+  );
+  assert.equal(
+    validateContentPayload("timeline", { title: "incompleto" }).ok,
+    false,
+  );
+});

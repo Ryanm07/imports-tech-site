@@ -1,6 +1,12 @@
 "use client";
 
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 type Entry = {
   id: string;
@@ -12,40 +18,61 @@ type Entry = {
   featured: boolean;
   updatedAt: string;
 };
-
-type Report = {
+type WallTopic = {
+  id: string;
+  categoryId: string;
+  displayName: string;
+  title: string;
+  body: string;
+  status: string;
+  isOfficial: boolean;
+  replyCount: number;
+  closedAt: string | null;
+  pinnedAt: string | null;
+  createdAt: string;
+};
+type WallReply = {
+  id: string;
+  topicId: string;
+  displayName: string;
+  body: string;
+  status: string;
+  isOfficial: boolean;
+  createdAt: string;
+};
+type WallReport = {
   id: string;
   targetType: "topic" | "reply";
   targetId: string;
   reason: string;
+  status: string;
   createdAt: string;
-  reporter: string;
-  target: null | {
-    id: string;
-    title?: string;
-    body: string;
-    status: string;
-    authorId: string;
-    authorDisplayName: string;
-  };
 };
-
+type WallCategory = {
+  id: string;
+  name: string;
+  description: string;
+  status: "active" | "archived";
+  position: number;
+};
+type WallBlock = {
+  id: string;
+  reason: string;
+  expiresAt: string;
+  active: boolean;
+  createdAt: string;
+};
 type HistoryItem = {
   id: string;
-  actorRole: string;
   action: string;
   targetType: string;
   targetId: string;
   reason: string | null;
   createdAt: string;
 };
-
-type StaffUser = {
-  id: string;
-  displayName: string;
-  role: "user" | "moderator" | "admin";
-  status: string;
-  blockedUntil: string | null;
+type YouTubeHealth = {
+  state: null | Record<string, unknown>;
+  runs: Array<Record<string, unknown>>;
 };
 
 const payloadExamples: Record<string, Record<string, unknown>> = {
@@ -82,78 +109,85 @@ const payloadExamples: Record<string, Record<string, unknown>> = {
     timeline: [],
     updatedAt: "2026-07-14",
   },
-  video: { id: "", title: "", category: "Reviews", tags: [], summary: "" },
+  video: {
+    id: "",
+    title: "",
+    category: "Reviews",
+    tags: [],
+    summary: "",
+    relatedReviewSlug: null,
+    relatedFindSlug: null,
+  },
   category: { name: "", icon: "10", description: "", relation: "" },
-  setting: { key: "", value: "" },
+  setting: { key: "telegram_channel_url", value: "" },
+  timeline: { year: "", title: "", description: "", position: 1 },
 };
 
-export function AdminPanel({
-  currentRole,
-}: {
-  currentRole: "moderator" | "admin";
-}) {
-  const [tab, setTab] = useState<"content" | "moderation">("content");
+export function AdminPanel() {
+  const [tab, setTab] = useState<"content" | "mural" | "youtube">("content");
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
+  const [topics, setTopics] = useState<WallTopic[]>([]);
+  const [replies, setReplies] = useState<WallReply[]>([]);
+  const [reports, setReports] = useState<WallReport[]>([]);
+  const [categories, setCategories] = useState<WallCategory[]>([]);
+  const [blocks, setBlocks] = useState<WallBlock[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [users, setUsers] = useState<StaffUser[]>([]);
+  const [youtube, setYoutube] = useState<YouTubeHealth>({
+    state: null,
+    runs: [],
+  });
   const [editing, setEditing] = useState<Entry | null>(null);
-  const [preview, setPreview] = useState<Entry | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [contentPage, setContentPage] = useState(1);
-  const [moderationPage, setModerationPage] = useState(1);
-  const [contentHasMore, setContentHasMore] = useState(false);
-  const [moderationHasMore, setModerationHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadContent = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/admin/content?page=${contentPage}`, {
-        cache: "no-store",
-      });
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Falha ao carregar conteúdo.");
-      setEntries(data.entries || []);
-      setContentHasMore(Boolean(data.hasMore));
-    } catch (caught) {
-      setError(messageFrom(caught));
-    } finally {
-      setLoading(false);
-    }
-  }, [contentPage]);
-
-  const loadModeration = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `/api/admin/moderation?page=${moderationPage}`,
-        {
-          cache: "no-store",
-        },
-      );
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Falha ao carregar moderação.");
-      setReports(data.reports || []);
-      setHistory(data.history || []);
-      setUsers(data.users || []);
-      setModerationHasMore(Boolean(data.hasMore));
-    } catch (caught) {
-      setError(messageFrom(caught));
-    } finally {
-      setLoading(false);
-    }
-  }, [moderationPage]);
+    const data = await getJson("/api/admin/content");
+    setEntries(data.entries ?? []);
+  }, []);
+  const loadMural = useCallback(async () => {
+    const data = await getJson("/api/admin/moderation");
+    setTopics(data.topics ?? []);
+    setReplies(data.replies ?? []);
+    setReports(data.reports ?? []);
+    setCategories(data.categories ?? []);
+    setBlocks(data.blocks ?? []);
+    setHistory(data.history ?? []);
+  }, []);
+  const loadYouTube = useCallback(async () => {
+    setYoutube(await getJson("/api/admin/youtube"));
+  }, []);
 
   useEffect(() => {
-    if (tab === "content") void loadContent();
-    else void loadModeration();
-  }, [tab, loadContent, loadModeration]);
+    setLoading(true);
+    setError("");
+    const operation =
+      tab === "content"
+        ? loadContent()
+        : tab === "mural"
+          ? loadMural()
+          : loadYouTube();
+    operation
+      .catch((caught) => setError(messageFrom(caught)))
+      .finally(() => setLoading(false));
+  }, [loadContent, loadMural, loadYouTube, tab]);
 
-  async function create(event: FormEvent<HTMLFormElement>) {
+  const visibleTopics = useMemo(
+    () => topics.filter((item) => matches(item, query, statusFilter)),
+    [query, statusFilter, topics],
+  );
+  const visibleReplies = useMemo(
+    () => replies.filter((item) => matches(item, query, statusFilter)),
+    [query, replies, statusFilter],
+  );
+  const visibleReports = useMemo(
+    () => reports.filter((item) => matches(item, query, statusFilter)),
+    [query, reports, statusFilter],
+  );
+
+  async function createContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     clearFeedback();
     const form = new FormData(event.currentTarget);
@@ -174,7 +208,6 @@ export function AdminPanel({
   async function saveEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) return;
-    clearFeedback();
     const form = new FormData(event.currentTarget);
     const payload = parseJson(form.get("payload"));
     if (!payload.ok) return setError(payload.error);
@@ -186,18 +219,17 @@ export function AdminPanel({
     });
     if (!response.ok) return setError(response.error);
     setEditing(null);
-    setMessage("Alterações validadas e salvas.");
+    setMessage("Conteúdo validado e salvo.");
     await loadContent();
   }
 
   async function updateEntry(id: string, changes: Record<string, unknown>) {
-    clearFeedback();
     const response = await adminFetch("/api/admin/content", "PATCH", {
       id,
       ...changes,
     });
     if (!response.ok) return setError(response.error);
-    setMessage("Conteúdo atualizado.");
+    setMessage("Conteúdo atualizado e auditado.");
     await loadContent();
   }
 
@@ -206,7 +238,6 @@ export function AdminPanel({
       "Motivo da remoção lógica (mínimo de 8 caracteres):",
     );
     if (!reason) return;
-    clearFeedback();
     const response = await adminFetch("/api/admin/content", "DELETE", {
       id,
       reason,
@@ -222,29 +253,112 @@ export function AdminPanel({
     targetId: string,
     extra: Record<string, unknown> = {},
   ) {
-    const needsReason = [
-      "hide",
-      "remove",
-      "block",
-      "ban",
-      "role",
-      "dismiss-report",
-    ].includes(action);
-    const reason = needsReason
-      ? window.prompt("Motivo da ação (mínimo de 8 caracteres):")
-      : "";
-    if (needsReason && !reason) return;
     clearFeedback();
+    let reason = "";
+    if (
+      [
+        "hide",
+        "remove",
+        "spam",
+        "block-hash",
+        "hard-delete",
+        "dismiss-report",
+      ].includes(action)
+    ) {
+      reason = window.prompt("Motivo da ação (mínimo de 8 caracteres):") || "";
+      if (!reason) return;
+    }
+    let confirmation: string | undefined;
+    if (action === "hard-delete") {
+      confirmation =
+        window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmar:') || "";
+      if (confirmation !== "EXCLUIR PERMANENTEMENTE") return;
+    }
     const response = await adminFetch("/api/admin/moderation", "POST", {
       action,
       targetType,
       targetId,
       reason,
+      confirmation,
       ...extra,
     });
     if (!response.ok) return setError(response.error);
-    setMessage("Ação de moderação concluída e auditada.");
-    await loadModeration();
+    setMessage("Ação concluída e registrada no histórico.");
+    await loadMural();
+  }
+
+  async function createOfficialTopic(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const response = await adminFetch("/api/admin/moderation", "POST", {
+      action: "official-create",
+      targetType: "topic",
+      targetId: "new",
+      categoryId: form.get("categoryId"),
+      title: form.get("title"),
+      body: form.get("body"),
+    });
+    if (!response.ok) return setError(response.error);
+    event.currentTarget.reset();
+    setMessage("Publicação oficial criada.");
+    await loadMural();
+  }
+
+  async function createOfficialReply(topicId: string) {
+    const body = window.prompt("Resposta oficial:");
+    if (!body) return;
+    await moderate("official-create", "reply", "new", { topicId, body });
+  }
+
+  async function createCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const response = await adminFetch("/api/admin/moderation", "POST", {
+      action: "create",
+      targetType: "category",
+      targetId: "new",
+      name: form.get("name"),
+      description: form.get("description"),
+      position: form.get("position"),
+    });
+    if (!response.ok) return setError(response.error);
+    event.currentTarget.reset();
+    await loadMural();
+  }
+
+  async function moveTopic(topic: WallTopic) {
+    const categoryId = window.prompt(
+      `ID da nova categoria:\n${categories
+        .map((item) => `${item.id} — ${item.name}`)
+        .join("\n")}`,
+      topic.categoryId,
+    );
+    if (categoryId && categoryId !== topic.categoryId) {
+      await moderate("move", "topic", topic.id, { categoryId });
+    }
+  }
+
+  async function editCategory(item: WallCategory) {
+    const name = window.prompt("Nome da categoria:", item.name);
+    if (!name) return;
+    const description = window.prompt("Descrição:", item.description);
+    if (description === null) return;
+    const position = Number(window.prompt("Posição:", String(item.position)));
+    await moderate("update", "category", item.id, {
+      name,
+      description,
+      position,
+    });
+  }
+
+  async function syncYouTube(mode: "incremental" | "full") {
+    clearFeedback();
+    setLoading(true);
+    const response = await adminFetch("/api/admin/youtube", "POST", { mode });
+    setLoading(false);
+    if (!response.ok) return setError(response.error);
+    setMessage("Sincronização concluída. Consulte o estado abaixo.");
+    await loadYouTube();
   }
 
   function clearFeedback() {
@@ -257,24 +371,23 @@ export function AdminPanel({
       <div
         className="admin-tabs"
         role="tablist"
-        aria-label="Áreas administrativas"
+        aria-label="Áreas do proprietário"
       >
-        <button
-          role="tab"
-          aria-selected={tab === "content"}
-          onClick={() => setTab("content")}
-        >
-          Conteúdo
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "moderation"}
-          onClick={() => setTab("moderation")}
-        >
-          Moderação
-        </button>
+        {(["content", "mural", "youtube"] as const).map((item) => (
+          <button
+            key={item}
+            role="tab"
+            aria-selected={tab === item}
+            onClick={() => setTab(item)}
+          >
+            {item === "content"
+              ? "Conteúdo"
+              : item === "mural"
+                ? "Mural"
+                : "YouTube"}
+          </button>
+        ))}
       </div>
-
       {message && (
         <p className="form-message" role="status">
           {message}
@@ -285,12 +398,12 @@ export function AdminPanel({
           {error}
         </p>
       )}
-      {loading && <p role="status">Carregando área administrativa…</p>}
+      {loading && <p role="status">Carregando área privada…</p>}
 
       {tab === "content" && (
         <>
-          <form className="topic-form" onSubmit={create}>
-            <h2>Novo conteúdo</h2>
+          <form className="topic-form" onSubmit={createContent}>
+            <h2>Novo conteúdo editorial</h2>
             <label>
               Tipo
               <select
@@ -298,22 +411,19 @@ export function AdminPanel({
                 onChange={(event) => {
                   const textarea =
                     event.currentTarget.form?.elements.namedItem("payload");
-                  if (textarea instanceof HTMLTextAreaElement) {
+                  if (textarea instanceof HTMLTextAreaElement)
                     textarea.value = JSON.stringify(
                       payloadExamples[event.target.value],
                       null,
                       2,
                     );
-                  }
                 }}
               >
-                <option value="review">Review</option>
-                <option value="find">Garimpo</option>
-                <option value="video">Vídeo</option>
-                <option value="category">Categoria</option>
-                {currentRole === "admin" && (
-                  <option value="setting">Configuração</option>
-                )}
+                {Object.keys(payloadExamples).map((type) => (
+                  <option value={type} key={type}>
+                    {type}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
@@ -328,7 +438,7 @@ export function AdminPanel({
               Dados estruturados
               <textarea
                 name="payload"
-                rows={14}
+                rows={12}
                 defaultValue={JSON.stringify(payloadExamples.review, null, 2)}
                 required
               />
@@ -337,8 +447,7 @@ export function AdminPanel({
               Validar e salvar rascunho
             </button>
           </form>
-
-          <div className="admin-entries">
+          <section className="admin-entries">
             <h2>Conteúdo gerenciável</h2>
             {entries.map((entry) => (
               <article key={entry.id}>
@@ -350,7 +459,6 @@ export function AdminPanel({
                   </small>
                 </div>
                 <div className="admin-row-actions">
-                  <button onClick={() => setPreview(entry)}>Prévia</button>
                   <button onClick={() => setEditing(entry)}>Editar</button>
                   <button
                     onClick={() =>
@@ -364,7 +472,7 @@ export function AdminPanel({
                       updateEntry(entry.id, { status: "published" })
                     }
                   >
-                    Publicar
+                    Publicar/restaurar
                   </button>
                   <button
                     onClick={() =>
@@ -377,88 +485,208 @@ export function AdminPanel({
                 </div>
               </article>
             ))}
-            {!loading && !entries.length && (
-              <div className="empty-state">
-                <strong>Nenhum conteúdo administrativo.</strong>
-              </div>
-            )}
-          </div>
-          <Pagination
-            page={contentPage}
-            hasMore={contentHasMore}
-            onChange={setContentPage}
-          />
+          </section>
         </>
       )}
 
-      {tab === "moderation" && (
+      {tab === "mural" && (
         <>
+          <div className="community-tools">
+            <label>
+              <span>Pesquisar</span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <option value="all">Todos</option>
+                {[
+                  "pending",
+                  "published",
+                  "hidden",
+                  "removed",
+                  "spam",
+                  "open",
+                  "reviewing",
+                  "resolved",
+                  "dismissed",
+                ].map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <form className="topic-form" onSubmit={createOfficialTopic}>
+            <h2>Publicação oficial</h2>
+            <label>
+              Categoria
+              <select name="categoryId">
+                {categories.map((item) => (
+                  <option value={item.id} key={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Título
+              <input name="title" minLength={8} maxLength={120} required />
+            </label>
+            <label>
+              Mensagem
+              <textarea name="body" minLength={15} maxLength={4000} required />
+            </label>
+            <button className="button primary">
+              Publicar como Ryan — Imports Tech
+            </button>
+          </form>
           <section className="admin-entries">
-            <h2>Denúncias abertas</h2>
-            {reports.map((report) => (
-              <article key={report.id} className="moderation-report">
+            <h2>Publicações</h2>
+            {visibleTopics.map((topic) => (
+              <article key={topic.id}>
+                <span>{topic.status}</span>
                 <div>
-                  <strong>
-                    {report.target?.title || `${report.targetType} denunciada`}
-                  </strong>
-                  <p>{report.target?.body || "Conteúdo não localizado."}</p>
+                  <strong>{topic.title}</strong>
                   <small>
-                    Denunciado por {report.reporter}: {report.reason}
+                    {topic.displayName} · {topic.replyCount} respostas ·{" "}
+                    {topic.categoryId}
                   </small>
+                  <p>{topic.body}</p>
                 </div>
                 <div className="admin-row-actions">
-                  {report.target && (
-                    <>
-                      <button
-                        onClick={() =>
-                          moderate("hide", report.targetType, report.targetId)
-                        }
-                      >
-                        Ocultar
-                      </button>
-                      <button
-                        onClick={() =>
-                          moderate("remove", report.targetType, report.targetId)
-                        }
-                      >
-                        Remover
-                      </button>
-                      <button
-                        onClick={() =>
-                          moderate(
-                            "restore",
-                            report.targetType,
-                            report.targetId,
-                          )
-                        }
-                      >
-                        Restaurar
-                      </button>
-                      <button
-                        onClick={() =>
-                          moderate("block", "user", report.target!.authorId, {
-                            blockHours: 24,
-                          })
-                        }
-                      >
-                        Bloquear 24h
-                      </button>
-                      <button
-                        onClick={() =>
-                          moderate("ban", "user", report.target!.authorId)
-                        }
-                      >
-                        Banir
-                      </button>
-                      <button
-                        onClick={() =>
-                          moderate("unblock", "user", report.target!.authorId)
-                        }
-                      >
-                        Desbloquear
-                      </button>
-                    </>
+                  <button
+                    onClick={() =>
+                      moderate(
+                        topic.status === "published" ? "hide" : "restore",
+                        "topic",
+                        topic.id,
+                      )
+                    }
+                  >
+                    {topic.status === "published" ? "Ocultar" : "Restaurar"}
+                  </button>
+                  <button
+                    onClick={() =>
+                      moderate(
+                        topic.pinnedAt ? "unpin" : "pin",
+                        "topic",
+                        topic.id,
+                      )
+                    }
+                  >
+                    {topic.pinnedAt ? "Desafixar" : "Fixar"}
+                  </button>
+                  <button
+                    onClick={() =>
+                      moderate(
+                        topic.closedAt ? "reopen" : "close",
+                        "topic",
+                        topic.id,
+                      )
+                    }
+                  >
+                    {topic.closedAt ? "Reabrir" : "Encerrar"}
+                  </button>
+                  <button onClick={() => createOfficialReply(topic.id)}>
+                    Responder oficial
+                  </button>
+                  <button onClick={() => moveTopic(topic)}>Mover</button>
+                  {!topic.isOfficial && (
+                    <button
+                      onClick={() =>
+                        moderate("block-hash", "topic", topic.id, {
+                          blockHours: 24,
+                        })
+                      }
+                    >
+                      Bloquear 24h
+                    </button>
                   )}
+                  <button onClick={() => moderate("spam", "topic", topic.id)}>
+                    Spam
+                  </button>
+                  <button onClick={() => moderate("remove", "topic", topic.id)}>
+                    Remover
+                  </button>
+                  <button
+                    onClick={() => moderate("hard-delete", "topic", topic.id)}
+                  >
+                    Excluir definitivamente
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
+          <section className="admin-entries">
+            <h2>Respostas</h2>
+            {visibleReplies.map((reply) => (
+              <article key={reply.id}>
+                <span>{reply.status}</span>
+                <div>
+                  <strong>{reply.displayName}</strong>
+                  <small>Tópico {reply.topicId}</small>
+                  <p>{reply.body}</p>
+                </div>
+                <div className="admin-row-actions">
+                  <button
+                    onClick={() =>
+                      moderate(
+                        reply.status === "published" ? "hide" : "restore",
+                        "reply",
+                        reply.id,
+                      )
+                    }
+                  >
+                    {reply.status === "published" ? "Ocultar" : "Restaurar"}
+                  </button>
+                  <button onClick={() => moderate("spam", "reply", reply.id)}>
+                    Spam
+                  </button>
+                  {!reply.isOfficial && (
+                    <button
+                      onClick={() =>
+                        moderate("block-hash", "reply", reply.id, {
+                          blockHours: 24,
+                        })
+                      }
+                    >
+                      Bloquear 24h
+                    </button>
+                  )}
+                  <button
+                    onClick={() => moderate("hard-delete", "reply", reply.id)}
+                  >
+                    Excluir definitivamente
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
+          <section className="admin-entries">
+            <h2>Denúncias</h2>
+            {visibleReports.map((report) => (
+              <article key={report.id}>
+                <span>{report.status}</span>
+                <div>
+                  <strong>
+                    {report.targetType} · {report.targetId}
+                  </strong>
+                  <p>{report.reason}</p>
+                </div>
+                <div className="admin-row-actions">
+                  <button
+                    onClick={() =>
+                      moderate("review-report", "report", report.id)
+                    }
+                  >
+                    Analisar
+                  </button>
                   <button
                     onClick={() =>
                       moderate("resolve-report", "report", report.id)
@@ -476,53 +704,118 @@ export function AdminPanel({
                 </div>
               </article>
             ))}
-            {!loading && !reports.length && <p>Nenhuma denúncia aberta.</p>}
           </section>
-          <Pagination
-            page={moderationPage}
-            hasMore={moderationHasMore}
-            onChange={setModerationPage}
-          />
-
-          {currentRole === "admin" && (
-            <section className="admin-entries">
-              <h2>Papéis persistidos</h2>
-              {users.map((user) => (
-                <article key={user.id}>
-                  <div>
-                    <strong>{user.displayName}</strong>
-                    <small>{user.status}</small>
-                  </div>
-                  <select
-                    value={user.role}
-                    aria-label={`Papel de ${user.displayName}`}
-                    onChange={(event) =>
-                      moderate("role", "user", user.id, {
-                        role: event.target.value,
-                      })
+          <form className="topic-form" onSubmit={createCategory}>
+            <h2>Nova categoria</h2>
+            <label>
+              Nome
+              <input name="name" minLength={3} required />
+            </label>
+            <label>
+              Descrição
+              <input name="description" />
+            </label>
+            <label>
+              Posição
+              <input name="position" type="number" defaultValue={99} />
+            </label>
+            <button>Criar categoria</button>
+          </form>
+          <section className="admin-entries">
+            <h2>Categorias</h2>
+            {categories.map((item) => (
+              <article key={item.id}>
+                <span>{item.status}</span>
+                <div>
+                  <strong>{item.name}</strong>
+                  <small>{item.description}</small>
+                </div>
+                <div className="admin-row-actions">
+                  <button onClick={() => editCategory(item)}>Editar</button>
+                  <button
+                    onClick={() =>
+                      moderate(
+                        item.status === "active" ? "archive" : "restore",
+                        "category",
+                        item.id,
+                      )
                     }
                   >
-                    <option value="user">Usuário</option>
-                    <option value="moderator">Moderador</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </article>
-              ))}
-            </section>
-          )}
-
+                    {item.status === "active" ? "Arquivar" : "Restaurar"}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
           <section className="admin-entries">
-            <h2>Histórico de moderação</h2>
+            <h2>Bloqueios de origem</h2>
+            {blocks.map((item) => (
+              <article key={item.id}>
+                <span>{item.active ? "ativo" : "encerrado"}</span>
+                <div>
+                  <strong>{item.reason}</strong>
+                  <small>
+                    Expira em {new Date(item.expiresAt).toLocaleString("pt-BR")}
+                  </small>
+                </div>
+                <div className="admin-row-actions">
+                  {item.active && (
+                    <button onClick={() => moderate("lift", "block", item.id)}>
+                      Encerrar bloqueio
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </section>
+          <section className="admin-entries">
+            <h2>Histórico</h2>
             {history.map((item) => (
               <article key={item.id}>
-                <span>{item.actorRole}</span>
+                <span>{item.targetType}</span>
                 <div>
                   <strong>{item.action}</strong>
                   <small>
-                    {item.targetType} ·{" "}
+                    {item.targetId} ·{" "}
                     {new Date(item.createdAt).toLocaleString("pt-BR")}
                   </small>
                   {item.reason && <p>{item.reason}</p>}
+                </div>
+              </article>
+            ))}
+          </section>
+        </>
+      )}
+
+      {tab === "youtube" && (
+        <>
+          <div className="admin-row-actions">
+            <button
+              className="button primary"
+              onClick={() => syncYouTube("incremental")}
+            >
+              Sincronizar agora
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => syncYouTube("full")}
+            >
+              Sincronização completa
+            </button>
+          </div>
+          <section className="admin-preview">
+            <h2>Saúde da sincronização</h2>
+            <pre>{JSON.stringify(youtube.state, null, 2)}</pre>
+          </section>
+          <section className="admin-entries">
+            <h2>Execuções recentes</h2>
+            {youtube.runs.map((run, index) => (
+              <article key={String(run.id ?? index)}>
+                <span>{String(run.status ?? "")}</span>
+                <div>
+                  <strong>{String(run.mode ?? "")}</strong>
+                  <small>{String(run.startedAt ?? "")}</small>
+                  {run.errorMessage ? <p>{String(run.errorMessage)}</p> : null}
                 </div>
               </article>
             ))}
@@ -565,48 +858,26 @@ export function AdminPanel({
           </form>
         </div>
       )}
-
-      {preview && (
-        <div
-          className="admin-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Prévia de conteúdo"
-        >
-          <article className="admin-preview">
-            <span>
-              {preview.type} · {preview.status}
-            </span>
-            <h2>{preview.title}</h2>
-            <pre>{formatJson(preview.payload)}</pre>
-            <button onClick={() => setPreview(null)}>Fechar prévia</button>
-          </article>
-        </div>
-      )}
     </section>
   );
 }
 
-function Pagination({
-  page,
-  hasMore,
-  onChange,
-}: {
-  page: number;
-  hasMore: boolean;
-  onChange: (page: number) => void;
-}) {
+function matches(item: Record<string, unknown>, query: string, status: string) {
+  const matchesStatus = status === "all" || item.status === status;
+  const haystack = Object.values(item)
+    .filter((value) => typeof value === "string")
+    .join(" ")
+    .toLocaleLowerCase("pt-BR");
   return (
-    <nav className="pagination" aria-label="Paginação">
-      <button disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        Anterior
-      </button>
-      <span>Página {page}</span>
-      <button disabled={!hasMore} onClick={() => onChange(page + 1)}>
-        Próxima
-      </button>
-    </nav>
+    matchesStatus && haystack.includes(query.trim().toLocaleLowerCase("pt-BR"))
   );
+}
+
+async function getJson(url: string) {
+  const response = await fetch(url, { cache: "no-store" });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "Falha ao carregar.");
+  return data;
 }
 
 async function adminFetch(url: string, method: string, body: unknown) {
@@ -628,8 +899,7 @@ async function adminFetch(url: string, method: string, body: unknown) {
 
 function parseJson(value: FormDataEntryValue | null) {
   try {
-    const parsed = JSON.parse(String(value || "{}"));
-    return { ok: true as const, value: parsed };
+    return { ok: true as const, value: JSON.parse(String(value || "{}")) };
   } catch {
     return {
       ok: false as const,
@@ -637,7 +907,6 @@ function parseJson(value: FormDataEntryValue | null) {
     };
   }
 }
-
 function formatJson(value: string) {
   try {
     return JSON.stringify(JSON.parse(value), null, 2);
@@ -645,7 +914,6 @@ function formatJson(value: string) {
     return value;
   }
 }
-
 function messageFrom(value: unknown) {
   return value instanceof Error ? value.message : "Falha inesperada.";
 }

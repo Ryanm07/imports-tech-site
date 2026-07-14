@@ -1,18 +1,26 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { requireChatGPTUser } from "@/app/chatgpt-auth";
 import { CommunityTopicClient } from "@/components/community-client";
+
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Conversa do Mural",
+  robots: { index: false, follow: true },
+};
+
 export default async function TopicPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   if (process.env.COMMUNITY_ENABLED !== "true") notFound();
-  const user = await requireChatGPTUser("/comunidade");
   const { id } = await params;
   return (
     <main id="conteudo" className="page-main">
-      <CommunityTopicClient id={id} userName={user.displayName} />
+      <CommunityTopicClient
+        id={id}
+        turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
+      />
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { BRAND_ASSETS } from "@/lib/brand";
 
 export type VideoCardData = {
   id: string;
@@ -23,7 +24,7 @@ export function VideoCard({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const thumbnail = imageFailed
-    ? "/brand/imports-tech-logo.jpg"
+    ? BRAND_ASSETS.logo
     : video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
 
   return (

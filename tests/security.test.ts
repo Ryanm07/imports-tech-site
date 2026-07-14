@@ -197,7 +197,10 @@ test("rate limit atômico não ultrapassa a política sob concorrência", async 
     attempts.filter((item) => item.allowed).length,
     RATE_LIMITS.topic.max,
   );
-  assert.equal(attempts.filter((item) => !item.allowed).length, 7);
+  assert.equal(
+    attempts.filter((item) => !item.allowed).length,
+    attempts.length - RATE_LIMITS.topic.max,
+  );
   assert.equal([...db.keys][0].includes("private@example.com"), false);
 });
 

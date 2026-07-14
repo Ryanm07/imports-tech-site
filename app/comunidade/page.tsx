@@ -1,27 +1,31 @@
 import type { Metadata } from "next";
-import { communityCategories } from "@/lib/site-data";
-import { chatGPTSignInPath, getChatGPTUser } from "@/app/chatgpt-auth";
 import { CommunityClient } from "@/components/community-client";
+import { TelegramSection } from "@/components/telegram-section";
+import { BRAND_LINKS } from "@/lib/brand";
+import { getSiteSettings } from "@/lib/content-repository";
+import { communityCategories } from "@/lib/site-data";
+import { getTelegramLinks } from "@/lib/telegram";
+
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Comunidade Beta",
+  title: "Mural da Comunidade",
   description:
-    "Espaço organizado para dúvidas, garimpos e conversas sobre tecnologia.",
+    "Dúvidas, garimpos, reparos e conversas sobre tecnologia com a comunidade Imports Tech.",
   alternates: { canonical: "/comunidade" },
 };
+
 export default async function CommunityPage() {
   const enabled = process.env.COMMUNITY_ENABLED === "true";
-  const user = enabled ? await getChatGPTUser() : null;
-  if (!enabled)
+  const telegram = getTelegramLinks(await getSiteSettings());
+  if (!enabled) {
     return (
       <main id="conteudo" className="page-main">
         <div className="feature-soon">
-          <span>BETA CONTROLADO</span>
+          <span>MURAL DA COMUNIDADE</span>
           <h1>Comunidade em breve.</h1>
           <p>
-            Estamos preparando um espaço de tópicos e respostas com moderação,
-            privacidade e proteção contra spam. Nada de chat aberto sem
-            controle.
+            Estamos preparando um espaço simples para dúvidas, achados e
+            experiências sobre tecnologia, com moderação e proteção contra spam.
           </p>
           <div className="category-pills">
             {communityCategories.map((item) => (
@@ -30,42 +34,33 @@ export default async function CommunityPage() {
           </div>
           <a
             className="button primary"
-            href="https://www.youtube.com/@Imports_Tech/community"
+            href={BRAND_LINKS.youtubeCommunity}
             target="_blank"
             rel="noreferrer"
           >
             Acompanhar no YouTube ↗
           </a>
+          <TelegramSection links={telegram} compact />
         </div>
       </main>
     );
+  }
+
   return (
     <main id="conteudo" className="page-main">
       <header className="page-hero">
-        <span className="eyebrow-v2">COMUNIDADE BETA</span>
+        <span className="eyebrow-v2">MURAL DA COMUNIDADE</span>
         <h1>Pergunte. Responda. Compartilhe o garimpo.</h1>
         <p>
-          Fórum modular do Imports Tech, com moderação e o mínimo de dados
-          pessoais.
+          Não é preciso criar conta. O nome é informado por cada visitante e não
+          representa uma identidade verificada, exceto quando houver o selo
+          oficial.
         </p>
       </header>
-      {!user ? (
-        <div className="auth-card">
-          <h2>Entre para participar</h2>
-          <p>
-            Para ler, criar tópicos, responder ou denunciar conteúdo,
-            identifique-se com segurança.
-          </p>
-          <a className="button primary" href={chatGPTSignInPath("/comunidade")}>
-            Entrar com ChatGPT
-          </a>
-        </div>
-      ) : (
-        <CommunityClient
-          categories={communityCategories}
-          userName={user.displayName}
-        />
-      )}
+      <CommunityClient
+        turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
+      />
+      <TelegramSection links={telegram} compact />
     </main>
   );
 }

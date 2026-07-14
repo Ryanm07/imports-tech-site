@@ -73,6 +73,65 @@ test("migration de privacidade preserva dados e elimina PII das relações", asy
   database.close();
 });
 
+test("migration 0002 é aditiva, preserva legado e cria mural, owner e YouTube", async () => {
+  const database = new DatabaseSync(":memory:");
+  applyMigration(database, await migration("0000_pink_power_man.sql"));
+  applyMigration(database, await migration("0001_privacy-hardening.sql"));
+  const now = "2026-07-14T00:00:00.000Z";
+  database.exec(`
+    INSERT INTO profiles (id,email,display_name,role,status,created_at,updated_at)
+    VALUES ('legacy-owner','legacy@example.com','Legado','admin','active','${now}','${now}');
+  `);
+  applyMigration(database, await migration("0002_owner_wall_youtube.sql"));
+
+  const tables = new Set(
+    (
+      database
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all() as Array<{ name: string }>
+    ).map((row) => row.name),
+  );
+  for (const table of [
+    "profiles",
+    "community_topics",
+    "owner_accounts",
+    "wall_categories",
+    "wall_topics",
+    "wall_replies",
+    "wall_reports",
+    "wall_blocks",
+    "owner_actions",
+    "youtube_channel_state",
+    "youtube_videos",
+    "youtube_sync_runs",
+  ]) {
+    assert.equal(tables.has(table), true, table);
+  }
+  const legacy = database
+    .prepare("SELECT email FROM profiles WHERE id='legacy-owner'")
+    .get() as { email: string };
+  assert.equal(legacy.email, "legacy@example.com");
+  const categories = database
+    .prepare("SELECT count(*) AS count FROM wall_categories")
+    .get() as { count: number };
+  assert.equal(categories.count, 9);
+  assert.deepEqual(database.prepare("PRAGMA foreign_key_check").all(), []);
+  database.close();
+});
+
+test("cadeia 0000→0001→0002 aplica em banco vazio", async () => {
+  const database = new DatabaseSync(":memory:");
+  for (const name of [
+    "0000_pink_power_man.sql",
+    "0001_privacy-hardening.sql",
+    "0002_owner_wall_youtube.sql",
+  ]) {
+    applyMigration(database, await migration(name));
+  }
+  assert.deepEqual(database.prepare("PRAGMA foreign_key_check").all(), []);
+  database.close();
+});
+
 async function migration(name: string) {
   return readFile(new URL(`../drizzle/${name}`, import.meta.url), "utf8");
 }

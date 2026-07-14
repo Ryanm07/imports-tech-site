@@ -5,8 +5,15 @@ import {
   type Review,
 } from "@/lib/site-data";
 import { sanitizePlainText } from "@/lib/security";
+import { VIDEO_CATEGORIES } from "@/lib/video-taxonomy";
 
-export type ContentType = "review" | "find" | "video" | "category" | "setting";
+export type ContentType =
+  | "review"
+  | "find"
+  | "video"
+  | "category"
+  | "setting"
+  | "timeline";
 
 const PATCH_FIELDS = [
   "title",
@@ -43,7 +50,26 @@ export function validateContentPayload(type: ContentType, value: unknown) {
   if (type === "find") return validateFind(value);
   if (type === "category") return validateCategory(value);
   if (type === "video") return validateVideo(value);
+  if (type === "timeline") return validateTimeline(value);
   return validateSetting(value);
+}
+
+function validateTimeline(value: Record<string, unknown>) {
+  const year = text(value.year, 20);
+  const title = text(value.title, 120);
+  const description = text(value.description, 600);
+  const position = Number(value.position);
+  if (
+    !year ||
+    !title ||
+    description.length < 10 ||
+    !Number.isInteger(position)
+  ) {
+    return invalid(
+      "Marco da trajetória exige ano, título, descrição e posição.",
+    );
+  }
+  return valid({ year, title, description, position });
 }
 
 function validateReview(value: Record<string, unknown>) {
@@ -162,7 +188,11 @@ function validateVideo(value: Record<string, unknown>) {
   const id = videoIdValue(value.id);
   const title = text(value.title, 200);
   const category = text(value.category, 60);
-  if (!id || !title || !category) {
+  if (
+    !id ||
+    !title ||
+    !VIDEO_CATEGORIES.includes(category as (typeof VIDEO_CATEGORIES)[number])
+  ) {
     return invalid("Vídeo exige ID, título e categoria.");
   }
   return valid({
@@ -171,6 +201,8 @@ function validateVideo(value: Record<string, unknown>) {
     category,
     tags: textList(value.tags, 12, 60),
     summary: text(value.summary, 1000),
+    relatedReviewSlug: sanitizeSlug(value.relatedReviewSlug) || null,
+    relatedFindSlug: sanitizeSlug(value.relatedFindSlug) || null,
   });
 }
 

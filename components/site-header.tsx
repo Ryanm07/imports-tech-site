@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import {
   type KeyboardEvent,
   useCallback,
@@ -187,7 +188,7 @@ export function SiteHeader() {
           aria-label="Imports Tech — início"
         >
           <Image
-            src="/brand/imports-tech-logo.jpg"
+            src={BRAND_ASSETS.logo}
             alt=""
             width="44"
             height="44"
@@ -220,7 +221,7 @@ export function SiteHeader() {
           })}
           <a
             className="mobile-youtube"
-            href="https://www.youtube.com/@Imports_Tech"
+            href={BRAND_LINKS.youtube}
             target="_blank"
             rel="noreferrer"
           >
@@ -240,7 +241,7 @@ export function SiteHeader() {
           </button>
           <a
             className="youtube-cta"
-            href="https://www.youtube.com/@Imports_Tech"
+            href={BRAND_LINKS.youtube}
             target="_blank"
             rel="noreferrer"
           >

@@ -8,11 +8,20 @@ type Data = {
   subscribers: number;
   totalViews: number;
   videoCount: number;
+  indexedVideoCount: number;
   videos: VideoCardData[];
   syncedAt: string;
-  lastSuccessfulSyncAt?: string;
-  isStale?: boolean;
-  isPartial?: boolean;
+  videoCatalogSource:
+    | "youtube-api"
+    | "youtube-feed"
+    | "snapshot"
+    | "unavailable";
+  videoCatalogUpdatedAt: string | null;
+  videoCatalogStale: boolean;
+  videoCatalogPartial: boolean;
+  channelMetricsSource: "youtube-api" | "snapshot" | "unavailable";
+  channelMetricsUpdatedAt: string | null;
+  channelMetricsStale: boolean;
 };
 
 export default function MetricsPage() {
@@ -72,18 +81,22 @@ export default function MetricsPage() {
           <section className="metrics-dashboard" aria-label="Resumo do canal">
             <Metric
               label="Inscritos"
-              value={compact(data.subscribers)}
-              note="Contagem pública atual"
+              value={metricValue(data.subscribers, data.channelMetricsSource)}
+              note={metricsNote(data)}
             />
             <Metric
-              label="Vídeos publicados"
-              value={String(data.videoCount)}
-              note="Catálogo informado pelo YouTube"
+              label="Vídeos indexados"
+              value={String(data.indexedVideoCount)}
+              note={
+                data.videoCatalogPartial
+                  ? "Catálogo local parcial"
+                  : "Catálogo local completo"
+              }
             />
             <Metric
               label="Visualizações totais"
-              value={compact(data.totalViews)}
-              note="Alcance público acumulado"
+              value={metricValue(data.totalViews, data.channelMetricsSource)}
+              note={metricsNote(data)}
             />
             <Metric
               label="Reviews mapeadas"
@@ -137,15 +150,20 @@ export default function MetricsPage() {
             </div>
           </section>
           <p className="sync-note" role="status">
-            {data.isStale
-              ? "Exibindo o último retrato disponível. "
-              : data.isPartial
-                ? "Sincronização parcial. "
-                : "Sincronização concluída. "}
-            Última tentativa: {formatDateTime(data.syncedAt)}.
-            {data.lastSuccessfulSyncAt
-              ? ` Último sucesso: ${formatDateTime(data.lastSuccessfulSyncAt)}.`
-              : ""}
+            Catálogo: {data.videoCatalogSource}
+            {data.videoCatalogStale
+              ? " · último retrato disponível"
+              : data.videoCatalogPartial
+                ? " · parcial"
+                : " · completo"}
+            {data.videoCatalogUpdatedAt
+              ? ` · atualizado em ${formatDateTime(data.videoCatalogUpdatedAt)}. `
+              : ". "}
+            Métricas: {data.channelMetricsSource}
+            {data.channelMetricsStale ? " · históricas" : " · atuais"}
+            {data.channelMetricsUpdatedAt
+              ? ` · atualizadas em ${formatDateTime(data.channelMetricsUpdatedAt)}.`
+              : "."}
           </p>
         </>
       )}
@@ -173,6 +191,19 @@ function Metric({
 
 function compact(value: number) {
   return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
+}
+
+function metricValue(value: number, source: Data["channelMetricsSource"]) {
+  return source === "unavailable" ? "Indisponível" : compact(value);
+}
+
+function metricsNote(data: Data) {
+  if (data.channelMetricsSource === "unavailable") {
+    return "Métrica pública temporariamente indisponível";
+  }
+  return data.channelMetricsStale
+    ? "Último retrato público disponível"
+    : "Atualizada pela API oficial";
 }
 
 function formatDateTime(value: string) {

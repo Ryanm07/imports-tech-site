@@ -1,6 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { contentEntries } from "@/db/schema";
 import {
+  sanitizeSlug,
   type ContentType,
   validateContentPayload,
 } from "@/lib/content-schemas";
@@ -14,22 +15,24 @@ import {
 } from "@/lib/site-data";
 
 type StoredEntry = typeof contentEntries.$inferSelect;
+export type TimelineItem = {
+  year: string;
+  title: string;
+  description: string;
+  position: number;
+};
 
-async function getPublishedEntries(type: ContentType) {
-  if (process.env.ADMIN_ENABLED !== "true") return [];
+async function getStoredEntries(type: ContentType) {
+  if (process.env.EDITORIAL_DB_ENABLED !== "true") return [];
   try {
     const { getDb } = await import("@/db");
     return await getDb()
       .select()
       .from(contentEntries)
-      .where(
-        and(
-          eq(contentEntries.type, type),
-          eq(contentEntries.status, "published"),
-        ),
-      )
+      .where(eq(contentEntries.type, type))
       .orderBy(desc(contentEntries.updatedAt));
   } catch {
+    // A database outage must not make the versioned public site disappear.
     return [];
   }
 }
@@ -37,7 +40,7 @@ async function getPublishedEntries(type: ContentType) {
 function parseEntry(entry: StoredEntry) {
   try {
     const parsed: unknown = JSON.parse(entry.payload);
-    const validated = validateContentPayload(entry.type, parsed);
+    const validated = validateContentPayload(entry.type as ContentType, parsed);
     return validated.ok ? validated.payload : null;
   } catch {
     return null;
@@ -45,65 +48,68 @@ function parseEntry(entry: StoredEntry) {
 }
 
 export async function getPublishedReviews(): Promise<Review[]> {
-  const entries = await getPublishedEntries("review");
-  return publishedReviewsFromEntries(entries);
+  return publishedReviewsFromEntries(await getStoredEntries("review"));
 }
 
 export function publishedReviewsFromEntries(entries: StoredEntry[]): Review[] {
-  const overrides = entries.flatMap((entry) => {
+  return mergeWithTombstones(versionedReviews, entries, (entry) => {
     const payload = parseEntry(entry);
     return payload && entry.type === "review"
-      ? [
-          {
-            slug: entry.slug,
-            name: entry.title,
-            ...(payload as Omit<Review, "slug" | "name">),
-          },
-        ]
-      : [];
+      ? {
+          slug: entry.slug,
+          name: entry.title,
+          ...(payload as Omit<Review, "slug" | "name">),
+        }
+      : null;
   });
-  return mergeBySlug(versionedReviews, overrides);
 }
 
 export async function getPublishedFinds(): Promise<Find[]> {
-  const entries = await getPublishedEntries("find");
-  return publishedFindsFromEntries(entries);
+  return publishedFindsFromEntries(await getStoredEntries("find"));
 }
 
 export function publishedFindsFromEntries(entries: StoredEntry[]): Find[] {
-  const overrides = entries.flatMap((entry) => {
+  return mergeWithTombstones(versionedFinds, entries, (entry) => {
     const payload = parseEntry(entry);
     return payload && entry.type === "find"
-      ? [{ slug: entry.slug, ...(payload as Omit<Find, "slug">) }]
-      : [];
+      ? { slug: entry.slug, ...(payload as Omit<Find, "slug">) }
+      : null;
   });
-  return mergeBySlug(versionedFinds, overrides);
 }
 
 export async function getPublishedCategories(): Promise<Category[]> {
-  const entries = await getPublishedEntries("category");
-  const overrides = entries.flatMap((entry) => {
+  const entries = await getStoredEntries("category");
+  const base = versionedCategories.map((item) => ({
+    ...item,
+    slug: sanitizeSlug(item.name),
+  }));
+  return mergeWithTombstones(base, entries, (entry) => {
     const payload = parseEntry(entry);
-    return payload && entry.type === "category" ? [payload as Category] : [];
-  });
-  const merged = new Map(versionedCategories.map((item) => [item.name, item]));
-  for (const item of overrides) merged.set(item.name, item);
-  return [...merged.values()];
+    return payload && entry.type === "category"
+      ? { ...(payload as Category), slug: entry.slug }
+      : null;
+  }).map(({ name, icon, description, relation }) => ({
+    name,
+    icon,
+    description,
+    ...(relation ? { relation } : {}),
+  }));
 }
 
 export async function getFeaturedVideos() {
-  const entries = await getPublishedEntries("video");
+  const entries = await getStoredEntries("video");
   return entries.flatMap((entry) => {
-    if (!entry.featured) return [];
+    if (entry.status !== "published" || !entry.featured) return [];
     const payload = parseEntry(entry);
     return payload && entry.type === "video" ? [payload] : [];
   });
 }
 
 export async function getSiteSettings() {
-  const entries = await getPublishedEntries("setting");
+  const entries = await getStoredEntries("setting");
   return Object.fromEntries(
     entries.flatMap((entry) => {
+      if (entry.status !== "published") return [];
       const payload = parseEntry(entry);
       if (!payload || entry.type !== "setting") return [];
       const setting = payload as { key: string; value: string };
@@ -112,20 +118,48 @@ export async function getSiteSettings() {
   );
 }
 
+export async function getTimeline(): Promise<TimelineItem[]> {
+  const entries = await getStoredEntries("timeline");
+  return entries
+    .flatMap((entry) => {
+      if (entry.status !== "published") return [];
+      const payload = parseEntry(entry);
+      return payload && entry.type === "timeline"
+        ? [payload as TimelineItem]
+        : [];
+    })
+    .sort((a, b) => a.position - b.position);
+}
+
 export async function getPublicEditorialData() {
-  const [reviews, finds, categories, featuredVideos, settings] =
+  const [reviews, finds, categories, featuredVideos, settings, timeline] =
     await Promise.all([
       getPublishedReviews(),
       getPublishedFinds(),
       getPublishedCategories(),
       getFeaturedVideos(),
       getSiteSettings(),
+      getTimeline(),
     ]);
-  return { reviews, finds, categories, featuredVideos, settings };
+  return { reviews, finds, categories, featuredVideos, settings, timeline };
 }
 
-function mergeBySlug<T extends { slug: string }>(base: T[], overrides: T[]) {
+function mergeWithTombstones<T extends { slug: string }>(
+  base: T[],
+  entries: StoredEntry[],
+  materialize: (entry: StoredEntry) => T | null,
+) {
   const merged = new Map(base.map((item) => [item.slug, item]));
-  for (const item of overrides) merged.set(item.slug, item);
+  // The database has a unique type+slug key, but keeping this order makes the
+  // behavior deterministic if legacy data ever contains duplicates.
+  for (const entry of [...entries].reverse()) {
+    if (entry.status === "archived" || entry.status === "removed") {
+      merged.delete(entry.slug);
+      continue;
+    }
+    if (entry.status !== "published") continue;
+    const item = materialize(entry);
+    if (item) merged.set(entry.slug, item);
+  }
   return [...merged.values()];
 }

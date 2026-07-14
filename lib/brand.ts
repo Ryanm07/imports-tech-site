@@ -1,5 +1,16 @@
 export const BRAND_ASSETS = {
+  // Compatibility aliases intentionally point to the current asset until the
+  // owner supplies the corresponding variants. A future brand swap happens
+  // here, without editing individual pages and components.
   logo: "/brand/imports-tech-logo.jpg",
+  logoMain: "/brand/imports-tech-logo.jpg",
+  logoCompact: "/brand/imports-tech-logo.jpg",
+  logoMonochrome: "/brand/imports-tech-logo.jpg",
+  logoLight: "/brand/imports-tech-logo.jpg",
+  logoDark: "/brand/imports-tech-logo.jpg",
+  favicon: "/brand/imports-tech-logo.jpg",
+  icon: "/brand/imports-tech-logo.jpg",
+  appleTouchIcon: "/brand/imports-tech-logo.jpg",
   banner: "/brand/imports-tech-banner.jpg",
   socialCard: "/og.jpg",
   introWebm: "/intro/imports-tech-intro.webm",

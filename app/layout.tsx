@@ -23,8 +23,9 @@ export const metadata: Metadata = {
   description:
     "Reviews sinceros, garimpos, reparos e tecnologia testada no uso real.",
   icons: {
-    icon: BRAND_ASSETS.logo,
-    shortcut: BRAND_ASSETS.logo,
+    icon: BRAND_ASSETS.icon,
+    shortcut: BRAND_ASSETS.favicon,
+    apple: BRAND_ASSETS.appleTouchIcon,
   },
   alternates: { canonical: "/" },
   openGraph: {
@@ -54,7 +55,7 @@ export default async function RootLayout({
     "@type": "Organization",
     name: "Imports Tech",
     url: site.toString(),
-    logo: new URL(BRAND_ASSETS.logo, site).toString(),
+    logo: new URL(BRAND_ASSETS.logoMain, site).toString(),
     sameAs: [BRAND_LINKS.youtube],
     description:
       "Canal brasileiro de reviews, garimpos, reparos e tecnologia testada no uso real.",

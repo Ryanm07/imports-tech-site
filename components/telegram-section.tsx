@@ -10,21 +10,22 @@ export function TelegramSection({
   return (
     <section
       className={compact ? "telegram-section compact" : "telegram-section"}
+      data-motion-section="comunidade"
     >
       <div>
         <span className="eyebrow-v2">IMPORTS TECH NO TELEGRAM</span>
-        <h2>Eu quero manter a conversa perto.</h2>
+        <h2>Eu quero que a conversa continue perto.</h2>
         <p>
-          No Telegram, eu separo as promoções do espaço de conversa para você
-          escolher como prefere acompanhar.
+          No Telegram, eu deixo as promoções em um lugar e a conversa em outro.
+          Assim, você entra só no espaço que fizer sentido para você.
         </p>
       </div>
       <div className="telegram-actions">
         <article>
           <strong>Canal de promoções</strong>
           <p>
-            Eu seleciono promoções, cupons e oportunidades de tecnologia para
-            compartilhar por lá.
+            Eu mando as promoções, cupons e oportunidades de tecnologia que
+            realmente chamam minha atenção.
           </p>
           {links.channel ? (
             <a
@@ -42,9 +43,8 @@ export function TelegramSection({
         <article>
           <strong>Grupo da comunidade</strong>
           <p>
-            No grupo, você pode conversar sobre celulares, notebooks, garimpos,
-            reparos e tecnologia com outras pessoas que acompanham o Imports
-            Tech.
+            É o espaço para conversar comigo e com outras pessoas sobre
+            celulares, notebooks, garimpos, reparos e tecnologia.
           </p>
           {links.group ? (
             <a
@@ -59,6 +59,12 @@ export function TelegramSection({
             <span>Grupo · Em breve</span>
           )}
         </article>
+      </div>
+      <div className="community-message-preview" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <i />
       </div>
       <small className="telegram-notice">
         O Telegram é um serviço externo e possui seus próprios termos e práticas

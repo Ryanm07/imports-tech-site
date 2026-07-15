@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import type { PublicLinks } from "@/lib/public-links";
 
@@ -17,15 +17,43 @@ const nav = [
 export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const header = useRef<HTMLElement>(null);
 
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      if (!header.current) return;
+      const distance = Math.max(
+        1,
+        document.documentElement.scrollHeight - window.innerHeight,
+      );
+      header.current.dataset.scrolled = window.scrollY > 24 ? "true" : "false";
+      header.current.style.setProperty(
+        "--header-progress",
+        Math.min(1, window.scrollY / distance).toFixed(4),
+      );
+    };
+    const onScroll = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
 
   return (
     <>
       <a className="skip-link" href="#conteudo">
         Pular para o conteúdo
       </a>
-      <header className="header-shell">
+      <header className="header-shell" ref={header}>
+        <span className="header-progress" aria-hidden="true" />
         <Link
           className="official-brand"
           href="/"

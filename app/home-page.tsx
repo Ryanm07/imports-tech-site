@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { TelegramSection } from "@/components/telegram-section";
+import { ScrollSection } from "@/components/motion/scroll-section";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { buildProjects } from "@/lib/projects";
 import type { PublicLinks } from "@/lib/public-links";
@@ -11,7 +12,7 @@ import type { TelegramLinks } from "@/lib/telegram";
 import type { YouTubeMetricsSnapshot } from "@/lib/youtube-service";
 
 const fallbackIntroduction =
-  "Eu sou o Ryan, criador do Imports Tech. Eu comecei o canal em setembro de 2025 para melhorar minha comunicação e compartilhar uma curiosidade que sempre esteve presente na minha vida: tecnologia. Com o tempo, o que começou com reviews simples de periféricos se transformou em histórias de aparelhos encontrados na OLX, reparos, testes reais e projetos que eu jamais imaginava produzir.";
+  "Eu sou o Ryan. Criei o Imports Tech em setembro de 2025 porque queria perder a timidez e aprender a me comunicar melhor falando sobre uma coisa que sempre gostei: tecnologia. Comecei com reviews simples de periféricos. Aos poucos, vieram os achados da OLX, os reparos, os testes no dia a dia e projetos que eu nem imaginava conseguir produzir.";
 
 export function HomePage({
   reviews,
@@ -47,7 +48,7 @@ export function HomePage({
 
   return (
     <main id="conteudo">
-      <section className="hero-v2">
+      <ScrollSection name="hero" className="hero-v2">
         <div className="hero-grid" aria-hidden="true" />
         <div className="hero-message">
           <span className="eyebrow-v2">
@@ -59,8 +60,8 @@ export function HomePage({
             <em>no uso real.</em>
           </h1>
           <p>
-            Eu compartilho garimpos, reparos e experiências reais com celulares,
-            notebooks e tecnologia.
+            Eu compro, testo, conserto e conto o que realmente aconteceu com
+            cada aparelho que passa pela minha bancada.
           </p>
           <div className="hero-buttons">
             <Link className="button primary" href="/sobre">
@@ -116,19 +117,27 @@ export function HomePage({
           />
           <span>{freshnessLabel(youtube)}</span>
         </div>
-      </section>
+        <div className="hero-scroll-invitation" aria-hidden="true">
+          <span>ROLE PARA CONTINUAR</span>
+          <i />
+        </div>
+      </ScrollSection>
 
-      <section className="home-metrics-band" aria-label="Métricas públicas">
+      <ScrollSection name="metricas" className="home-metrics-band">
+        <span className="sr-only">Métricas públicas</span>
         <Metric value={youtube.subscribers} label="Inscritos" />
         <Metric value={youtube.totalViews} label="Visualizações" />
         <Metric value={youtube.videoCount} label="Vídeos publicados" />
         <Link href="/metricas">Como estes dados são atualizados ↗</Link>
-      </section>
+      </ScrollSection>
 
-      <section className="home-personal-intro section-shell">
+      <ScrollSection
+        name="apresentacao"
+        className="home-personal-intro section-shell"
+      >
         <div className="home-personal-copy">
           <span className="eyebrow-v2">EU SOU O RYAN</span>
-          <h2>O canal também registra o quanto eu evoluí.</h2>
+          <h2>O canal acabou virando o registro da minha própria evolução.</h2>
           <p>{homeIntroduction || fallbackIntroduction}</p>
           <Link className="button secondary" href="/sobre">
             Continuar minha história
@@ -143,18 +152,18 @@ export function HomePage({
             sizes="(max-width: 760px) 100vw, 52vw"
           />
           <p>
-            Eu gosto de tecnologia, jogos, fotografia e audiovisual. A
-            curiosidade, a pesquisa e a prática sempre fizeram parte de como eu
-            aprendo.
+            Eu gosto de tecnologia, jogos, fotografia e audiovisual. Quase tudo
+            que aprendo começa do mesmo jeito: uma curiosidade, muita pesquisa e
+            vontade de colocar a mão na massa.
           </p>
         </div>
-      </section>
+      </ScrollSection>
 
-      <section className="home-milestones">
+      <ScrollSection name="trajetoria" className="home-milestones">
         <div className="section-title">
           <div>
             <span className="eyebrow-v2">O CAMINHO ATÉ AQUI</span>
-            <h2>Alguns momentos que mudaram minha direção.</h2>
+            <h2>Alguns momentos que mudaram o rumo dessa história.</h2>
           </div>
           <Link href="/sobre">Ver a história completa ↗</Link>
         </div>
@@ -168,13 +177,13 @@ export function HomePage({
             </li>
           ))}
         </ol>
-      </section>
+      </ScrollSection>
 
-      <section className="section-shell home-projects">
+      <ScrollSection name="projetos" className="section-shell home-projects">
         <div className="section-title">
           <div>
             <span className="eyebrow-v2">HISTÓRIAS REAIS</span>
-            <h2>Projetos que ficaram comigo.</h2>
+            <h2>Projetos que me ensinaram alguma coisa.</h2>
           </div>
           <Link href="/projetos">Ver todos os projetos ↗</Link>
         </div>
@@ -201,19 +210,21 @@ export function HomePage({
             </article>
           ))}
         </div>
-      </section>
+      </ScrollSection>
 
       <TelegramSection links={telegram} />
 
-      <section className="brand-home section-shell">
+      <ScrollSection name="empresas" className="brand-home section-shell">
         <div>
           <span className="eyebrow-v2">PARA MARCAS E EMPRESAS</span>
-          <h2>Eu transformo uso real em conteúdo que gera confiança.</h2>
+          <h2>
+            Eu transformo experiências reais em conteúdo que ajuda a decidir.
+          </h2>
         </div>
         <div>
           <p>
             {commercialIntroduction ||
-              "Eu produzo reviews, garimpos, reparos e experiências com tecnologia mostrando contexto, processo e resultado. Meu foco é criar histórias úteis para quem realmente está escolhendo ou usando um produto."}
+              "Eu produzo reviews, garimpos e reparos mostrando o contexto inteiro: como o produto chegou, o que eu encontrei e qual foi o resultado. Meu compromisso é criar uma história útil para quem está pensando em comprar ou já usa aquele produto."}
           </p>
           <div className="hero-buttons">
             {publicLinks.mediaKit ? (
@@ -244,14 +255,14 @@ export function HomePage({
             )}
           </div>
         </div>
-      </section>
+      </ScrollSection>
 
-      <section className="home-final-cta">
+      <ScrollSection name="continuar" className="home-final-cta">
         <span className="eyebrow-v2">CONTINUE COMIGO</span>
         <h2>O próximo projeto já pode estar na minha bancada.</h2>
         <p>
-          No YouTube, eu publico a história completa. Aqui, eu organizo o que
-          aprendi no caminho.
+          No YouTube, eu mostro a história completa. Aqui, eu deixo organizado o
+          que aprendi pelo caminho.
         </p>
         <div className="hero-buttons">
           <a
@@ -273,7 +284,7 @@ export function HomePage({
             </a>
           )}
         </div>
-      </section>
+      </ScrollSection>
     </main>
   );
 }

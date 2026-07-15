@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { IntroReplayButtons } from "@/components/intro-replay-buttons";
+import { ScrollSection } from "@/components/motion/scroll-section";
+import { StoryExperience } from "@/components/story-experience";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { getTimeline } from "@/lib/content-repository";
 
@@ -16,20 +18,21 @@ export default async function AboutPage() {
   const timeline = await getTimeline();
   return (
     <main id="conteudo" className="page-main story-page">
-      <header className="page-hero story-hero">
+      <header className="page-hero story-hero" data-motion-section="abertura">
         <span className="eyebrow-v2">MINHA HISTÓRIA</span>
         <h1>
           Eu comecei para aprender a falar. Continuei porque encontrei minha
           voz.
         </h1>
         <p>
-          Em setembro de 2025, eu não imaginava onde o Imports Tech poderia
-          chegar. Eu só queria enfrentar a timidez, melhorar minha comunicação e
-          dividir uma curiosidade que sempre esteve comigo: tecnologia.
+          Quando eu comecei, em setembro de 2025, eu não fazia ideia de onde o
+          Imports Tech poderia chegar. Eu só queria perder a timidez, aprender a
+          me comunicar melhor e dividir uma coisa que sempre mexeu comigo:
+          tecnologia.
         </p>
       </header>
 
-      <section className="story-opening">
+      <ScrollSection name="origem" className="story-opening">
         <div className="story-banner">
           <Image
             src={BRAND_ASSETS.banner}
@@ -42,17 +45,17 @@ export default async function AboutPage() {
         </div>
         <div>
           <span className="eyebrow-v2">DE ONDE EU PARTI</span>
-          <h2>Minha evolução ficou gravada.</h2>
+          <h2>Eu deixei minha evolução à vista.</h2>
           <p>
-            Nos primeiros vídeos, eu falava baixo, me enrolava e tinha menos
-            confiança. Eu mantive esses vídeos publicados porque eles mostram a
-            distância entre o começo e o que consigo produzir hoje.
+            Nos primeiros vídeos, eu falava baixo, me enrolava e quase não tinha
+            confiança. Eu deixei tudo publicado porque gosto de olhar para trás
+            e ver, de verdade, o quanto eu caminhei desde o começo.
           </p>
           <p>
-            Eu gosto de tecnologia, jogos, fotografia e audiovisual. Fiz o
-            ensino médio com curso técnico e comecei Engenharia da Computação,
-            mas grande parte do que sei também veio de curiosidade, pesquisa e
-            prática.
+            Eu sempre gostei de tecnologia, jogos, fotografia e audiovisual. Fiz
+            o ensino médio com curso técnico e comecei Engenharia da Computação,
+            mas muita coisa que eu sei veio da curiosidade, de ir atrás e de
+            aprender fazendo.
           </p>
           <div className="hero-buttons">
             <a
@@ -66,77 +69,28 @@ export default async function AboutPage() {
           </div>
           <IntroReplayButtons />
         </div>
-      </section>
+      </ScrollSection>
 
-      <section className="story-timeline" aria-label="Minha trajetória">
-        <div className="story-timeline-heading">
-          <span className="eyebrow-v2">MINHA TRAJETÓRIA</span>
-          <h2>O que mudou — e o que eu aprendi no caminho.</h2>
-        </div>
-        <ol>
-          {timeline.map((item, index) => (
-            <li id={item.slug} key={item.slug}>
-              <div className="story-index" aria-hidden="true">
-                {String(index + 1).padStart(2, "0")}
-              </div>
-              <div className="story-date">
-                <span>{item.dateLabel}</span>
-                <small>
-                  {item.datePrecision === "approximate"
-                    ? "Data aproximada"
-                    : "Data confirmada"}
-                </small>
-              </div>
-              <div className="story-entry">
-                {item.number && <strong>{item.number}</strong>}
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-                <div className="story-entry-links">
-                  {item.relatedProject && (
-                    <Link href={`/projetos#${item.relatedProject}`}>
-                      Ver projeto relacionado →
-                    </Link>
-                  )}
-                  {item.youtubeUrl && (
-                    <a href={item.youtubeUrl} target="_blank" rel="noreferrer">
-                      Assistir no YouTube ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-              {item.imageUrl && (
-                <div className="story-entry-image">
-                  <Image
-                    src={item.imageUrl}
-                    alt=""
-                    fill
-                    sizes="(max-width: 760px) 100vw, 28vw"
-                  />
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
-      </section>
+      <StoryExperience timeline={timeline} />
 
-      <section className="story-process">
+      <ScrollSection name="processo" className="story-process">
         <div>
           <span className="eyebrow-v2">COMO EU PRODUZO HOJE</span>
           <h2>O vídeo final esconde muitas horas de trabalho.</h2>
         </div>
         <div className="story-process-copy">
           <p>
-            Hoje eu uso tripé, iluminação, barra de luz, luz de preenchimento,
-            um bom celular, microfone Fifine M8 com braço, Audacity e DaVinci
-            Resolve. O modelo exato do celular fica como informação editável no
-            painel porque eu não quero publicar um dado que possa ficar
-            desatualizado.
+            Hoje eu gravo com tripé, iluminação, barra de luz, luz de
+            preenchimento, um bom celular e microfone Fifine M8 com braço. O
+            áudio passa pelo Audacity e a edição pelo DaVinci Resolve. O modelo
+            exato do celular fica editável no painel, porque eu não quero deixar
+            no ar uma informação que pode mudar.
           </p>
           <p>
-            Normalmente, eu tenho dois ou três vídeos gravados esperando edição.
-            Esse é meu maior gargalo. Uma hora de gravação costuma virar de 10 a
-            15 minutos finais, e eu gasto cerca de 12 horas no processo completo
-            de cada vídeo.
+            Normalmente, eu tenho dois ou três vídeos gravados esperando para
+            editar. Esse ainda é meu maior gargalo. Uma hora de gravação costuma
+            virar só 10 a 15 minutos de vídeo, e cada produção leva cerca de 12
+            horas do começo ao fim.
           </p>
         </div>
         <div className="story-numbers" aria-label="Números do processo">
@@ -153,15 +107,15 @@ export default async function AboutPage() {
             <span>a partir de 1h gravada</span>
           </div>
         </div>
-      </section>
+      </ScrollSection>
 
-      <section className="home-final-cta story-final">
+      <ScrollSection name="meta" className="home-final-cta story-final">
         <span className="eyebrow-v2">O PRÓXIMO CAPÍTULO</span>
         <h2>Minha meta é chegar a 100 mil inscritos até o fim de 2027.</h2>
         <p>
-          No longo prazo, eu quero construir uma das maiores comunidades de
-          tecnologia do Brasil sem perder a honestidade e a proximidade que me
-          trouxeram até aqui.
+          Eu quero construir uma das maiores comunidades de tecnologia do
+          Brasil, mas sem perder a honestidade e a proximidade que fizeram tudo
+          isso começar.
         </p>
         <div className="hero-buttons">
           <Link className="button secondary" href="/projetos">
@@ -176,7 +130,7 @@ export default async function AboutPage() {
             Acompanhar no YouTube ↗
           </a>
         </div>
-      </section>
+      </ScrollSection>
     </main>
   );
 }

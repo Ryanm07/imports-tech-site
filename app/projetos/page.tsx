@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProjectsClient } from "@/components/projects-client";
+import { ProjectExperience } from "@/components/project-experience";
 import { getPublicEditorialData } from "@/lib/content-repository";
 import { buildProjects } from "@/lib/projects";
 
@@ -19,16 +19,16 @@ export default async function ProjectsPage() {
   );
   return (
     <main id="conteudo" className="page-main projects-page">
-      <header className="page-hero">
+      <header className="page-hero" data-motion-section="abertura">
         <span className="eyebrow-v2">BASTIDORES E RESULTADOS</span>
-        <h1>Eu não registro só o produto. Eu registro o que aconteceu.</h1>
+        <h1>Eu não mostro só o produto. Eu conto o que aconteceu com ele.</h1>
         <p>
-          Aqui eu reúno garimpos, reparos, reviews e periféricos pelo caminho
-          completo: compra, problema, custo conhecido, decisão, resultado e o
-          que aprendi.
+          Aqui estão os garimpos, reparos, reviews e periféricos que mais me
+          ensinaram. Eu mostro quanto paguei, o problema que encontrei, o que
+          decidi fazer e como a história terminou.
         </p>
       </header>
-      <ProjectsClient projects={projects} />
+      <ProjectExperience projects={projects} />
     </main>
   );
 }

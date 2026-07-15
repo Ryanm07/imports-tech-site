@@ -135,6 +135,11 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
       if (finishTimer.current) window.clearTimeout(finishTimer.current);
       finishTimer.current = window.setTimeout(
         () => {
+          window.dispatchEvent(
+            new CustomEvent("imports-tech:intro-complete", {
+              detail: { reduced },
+            }),
+          );
           if (flightLogo.current) flightLogo.current.style.opacity = "0";
           document.body.classList.remove("intro-logo-flight");
           window.setTimeout(finish, 80);

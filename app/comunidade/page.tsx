@@ -15,21 +15,22 @@ export default async function CommunityPage() {
   const telegram = getTelegramLinks(await getSiteSettings());
   return (
     <main id="conteudo" className="page-main community-hub">
-      <header className="page-hero">
+      <header className="page-hero" data-motion-section="abertura">
         <span className="eyebrow-v2">COMUNIDADE IMPORTS TECH</span>
-        <h1>A conversa continua fora do site.</h1>
+        <h1>O vídeo termina. A conversa não precisa terminar.</h1>
         <p>
-          Eu uso os espaços oficiais para ficar perto de quem acompanha o canal.
-          O site não exige conta e não mantém um fórum próprio.
+          Eu uso meus espaços oficiais para continuar perto de quem acompanha o
+          canal. Você não precisa criar conta aqui, e eu não mantenho um{" "}
+          {"fórum próprio"} no site.
         </p>
       </header>
       <TelegramSection links={telegram} compact />
-      <section className="community-youtube">
+      <section className="community-youtube" data-motion-section="youtube">
         <span>NO YOUTUBE</span>
-        <h2>Eu também leio comentários e publico atualizações no canal.</h2>
+        <h2>Eu também estou nos comentários e nas atualizações do canal.</h2>
         <p>
-          Para acompanhar vídeos, bastidores e publicações, use sempre o perfil
-          oficial @Imports_Tech.
+          É por lá que eu publico vídeos, mostro alguns bastidores e compartilho
+          atualizações. Meu perfil oficial é @Imports_Tech.
         </p>
         <a
           className="button secondary"

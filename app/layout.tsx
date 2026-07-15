@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { SiteIntro } from "@/components/site-intro";
+import { InteractiveBackground } from "@/components/motion/interactive-background";
+import { PageTransition } from "@/components/motion/page-transition";
+import { MotionProvider } from "@/components/motion/motion-provider";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { getSiteSettings } from "@/lib/content-repository";
 import { safeJsonLd } from "@/lib/json-ld";
@@ -67,10 +70,13 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${geist.variable} ${mono.variable}`}>
-        <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
-        <SiteHeader publicLinks={publicLinks} />
-        {children}
-        <SiteFooter telegram={telegram} publicLinks={publicLinks} />
+        <MotionProvider>
+          <InteractiveBackground />
+          <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
+          <SiteHeader publicLinks={publicLinks} />
+          <PageTransition>{children}</PageTransition>
+          <SiteFooter telegram={telegram} publicLinks={publicLinks} />
+        </MotionProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}

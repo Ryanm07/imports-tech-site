@@ -101,6 +101,7 @@ export function HomePage({
               fill
               sizes="255px"
               priority
+              unoptimized
             />
             <span>IMPORTS TECH</span>
           </div>
@@ -185,9 +186,10 @@ export function HomePage({
           <Image
             src={BRAND_ASSETS.banner}
             alt="Banner oficial do canal Imports Tech"
-            width={2120}
-            height={373}
+            width={2048}
+            height={339}
             sizes="(max-width: 760px) 100vw, 52vw"
+            unoptimized
           />
           <p>
             Eu gosto de tecnologia, jogos, fotografia e audiovisual. Quase tudo
@@ -290,7 +292,13 @@ export function HomePage({
       <ScrollSection name="continuar" className="home-final-cta">
         <div className="final-brand-return" aria-hidden="true">
           <i />
-          <Image src={BRAND_ASSETS.logo} alt="" width={76} height={76} />
+          <Image
+            src={BRAND_ASSETS.logo}
+            alt=""
+            width={76}
+            height={76}
+            unoptimized
+          />
         </div>
         <span className="eyebrow-v2">CONTINUE COMIGO</span>
         <h2>A história continua daqui.</h2>

@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { youtubeChannelState, youtubeSyncRuns } from "@/db/schema";
+import { introEnabled } from "@/lib/features";
 import { privateJson } from "@/lib/http";
 import { ownerRateLimitIdentity } from "@/lib/owner-domain";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -70,7 +71,7 @@ export async function GET() {
       commercialEmailConfigured: Boolean(publicLinks.commercialEmail),
       introAvailable: true,
       d1Connected: true,
-      introEnabled: process.env.INTRO_ENABLED === "true",
+      introEnabled: introEnabled(),
     },
   });
 }

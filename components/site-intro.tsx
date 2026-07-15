@@ -18,6 +18,7 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
   const [transitioning, setTransitioning] = useState(false);
   const [soundRequested, setSoundRequested] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [playbackFailed, setPlaybackFailed] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const skip = useRef<HTMLButtonElement>(null);
   const flightLogo = useRef<HTMLDivElement>(null);
@@ -35,6 +36,7 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
     setPrepared(false);
     setTransitioning(false);
     setAudioBlocked(false);
+    setPlaybackFailed(false);
     setSoundRequested(sound);
     setVisible(true);
     try {
@@ -42,6 +44,12 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
     } catch {
       // Session storage is an enhancement; failure never blocks the home.
     }
+  }, []);
+
+  const showPlaybackFallback = useCallback(() => {
+    video.current?.pause();
+    setPrepared(true);
+    setPlaybackFailed(true);
   }, []);
 
   const finish = useCallback(() => {
@@ -235,9 +243,9 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
         if (soundRequested) {
           element.muted = true;
           setAudioBlocked(true);
-          void element.play().catch(() => beginTransition(true));
+          void element.play().catch(showPlaybackFallback);
         } else {
-          beginTransition(true);
+          showPlaybackFallback();
         }
       });
     }
@@ -247,7 +255,7 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
       window.removeEventListener("keydown", escape);
       if (finishTimer.current) window.clearTimeout(finishTimer.current);
     };
-  }, [beginTransition, soundRequested, visible]);
+  }, [beginTransition, showPlaybackFallback, soundRequested, visible]);
 
   function monitorFrames() {
     const element = video.current as
@@ -273,12 +281,21 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
     void video.current.play().catch(() => setAudioBlocked(true));
   }
 
+  function retryPlayback() {
+    if (!video.current) return;
+    setPlaybackFailed(false);
+    setPrepared(false);
+    video.current.currentTime = 0;
+    video.current.muted = true;
+    void video.current.play().catch(showPlaybackFallback);
+  }
+
   if (!visible) return null;
   return (
     <div
       className={`site-intro${prepared ? " is-prepared" : ""}${
-        transitioning ? " is-transitioning" : ""
-      }`}
+        playbackFailed ? " has-playback-fallback" : ""
+      }${transitioning ? " is-transitioning" : ""}`}
       role="dialog"
       aria-modal="true"
       aria-label="Abertura Imports Tech"
@@ -290,22 +307,21 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
         fill
         sizes="100vw"
         priority
+        unoptimized
       />
       <video
         ref={video}
         muted
         playsInline
-        preload="metadata"
+        preload="auto"
         poster={BRAND_ASSETS.introPoster}
         onLoadedMetadata={monitorFrames}
         onTimeUpdate={(event) => {
           if (event.currentTarget.currentTime >= 4.65) setPrepared(true);
         }}
+        onPlaying={() => setPlaybackFailed(false)}
         onEnded={() => beginTransition(false)}
-        onError={() => {
-          setPrepared(true);
-          window.setTimeout(() => beginTransition(true), 120);
-        }}
+        onError={showPlaybackFallback}
       >
         <source src={BRAND_ASSETS.introWebm} type="video/webm" />
         <source src={BRAND_ASSETS.introMp4} type="video/mp4" />
@@ -320,22 +336,36 @@ export function SiteIntro({ enabled }: { enabled: boolean }) {
         <i />
       </div>
       <div className="intro-flight-logo" ref={flightLogo} aria-hidden="true">
-        <Image src={BRAND_ASSETS.logo} alt="" fill sizes="344px" priority />
+        <Image
+          src={BRAND_ASSETS.logo}
+          alt=""
+          fill
+          sizes="344px"
+          priority
+          unoptimized
+        />
       </div>
       <div className="intro-actions">
+        {playbackFailed && (
+          <button type="button" onClick={retryPlayback}>
+            Tentar reproduzir
+          </button>
+        )}
         {audioBlocked && (
           <button type="button" onClick={enableSound}>
             Ativar som
           </button>
         )}
         <button ref={skip} type="button" onClick={() => beginTransition(true)}>
-          Pular intro
+          {playbackFailed ? "Continuar" : "Pular intro"}
         </button>
       </div>
       <span className="sr-only" role="status">
-        {transitioning
-          ? "Abrindo a página inicial"
-          : "Introdução em reprodução"}
+        {playbackFailed
+          ? "O vídeo não iniciou. O poster permanece visível."
+          : transitioning
+            ? "Abrindo a página inicial"
+            : "Introdução em reprodução"}
       </span>
     </div>
   );

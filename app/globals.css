@@ -3735,6 +3735,9 @@ main {
 .site-intro.is-prepared .intro-final-frame {
   opacity: 1;
 }
+.site-intro.has-playback-fallback video {
+  opacity: 0;
+}
 .site-intro.is-transitioning {
   background: rgba(8, 20, 38, 0);
 }

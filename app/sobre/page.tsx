@@ -38,10 +38,11 @@ export default async function AboutPage() {
           <Image
             src={BRAND_ASSETS.banner}
             alt="Banner oficial do canal Imports Tech"
-            width={1546}
-            height={423}
+            width={2048}
+            height={339}
             sizes="(max-width: 760px) 100vw, 55vw"
             priority
+            unoptimized
           />
         </div>
         <div>

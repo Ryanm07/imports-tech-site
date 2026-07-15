@@ -12,7 +12,7 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { getSiteUrl } from "@/lib/site-url";
 import { getTelegramLinks } from "@/lib/telegram";
 import { getPublicLinks } from "@/lib/public-links";
-import { projectsEnabled } from "@/lib/features";
+import { introEnabled, projectsEnabled } from "@/lib/features";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -73,7 +73,7 @@ export default async function RootLayout({
       <body className={`${geist.variable} ${mono.variable}`}>
         <MotionProvider>
           <InteractiveBackground />
-          <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
+          <SiteIntro enabled={introEnabled()} />
           <SiteHeader
             publicLinks={publicLinks}
             projectsEnabled={projectsEnabled()}

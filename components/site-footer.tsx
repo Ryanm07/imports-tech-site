@@ -22,6 +22,7 @@ export function SiteFooter({
           width={58}
           height={58}
           sizes="58px"
+          unoptimized
         />
         <div>
           <strong>IMPORTS TECH</strong>

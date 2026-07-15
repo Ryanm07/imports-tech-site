@@ -96,6 +96,7 @@ export function SiteHeader({
             width="44"
             height="44"
             priority
+            unoptimized
           />
           <span>
             IMPORTS <strong>TECH</strong>

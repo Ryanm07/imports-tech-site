@@ -68,11 +68,12 @@ Configuração pública de servidor:
 - `MEDIA_KIT_URL`;
 - `COMMERCIAL_CONTACT_EMAIL`.
 
-Flags, sempre desativadas até homologação explícita:
+Flags de recursos:
 
 - `ADMIN_ENABLED=false`;
 - `EDITORIAL_DB_ENABLED=false`;
-- `INTRO_ENABLED=false`;
+- `INTRO_ENABLED=true` mantém a abertura cinematográfica ativa; use `false`
+  somente para desativação explícita;
 - `PROJECTS_ENABLED=false` mantém reviews e garimpos preservados no painel, mas fora da experiência pública.
 
 `MEDIA_KIT_URL` aceita somente HTTPS. Telegram aceita somente HTTPS nos hosts

@@ -5,7 +5,9 @@ import {
   INTRO_FINAL_FRAME_SECONDS,
   INTRO_SESSION_KEY,
   mapIntroGeometry,
+  shouldShowIntro,
 } from "../lib/intro";
+import { introEnabled } from "../lib/features";
 import { containsPublicYouTubeSecret } from "../lib/public-bundle-security";
 
 const root = new URL("../", import.meta.url);
@@ -31,8 +33,90 @@ test("intro v3 usa geometria cover exata no desktop e no celular", () => {
   assert.ok(mobile.logo.left < 375 && mobile.logo.left + mobile.logo.width > 0);
 });
 
+test("intro fica ativa por padrão e respeita sessão, redução e economia", () => {
+  assert.equal(introEnabled(undefined), true);
+  assert.equal(introEnabled("true"), true);
+  assert.equal(introEnabled("false"), false);
+
+  const base = {
+    enabled: true,
+    replay: false,
+    seenThisSession: false,
+    reducedMotion: false,
+    saveData: false,
+    hasPlayableAsset: true,
+  };
+  assert.equal(shouldShowIntro(base), true);
+  assert.equal(shouldShowIntro({ ...base, seenThisSession: true }), false);
+  assert.equal(shouldShowIntro({ ...base, reducedMotion: true }), false);
+  assert.equal(shouldShowIntro({ ...base, saveData: true }), false);
+  assert.equal(
+    shouldShowIntro({ ...base, replay: true, seenThisSession: true }),
+    true,
+  );
+});
+
+test("assets locais usam caminhos públicos e ignoram o otimizador do Vinext", async () => {
+  const [brand, header, footer, home, about, intro] = await Promise.all([
+    source("lib/brand.ts"),
+    source("components/site-header.tsx"),
+    source("components/site-footer.tsx"),
+    source("app/home-page.tsx"),
+    source("app/sobre/page.tsx"),
+    source("components/site-intro.tsx"),
+  ]);
+  for (const path of [
+    "/brand/imports-tech-logo.jpg",
+    "/brand/imports-tech-banner.jpg",
+    "/intro/imports-tech-intro.mp4",
+    "/intro/imports-tech-intro.webm",
+    "/intro/imports-tech-intro-poster.webp",
+    "/intro/imports-tech-intro-final.webp",
+  ]) {
+    assert.equal(brand.includes(`"${path}"`), true, path);
+  }
+  for (const invalid of [
+    "public" + "/brand/",
+    "public" + "/intro/",
+    ".." + "/brand/",
+    ".." + "/intro/",
+    "/_vinext/" + "image?url=",
+  ]) {
+    assert.equal(brand.includes(invalid), false, invalid);
+  }
+  for (const [file, contents, expected] of [
+    ["header", header, 1],
+    ["footer", footer, 1],
+    ["home", home, 3],
+    ["sobre", about, 1],
+    ["intro", intro, 2],
+  ] as const) {
+    assert.equal(countOccurrences(contents, "unoptimized"), expected, file);
+  }
+  assert.equal(intro.includes('preload="auto"'), true);
+  assert.equal(intro.includes("BRAND_ASSETS.introPoster"), true);
+  assert.equal(intro.includes("BRAND_ASSETS.introWebm"), true);
+  assert.equal(intro.includes("BRAND_ASSETS.introMp4"), true);
+});
+
+test("CSP preserva self para imagens e mídia sem curingas", async () => {
+  const worker = await source("worker/index.ts");
+  assert.equal(
+    worker.includes("img-src 'self' data: blob: https://i.ytimg.com"),
+    true,
+  );
+  assert.equal(
+    worker.includes("media-src 'self' https://www.youtube.com"),
+    true,
+  );
+  assert.equal(worker.includes("img-src *"), false);
+  assert.equal(worker.includes("media-src *"), false);
+  assert.equal(worker.includes("default-src *"), false);
+});
+
 test("os quatro assets definitivos da intro estão versionados e válidos", async () => {
-  const base = new URL("../public/intro/", import.meta.url);
+  const publicRoot = new URL("../public/", import.meta.url);
+  const base = new URL("intro/", publicRoot);
   const [mp4, webm, poster, finalFrame] = await Promise.all([
     readFile(new URL("imports-tech-intro.mp4", base)),
     readFile(new URL("imports-tech-intro.webm", base)),
@@ -95,6 +179,9 @@ test("intro possui caminhos de teclado, falha, timeout, alvo real e autoplay seg
     "Pular intro",
     'event.key === "Escape"',
     "onError",
+    "showPlaybackFallback",
+    "Tentar reproduzir",
+    "has-playback-fallback",
     "onEnded",
     "8_000",
     "requestVideoFrameCallback",
@@ -124,9 +211,7 @@ test("sincronização manual é privada e a chave não possui caminho cliente", 
   assert.equal(exampleEnv.includes("NEXT_PUBLIC_YOUTUBE"), false);
   assert.equal(containsPublicYouTubeSecret("const value = 'público'"), false);
   assert.equal(
-    containsPublicYouTubeSecret(
-      "const key = 'TEST_YOUTUBE_API_KEY_NOT_REAL'",
-    ),
+    containsPublicYouTubeSecret("const key = 'TEST_YOUTUBE_API_KEY_NOT_REAL'"),
     true,
   );
   assert.equal(
@@ -175,4 +260,8 @@ function mp4Duration(buffer: Buffer) {
   const timescale = buffer.readUInt32BE(marker + 16);
   const duration = buffer.readUInt32BE(marker + 20);
   return duration / timescale;
+}
+
+function countOccurrences(source: string, value: string) {
+  return source.split(value).length - 1;
 }

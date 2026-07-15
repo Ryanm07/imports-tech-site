@@ -96,6 +96,7 @@ export function StoryExperience({
     let travel = 1;
     let mobile = false;
     let hashCorrection = 0;
+    let resizeFrame = 0;
     let mobileItems: Array<{ top: number; height: number } | undefined> = [];
 
     const measure = () => {
@@ -219,9 +220,21 @@ export function StoryExperience({
     const requestUpdate = () => {
       if (!raf) raf = requestAnimationFrame(update);
     };
+    const handleResize = () => {
+      const preserveChapter =
+        window.scrollY >= top - window.innerHeight * 0.2 &&
+        window.scrollY <= top + travel + window.innerHeight * 0.2;
+      const preservedIndex = activeIndexRef.current;
+      measure();
+      if (!preserveChapter) return;
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() =>
+        goTo(preservedIndex, false, true),
+      );
+    };
     measure();
     window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", handleResize);
     const observer = new ResizeObserver(measure);
     observer.observe(documentary);
 
@@ -241,10 +254,11 @@ export function StoryExperience({
 
     return () => {
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(resizeFrame);
       window.clearTimeout(hashCorrection);
       observer.disconnect();
       window.removeEventListener("scroll", requestUpdate);
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", handleResize);
       window.removeEventListener("hashchange", goToCurrentHash);
       window.removeEventListener("popstate", goToCurrentHash);
       delete document.documentElement.dataset.storyVisual;

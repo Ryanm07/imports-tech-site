@@ -1,70 +1,104 @@
-# Auditoria da implementação atual — Imports Tech
+# Auditoria corretiva final — Imports Tech
 
-Data da auditoria: 15 de julho de 2026  
-Base analisada: commit `313ee58`, branch `main`, com trabalho local em andamento.
+Data da conclusão: 15 de julho de 2026
 
-## Implementado e funcionando
+Base de partida: commit `313ee58`, branch `main`
 
-- Identidade oficial azul-marinho e dourada, assets e intro responsiva: `components/site-intro.tsx`, `lib/intro.ts`, `public/imports-tech-intro.*`, `app/globals.css`.
-- Voz pessoal em primeira pessoa e os fatos históricos confirmados: `lib/story.ts`, `app/home-page.tsx`, `app/sobre/page.tsx`.
-- Métricas públicas vindas somente de `channels.list`, com snapshot/falhas explícitos e chave no servidor: `lib/youtube-service.ts`, `app/api/youtube/route.ts`.
-- Comunidade externa sem fórum ou mural público: `app/comunidade/page.tsx`, `components/telegram-section.tsx`, `lib/telegram.ts`.
-- Segurança, rate limit, autorização privada, schema e migrations preservados: `lib/security.ts`, `lib/rate-limit.ts`, `lib/server-auth.ts`, `db/schema.ts`, `drizzle/`.
-- Motor nativo de movimento com `requestAnimationFrame`, medidas armazenadas, direção, velocidade, progresso global e por seção: `components/motion/motion-provider.tsx`, `lib/motion.ts`.
-- Canvas persistente com DPR limitado, modo leve e pausa quando a aba fica invisível: `components/motion/interactive-background.tsx`.
-- Home com hero, métricas sequenciais, apresentação, quatro marcos, comunidade, empresas e encerramento conectados ao scroll: `app/home-page.tsx`, `components/home-scroll-director.tsx`, `app/globals.css`.
-- Palco documental desktop e narrativa vertical mobile com navegação por capítulo/hash: `components/story-experience.tsx`.
-- Presets editoriais seguros e validação dos campos visuais: `lib/story.ts`, `lib/content-schemas.ts`, `lib/content-repository.ts`, `components/admin-panel.tsx`.
-- Projetos preservados internamente e desativados publicamente por `PROJECTS_ENABLED=false`: `lib/features.ts`, `.env.example`, rotas antigas, header, footer, sitemap e painel.
+Checkpoints de recuperação: `e597b74` e `82ca615`
 
-## Implementado parcialmente
+## Estado encontrado
 
-- Microcenas existem para os 12 marcos anteriores, mas a especificação mais recente exige separar “Falta de tempo” como o 13º capítulo: `lib/story.ts`, `components/story-micro-scene.tsx`.
-- A cena Dell mostra notebook, 500 GB e dois dias, porém ainda precisa comunicar melhor desmontagem repetida, preenchimento progressivo e dois ciclos de relógio: `components/story-micro-scene.tsx`, `app/globals.css`.
-- A primeira gravação possui celular e timeline de cortes, mas falta um teclado abstrato explícito: `components/story-micro-scene.tsx`.
-- A cena de equipamentos monta celular, tripé, luzes, microfone e computador; o risco de R$ 300 precisa ficar visualmente integrado: `components/story-micro-scene.tsx`.
-- O fio dourado atravessa header, seções, timeline e encerramento, mas é composto por elementos coordenados por seção, não por uma única geometria global: `components/motion/interactive-background.tsx`, `app/globals.css`.
-- Os testes unitários cobrem fases e presets, mas parte da prova visual ainda é manual e precisa ser complementada com smoke test comportamental: `tests/motion-experience.test.ts`.
+- A execução anterior havia parado depois da maior parte da experiência cinematográfica, mas antes da consolidação final.
+- A árvore de trabalho ainda continha um ajuste não commitado de resize, seis logs de QA, `.env.local` e `public/mobile-qa.html`.
+- Este relatório ainda descrevia 12 capítulos, `time-balance` desconectado e validação pendente.
+- O projeto publicado continuava no commit `313ee58` e com `INTRO_ENABLED=false` no runtime.
 
-## Criado, mas não conectado
+Os temporários foram removidos, o ajuste pendente foi validado e este documento passou a registrar o estado real da entrega.
 
-- `time-balance` está disponível como preset editorial, porém ainda não é usado por um capítulo público próprio: `lib/story.ts`, `components/story-micro-scene.tsx`.
-- O suporte a `visualAsset` existe no schema, mas as cenas atuais usam composições abstratas porque não há assets reais confirmados para esses capítulos: `lib/content-schemas.ts`, `components/story-experience.tsx`.
+## Experiência final implementada
 
-## Quebrado
+- Home conectada pelo scroll: intro, hero, cinco métricas, apresentação pessoal, quatro marcos, comunidade, empresas e CTA final.
+- Narrativa documental com 13 capítulos independentes, voz em primeira pessoa e uma microcena própria para cada capítulo:
+  1. origem em setembro de 2025;
+  2. mudança de identidade para Imports Tech;
+  3. primeira gravação com celular, teclado e timeline;
+  4. montagem do equipamento e risco de R$ 300;
+  5. primeiro sinal do canal;
+  6. descoberta inesperada;
+  7. percepção do padrão de crescimento;
+  8. transição mecânica de 999 para 1.000 inscritos;
+  9. avanço para 200 mil visualizações;
+  10. notebook Dell, 500 GB, desmontagem e quase dois dias de processamento;
+  11. linha de produção de um vídeo, de 1 hora a 10–15 minutos e até 12 horas de trabalho;
+  12. falta de tempo e conciliação da rotina;
+  13. meta futura de 1 milhão de inscritos.
+- Scroll reversível, fases contínuas, progresso por seção, direção e velocidade usando `requestAnimationFrame` nativo.
+- Cena ativa preservada quando a viewport muda entre mobile, tablet e desktop.
+- Deep links por hash, voltar/avançar do navegador e navegação por capítulo.
+- Desktop com palco sticky e mobile com os 13 artigos no fluxo vertical.
+- Fallbacks para movimento reduzido, economia de dados, Canvas indisponível e JavaScript ausente.
+- Intro responsiva com vídeo cover, transição para o logo real, Escape, timeout, replay e recuperação de falhas.
+- Menu móvel com botão nativo, ARIA, suporte de Enter/Espaço do navegador e Escape com devolução de foco.
+- Projetos e rotas editoriais antigas preservados internamente, mas removidos da navegação pública por feature flag e redirects.
+- Compatibilidade com a timeline antiga do D1: o capítulo combinado anterior é normalizado sem duplicar ou perder conteúdo.
 
-- Nenhum erro de TypeScript, teste ou build foi reproduzido na primeira instalação limpa desta rodada.
-- Problema visual reproduzido durante o QA: o novo rótulo de cena criou uma quarta célula em um header de três colunas, empurrando Media Kit e YouTube para uma segunda linha. Corrigido em `app/globals.css` com grade desktop de quatro colunas.
-- Problema visual reproduzido durante o QA: o hero mobile começava com opacidade `0.18` porque a fase de foco ainda era zero no primeiro viewport. Corrigido para usar a fase de entrada em `app/globals.css`.
-- Problema visual reproduzido durante o QA: o layout documental de 768 px comprimia a coluna textual. Corrigido usando a experiência vertical até 820 px em `app/globals.css`.
+## Conteúdo e dados
 
-## Ainda não iniciado nesta rodada
+- Textos pessoais, históricos, projetos, dificuldades, aprendizados e metas estão em primeira pessoa.
+- Nenhum fato, data ou número foi inventado para completar a narrativa.
+- Campos visuais usam allowlists e presets seguros; `visualAsset` está conectado quando o editorial fornece um asset válido.
+- Métricas públicas continuam limitadas a `channels.list`; a chave do YouTube permanece somente no servidor.
+- Snapshot antigo continua identificado como retrato histórico, sem fingir atualização atual.
 
-- Separação editorial do capítulo “Falta de tempo”.
-- Ampliação da microcena Dell e dos detalhes de teclado/equipamentos.
-- Testes comportamentais DOM para scroll reversível, hash, fallback sem Canvas e ausência de lock.
-- Validação final completa após essas correções e publicação.
+## Validação limpa
 
-## Desnecessário
+Executada depois da remoção completa de `node_modules` e de um novo `npm ci`:
 
-- GSAP/ScrollTrigger: o motor nativo atual já fornece scrub contínuo, reversão, cache de medidas e variáveis CSS sem disputar elementos com outro motor.
-- Lenis: não é necessário; o scroll nativo preserva teclado, touch, âncoras e histórico.
-- Three.js/React Three Fiber: as metáforas são geométricas e funcionam com HTML/CSS/Canvas 2D.
-- Migração destrutiva para Projetos: proibida e desnecessária; dados permanecem preservados.
+- `npm run typecheck`: aprovado.
+- `npm run lint`: aprovado, sem warnings.
+- `npm run test`: 32 de 32 testes aprovados.
+- `npm run format:check`: aprovado.
+- `npm run build`: aprovado.
+- Varredura do bundle público: 46 arquivos verificados, nenhum segredo do YouTube encontrado.
+- `npm audit --omit=dev`: 0 vulnerabilidades de produção.
+- Smoke de rotas: `/`, `/sobre`, `/comunidade`, `/metricas`, `/sitemap.xml` e `/robots.txt` retornaram 200; rotas desativadas retornaram os redirects esperados.
+- SSR de `/sobre`: 13 capítulos presentes no HTML.
+- Console limpo no smoke visual final: 0 erros e 0 warnings.
 
-## Legado preservado
+O conjunto completo de desenvolvimento ainda reporta 12 advisories transitivos (`1 low`, `5 moderate`, `6 high`) em ferramentas como Vite, Wrangler e Drizzle Kit. Eles não entram nas dependências de produção, conforme o audit com `--omit=dev`.
 
-- Componentes e dados de Projetos permanecem isolados atrás da flag para possível reativação: `components/project-experience.tsx`, `components/projects-client.tsx`, `lib/projects.ts`, `lib/site-data.ts`, `app/projetos/page.tsx`.
-- CSS histórico ainda referencia telas antigas, mas não é carregado como experiência pública navegável; sua remoção ampla nesta rodada teria risco maior que benefício: `app/globals.css`.
-- Migrations antigas de mural/owner continuam no histórico para manter bancos existentes reproduzíveis; as superfícies públicas correspondentes seguem removidas.
+## QA visual e comportamental
 
-## Riscos técnicos
+- Intro verificada em desktop e mobile, incluindo transição, ausência de flash e retorno ao topo.
+- Home percorrida para baixo e para cima, cobrindo métricas, apresentação, trajetória, comunidade, empresas e CTA.
+- Todas as microcenas críticas foram verificadas: 999→1.000, 200 mil, Dell/500 GB/dois ciclos, linha de produção, falta de tempo e meta.
+- História verificada em 320×568, 375×667, 768×1024, 1366×768, 1440×900, 1920×1080 e 2560×1440.
+- O mesmo capítulo permaneceu ativo durante todos os redimensionamentos; não houve overflow horizontal.
+- Hash, voltar, avançar e scroll reverso foram exercitados no navegador.
 
-- `app/globals.css` é grande e acumula camadas históricas; novas regras devem permanecer isoladas e verificadas em todos os breakpoints.
-- A timeline publicada pelo D1 pode conter entradas antigas sem campos visuais; o repositório precisa continuar mesclando os defaults seguros por slug.
-- O snapshot do YouTube pode ficar antigo quando a sincronização oficial não estiver configurada; a interface precisa continuar chamando-o de “último retrato”, nunca de dado atual.
-- O modo reduzido depende de CSS e detecção do sistema; deve manter todos os 13 artigos no fluxo normal.
+## Performance
 
-## Resultado final
+- Baseline do commit `313ee58`: 21 chunks JS, 376.278 bytes brutos e 122.482 bytes gzip.
+- Resultado final: 23 chunks JS, 402.850 bytes brutos e 130.761 bytes gzip.
+- Variação: +26.572 bytes brutos (+7,06%) e +8.279 bytes gzip (+6,76%).
+- Não foram adicionados GSAP, ScrollTrigger, Lenis, Three.js ou outra biblioteca de animação.
 
-Esta seção será atualizada depois da implementação, dos testes e da publicação.
+## Publicação e configuração
+
+- Projeto Sites preservado: `appgprj_6a55c1441aac8191a90d8e7125bdec33`.
+- URL de produção preservada: `https://central-do-canal-2026.vsvsbssy.chatgpt.site/`.
+- A intro foi ativada no runtime com `INTRO_ENABLED=true` para acompanhar a experiência validada.
+- O controle de acesso existente foi preservado; esta entrega não amplia quem pode acessar o site.
+
+Limitação operacional real: ainda não existe `YOUTUBE_API_KEY` no runtime publicado. O cron de seis horas está implementado, mas a sincronização recorrente só funcionará quando uma chave válida for cadastrada como segredo. Enquanto isso, o site usa o snapshot/fallback explícito e não inventa atualização.
+
+## Legado e riscos residuais
+
+- `app/globals.css` continua grande e contém camadas históricas; a remoção ampla foi evitada porque teria risco maior que benefício nesta entrega.
+- Projetos, reviews e migrations antigas permanecem preservados para reativação e compatibilidade de bancos existentes.
+- O QA real de resize, touch, hash e scroll foi manual; os testes versionados cobrem os cálculos, presets, fallbacks, schemas e contratos, mas ainda não existe uma suíte E2E de navegador no repositório.
+- `vinext start` local encontra o esquema `cloudflare:` fora do runtime de destino; o build do Sites é válido e a verificação de produção é feita no ambiente hospedado.
+
+## Resultado
+
+A experiência cinematográfica foi concluída sem recomeçar o projeto, sem apagar legado e sem inventar conteúdo. O código, o build e o estado publicado correspondem à versão auditada nesta entrega.

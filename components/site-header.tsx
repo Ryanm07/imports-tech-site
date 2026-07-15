@@ -23,12 +23,24 @@ export function SiteHeader({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const header = useRef<HTMLElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   const sceneLabel = useRef<HTMLSpanElement>(null);
   const nav = projectsEnabled
     ? ([...baseNav.slice(0, 2), ["Projetos", "/projetos"], baseNav[2]] as const)
     : baseNav;
 
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      menuTrigger.current?.focus();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
 
   useEffect(() => {
     let raf = 0;
@@ -151,6 +163,8 @@ export function SiteHeader({
             <span aria-hidden="true">▶</span> YouTube
           </a>
           <button
+            ref={menuTrigger}
+            type="button"
             className="menu-trigger"
             onClick={() => setMenuOpen((value) => !value)}
             aria-expanded={menuOpen}

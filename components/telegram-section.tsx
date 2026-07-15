@@ -15,35 +15,49 @@ export function TelegramSection({
         <span className="eyebrow-v2">IMPORTS TECH NO TELEGRAM</span>
         <h2>Achados e conversas além do site.</h2>
         <p>
-          Entre no canal para acompanhar novidades ou no grupo para conversar
-          com a comunidade. Links oficiais aparecem somente quando configurados.
+          Duas entradas oficiais, exibidas somente quando o endereço foi
+          configurado e validado.
         </p>
       </div>
       <div className="telegram-actions">
-        {links.channel ? (
-          <a
-            className="button primary"
-            href={links.channel}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Canal no Telegram ↗
-          </a>
-        ) : (
-          <span>Canal no Telegram · Em breve</span>
-        )}
-        {links.group ? (
-          <a
-            className="button secondary"
-            href={links.group}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Grupo da comunidade ↗
-          </a>
-        ) : (
-          <span>Grupo da comunidade · Em breve</span>
-        )}
+        <article>
+          <strong>Canal de promoções</strong>
+          <p>
+            Promoções, cupons e oportunidades de tecnologia selecionadas pelo
+            Imports Tech.
+          </p>
+          {links.channel ? (
+            <a
+              className="button primary"
+              href={links.channel}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Entrar no canal ↗
+            </a>
+          ) : (
+            <span>Canal · Em breve</span>
+          )}
+        </article>
+        <article>
+          <strong>Grupo da comunidade</strong>
+          <p>
+            Converse sobre celulares, notebooks, garimpos, reparos e tecnologia
+            com a comunidade.
+          </p>
+          {links.group ? (
+            <a
+              className="button secondary"
+              href={links.group}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Entrar no grupo ↗
+            </a>
+          ) : (
+            <span>Grupo · Em breve</span>
+          )}
+        </article>
       </div>
     </section>
   );

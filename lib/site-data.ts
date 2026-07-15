@@ -25,6 +25,7 @@ export type Review = {
   facts: string[];
   updatedAt: string;
   videoId: string;
+  imageUrl?: string | null;
 };
 
 export type Find = {
@@ -40,6 +41,7 @@ export type Find = {
   result: string;
   currentStatus: string;
   videoId: string;
+  imageUrl?: string | null;
   tags: string[];
   updatedAt: string;
   timeline: { label: string; detail: string; state: "done" | "pending" }[];

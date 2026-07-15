@@ -1,16 +1,21 @@
 # Imports Tech — site oficial
 
-Portal do canal Imports Tech com biblioteca de vídeos, reviews, garimpos,
-métricas públicas, Mural da Comunidade anônimo, painel privado do proprietário e
-sincronização persistente com a API oficial do YouTube.
+Experiência complementar ao canal Imports Tech: história, projetos editoriais,
+métricas públicas reais, Mural anônimo simples e acesso ao Telegram e YouTube.
+O site não mantém biblioteca, busca nem reprodução interna do catálogo do canal.
 
-## Stack
+## Stack e rotas
 
 - Next.js 16, React 19, TypeScript e Vinext/Vite;
-- Cloudflare Workers, D1, Drizzle e Scheduled Events;
-- CSS próprio, preservando a identidade azul-marinho e amarela do canal;
-- Cloudflare Turnstile nas escritas públicas do Mural;
-- autenticação da hospedagem apenas na rota privada `/admin`.
+- Cloudflare Workers, Scheduled Events, D1 e Drizzle;
+- CSS próprio com a identidade azul-marinho e amarela;
+- Turnstile nas escritas públicas do Mural;
+- autenticação da hospedagem somente para o proprietário em `/admin`.
+
+Navegação principal: `/`, `/sobre`, `/projetos` e `/comunidade`. A página
+`/metricas` é secundária. `/videos`, `/reviews` e `/garimpos` redirecionam para
+`/projetos`; um ID de vídeo antigo válido redireciona para o vídeo no canal
+oficial. Essas rotas antigas não aparecem no sitemap.
 
 ## Instalação e validação
 
@@ -28,170 +33,156 @@ npm audit --omit=dev
 
 No PowerShell, use `npm.cmd` se a política local bloquear `npm.ps1`.
 
-## Flags e segredos
+## Flags, Secrets e variáveis
 
-Copie `.env.example` para `.env.local` apenas no desenvolvimento. Valores reais
-pertencem ao gerenciador de segredos da hospedagem e nunca ao repositório.
+Copie `.env.example` para `.env.local` somente no desenvolvimento. Valores reais
+pertencem ao gerenciador de segredos da hospedagem.
 
-As quatro flags de produção permanecem explicitamente desligadas:
+As flags de produção ficam desligadas até homologação explícita:
 
 ```env
-COMMUNITY_ENABLED=false
 ADMIN_ENABLED=false
 EDITORIAL_DB_ENABLED=false
+COMMUNITY_ENABLED=false
 INTRO_ENABLED=false
 ```
 
-| Variável                         | Uso                                                                                           |
-| -------------------------------- | --------------------------------------------------------------------------------------------- |
-| `YOUTUBE_API_KEY`                | Chave server-side da YouTube Data API v3. Nunca vai para URL, JSON público ou bundle cliente. |
-| `YOUTUBE_CHANNEL_ID`             | ID oficial do canal.                                                                          |
-| `OWNER_EMAILS`                   | Allowlist privada e fonte de recuperação do proprietário.                                     |
-| `RATE_LIMIT_SALT`                | Segredo aleatório com pelo menos 24 caracteres para o hash de origem.                         |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Chave pública do widget Turnstile.                                                            |
-| `TURNSTILE_SECRET_KEY`           | Segredo server-side de validação Turnstile.                                                   |
-| `TELEGRAM_CHANNEL_URL`           | Link HTTPS opcional para `t.me`/`telegram.me`.                                                |
-| `TELEGRAM_GROUP_URL`             | Link HTTPS opcional para `t.me`/`telegram.me`.                                                |
-| `ALLOWED_ORIGINS`                | Origens HTTPS adicionais confiáveis, separadas por vírgula.                                   |
-| `SITE_URL`                       | Origem canônica; nunca é usada como salt.                                                     |
+Secrets server-side:
 
-Sem salt, chave pública ou segredo do Turnstile, as escritas do Mural falham
-fechadas. O site público continua disponível.
+| Variável               | Uso                                                                        |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `YOUTUBE_API_KEY`      | YouTube Data API v3; nunca é devolvida, registrada ou incluída no cliente. |
+| `OWNER_EMAILS`         | Allowlist privada e recuperação do acesso do proprietário.                 |
+| `RATE_LIMIT_SALT`      | Salt privado, com pelo menos 24 caracteres, para identidade anonimizada.   |
+| `TURNSTILE_SECRET_KEY` | Validação server-side do Turnstile.                                        |
 
-### Como obter a chave do YouTube
+Variáveis não secretas/públicas:
 
-1. No Google Cloud Console, crie ou selecione um projeto.
-2. Ative **YouTube Data API v3**.
-3. Crie uma API key e restrinja-a à API do YouTube e ao ambiente do Worker.
-4. Salve-a como segredo `YOUTUBE_API_KEY` na hospedagem.
-5. Não coloque a chave em `NEXT_PUBLIC_*`, `.env.example`, links ou logs.
+| Variável                         | Uso                                     |
+| -------------------------------- | --------------------------------------- |
+| `YOUTUBE_CHANNEL_ID`             | ID oficial do canal.                    |
+| `SITE_URL`                       | Origem canônica validada.               |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Chave pública do widget Turnstile.      |
+| `TELEGRAM_CHANNEL_URL`           | Canal HTTPS em `t.me` ou `telegram.me`. |
+| `TELEGRAM_GROUP_URL`             | Grupo HTTPS em `t.me` ou `telegram.me`. |
 
-## YouTube persistente
+Restrinja `YOUTUBE_API_KEY` no Google Cloud exclusivamente à **YouTube Data API
+v3**. Ela não deve usar prefixo `NEXT_PUBLIC_`, ir para URLs ou ser armazenada no
+D1. O painel informa apenas se a API está configurada e exibe estado e erros
+sanitizados.
 
-Visitantes nunca consultam Google ou feed do YouTube. `/api/youtube` lê somente
-o D1; se ele ainda não estiver populado, usa um snapshot versionado e marcado
-como histórico.
+## Métricas do YouTube
 
-A sincronização:
-
-- percorre todos os `nextPageToken` da playlist de uploads;
-- deduplica IDs, busca detalhes em lotes de até 50 e preserva a ordem;
-- mantém vídeos ausentes como `unavailable`, sem apagar metadados editoriais;
-- faz upsert sem sobrescrever categoria, tags, resumo, destaque ou relações;
-- registra tentativa, sucesso, erro, modo, contagens e lock concorrente;
-- usa `X-Goog-Api-Key`, não query string;
-- tenta o feed somente dentro do job, como catálogo parcial de contingência.
-
-Freshness de catálogo e métricas é independente:
-
-- `videoCatalogSource`, `videoCatalogUpdatedAt`, `videoCatalogPartial`,
-  `videoCatalogStale`, `indexedVideoCount`;
-- `channelMetricsSource`, `channelMetricsUpdatedAt`, `channelMetricsStale`.
-
-Crons configurados:
+A sincronização faz uma única consulta oficial:
 
 ```text
-0 * * * *     incremental a cada hora
-15 3 * * *   completa diariamente às 03:15 UTC
+channels.list
+part=snippet,statistics
+id=YOUTUBE_CHANNEL_ID
 ```
 
-O proprietário também pode usar **Sincronizar agora** ou **Sincronização
-completa** no painel.
+A chave segue no header `X-Goog-Api-Key`. Não há `playlistItems.list`,
+`videos.list`, feed, scraping, paginação de uploads ou classificação automática
+do catálogo. Visitantes leem somente o snapshot em `youtube_channel_state`; se o
+D1 falhar ou ainda estiver vazio, recebem um snapshot versionado explicitamente
+marcado como antigo.
 
-## D1 e migrations
+- cron: `0 */6 * * *` (a cada seis horas);
+- sincronização manual: privada e limitada pelo painel;
+- falhas preservam o último snapshot válido;
+- tentativa, sucesso, fonte, stale e erro sanitizado são independentes;
+- dados com mais de 12 horas nunca são apresentados como atuais.
 
-O binding lógico é `DB`, definido em `.openai/hosting.json`.
+As métricas editoriais (projetos, garimpos e reparos) são calculadas dos registros
+publicados. Os projetos mantêm apenas o ID/link editorial do vídeo relacionado.
 
-- `0000_pink_power_man.sql`: schema inicial legado;
-- `0001_privacy-hardening.sql`: hardening anterior;
-- `0002_owner_wall_youtube.sql`: migration aditiva para owner, Mural e YouTube.
+## D1, migrations e legado preservado
 
-A `0002` não remove tabelas nem dados legados. Ela cria:
+O binding lógico é `DB`, definido em `.openai/hosting.json`. As migrations
+`0000`, `0001` e `0002` continuam aditivas e testadas em sequência. Nenhuma
+migration destrutiva foi criada nesta simplificação.
 
-- `owner_accounts`, `owner_actions`;
-- `wall_categories`, `wall_topics`, `wall_replies`, `wall_reports`,
-  `wall_blocks`;
-- `youtube_channel_state`, `youtube_videos`, `youtube_sync_runs`.
+Tabelas ativas incluem `owner_accounts`, `owner_actions`, `content_entries`,
+`wall_categories`, `wall_topics`, `wall_replies`, `wall_reports`, `wall_blocks`,
+`rate_limits`, `youtube_channel_state` e `youtube_sync_runs`.
 
-O teste automatizado aplica `0000 → 0001 → 0002` sobre banco vazio e também
-com dados legados, executa `foreign_key_check` e verifica preservação. Antes de
-ativar flags em homologação, faça backup e aplique as migrations na ordem.
+Tabelas preservadas somente como legado ou compatibilidade:
 
-## Mural da Comunidade
+- comunidade antiga: `profiles`, `community_topics`, `community_replies`,
+  `community_reports`, `moderation_actions`;
+- YouTube antigo: `youtube_snapshots` e `youtube_videos`.
 
-Não há login, conta, perfil ou e-mail público. O visitante informa nome,
-categoria, título e mensagem; respostas e denúncias usam o mesmo modelo simples.
-O nome aparece como **Nome informado pelo visitante** e não é verificado.
+Elas só devem ser removidas por uma migration separada depois de backup remoto e
+aprovação do proprietário.
 
-Proteções implementadas:
+## Projetos, história, Mural e Telegram
 
-- nomes reservados e variações do canal/proprietário/administração;
-- normalização Unicode, texto simples, limites de tamanho e de links;
-- Turnstile server-side, honeypot e validação de origem;
-- rate limits atômicos: 3 tópicos/h, 12 respostas/h e 10 denúncias/h;
-- tentativas inválidas consomem limite;
-- hash SHA-256 da origem com salt privado; IP simples não é persistido;
-- detecção de duplicação, URLs suspeitas, repetição, spam e XSS;
-- publicação normal automática; suspeita pendente; spam separado.
+`/projetos` unifica reviews, garimpos e reparos em registros editoriais com
+produto, imagem, tipo, valores, problema, reparo, resultado, situação e link
+direto para o YouTube. A linha do tempo de `/sobre` continua editável no painel;
+quando não há marcos aprovados, o site mostra um único texto factual e um aviso
+de conteúdo pendente de revisão.
 
-O painel owner-only permite pesquisar e filtrar, ocultar, restaurar, remover,
-marcar spam, excluir definitivamente com confirmação reforçada, fixar, mover,
-encerrar/reabrir, responder oficialmente, gerir categorias, tratar denúncias e
-bloquear/encerrar bloqueio de hash. O contador de respostas é recalculado após
-ações de moderação.
+O Mural não possui cadastro, conta, perfil, e-mail, senha, magic link ou edição
+pública. Ele mantém nome informado, categoria, tópico, resposta, denúncia,
+pesquisa e ordenação. Publicação normal é automática; conteúdo suspeito fica
+pendente; spam é separado. Turnstile, honeypot, origem, limites atômicos, nomes
+reservados e hash com salt protegem as escritas. A moderação é exclusiva do
+proprietário e usa soft delete como padrão.
 
-## Owner e conteúdo editorial
+Canal e grupo do Telegram aparecem na home, Mural e rodapé. Somente URLs HTTPS
+oficiais são aceitas; valor ausente aparece como “Em breve”, sem link quebrado.
 
-`OWNER_EMAILS` é revalidado no servidor em todo acesso privado e restaura a
-conta protegida se necessário. A aplicação não oferece ação para remover,
-rebaixar ou bloquear o proprietário e não devolve seu e-mail nas APIs do painel.
+## Intro oficial
 
-`ADMIN_ENABLED` controla somente o painel. `EDITORIAL_DB_ENABLED` controla a
-leitura pública do D1 editorial. Registros `archived` e `removed` são tombstones:
-eles impedem que o fallback versionado de mesmo slug reapareça. Se o D1 falhar, o
-conteúdo versionado continua disponível.
-
-O painel edita reviews, garimpos, vídeos editoriais, categorias, configurações,
-destaques e marcos da trajetória. URLs do Telegram também podem ser publicadas
-como settings `telegram_channel_url` e `telegram_group_url`.
-
-## Intro e marca
-
-Os caminhos oficiais de marca ficam em `lib/brand.ts`. Não há redesenho do logo.
-
-A intro está preparada, mas desligada e sem arquivos versionados. Para homologar,
-adicione externamente:
+Assets preparados localmente, nunca em runtime:
 
 ```text
-public/intro/imports-tech-intro.webm
 public/intro/imports-tech-intro.mp4
+public/intro/imports-tech-intro.webm
 public/intro/imports-tech-intro-poster.webp
+public/intro/imports-tech-intro-final.webp
 ```
 
-Ela é `muted`, `playsInline`, uma vez por sessão, pulável, fecha com Escape,
-possui timeout, respeita movimento reduzido/economia de dados/conexão lenta e
-mantém o DOM principal disponível. Com flag desligada ou arquivos ausentes, o
-site abre normalmente.
+Conversões feitas com FFmpeg:
 
-## Estrutura
+```text
+MP4:  H.264, preset slow, CRF 21, yuv420p, faststart, AAC 128 kb/s, 48 kHz
+WebM: VP9, CRF 31, b:v 0, row-mt/tile-columns, Opus 96 kb/s
+Poster: frame em 0,04 s, WebP qualidade 82
+Final:  frame em 4,83 s, WebP qualidade 90
+```
 
-- `app/`: páginas, metadados e APIs;
-- `components/`: interface pública, Mural, intro e painel;
-- `lib/`: conteúdo, segurança, Telegram, marca e YouTube;
-- `db/`: schema e bindings D1;
-- `drizzle/`: migrations e snapshots;
-- `public/brand/`: logo e banner oficiais;
-- `tests/`: unidade, segurança, integração controlada e migrations.
+O vídeo-fonte tem aproximadamente 4,907 s, 1280×720, cerca de 24 FPS e áudio
+AAC. A intro automática é muda, `playsInline`, uma vez por sessão pela chave
+`imports-tech:intro:v3`, pulável por botão ou Escape e possui timeout de oito
+segundos. Ela não roda com movimento reduzido, Save-Data ou 2G. A página real já
+está renderizada atrás do overlay.
+
+A transição usa `object-fit: cover` e calcula:
+
+```text
+scale = max(viewportWidth / 1280, viewportHeight / 720)
+offsetX = (viewportWidth - 1280 * scale) / 2
+offsetY = (viewportHeight - 720 * scale) / 2
+```
+
+A caixa da marca no frame-fonte (`x=468`, `y=263`, `344×193`) é convertida para
+o viewport. No fim, Web Animations move essa cópia para o retângulo real obtido
+por `data-intro-logo-target.getBoundingClientRect()`. Os anéis fazem a mesma
+troca visual em direção a `data-intro-orbit-target`. O frame final sustenta a
+continuidade enquanto vídeo e overlay desaparecem. Há fallback por
+`timeupdate`, `ended`, erro e timeout. A página História oferece replay e replay
+com som após interação.
 
 ## Ativação segura
 
 1. Faça backup do D1 remoto.
-2. Aplique `0000`, `0001` e `0002` conforme o estado do ambiente.
-3. Configure os segredos sem registrá-los em logs.
-4. Rode a sincronização completa do YouTube e confira o painel de saúde.
-5. Valide Telegram e, se desejado, envie os arquivos externos da intro.
-6. Homologue Mural, owner e editorial em ambiente separado.
-7. Ative cada flag somente após aprovação explícita.
+2. Confirme a ordem e o estado das migrations.
+3. Configure os Secrets sem registrá-los em logs.
+4. Valide o snapshot do canal e os links do Telegram no ambiente de homologação.
+5. Homologue Mural, painel, editorial e intro separadamente.
+6. Ative cada flag somente depois de aprovação explícita.
 
-O estado remoto do D1, os segredos reais, os links do Telegram e os arquivos da
-intro não são validados pelo repositório local.
+O repositório local não comprova, por si só, Secrets ou dados remotos. Nunca
+descreva a API como sincronizada sem uma chamada remota bem-sucedida.

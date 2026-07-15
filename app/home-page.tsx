@@ -1,120 +1,55 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { VideoCard } from "@/components/video-card";
 import { TelegramSection } from "@/components/telegram-section";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
+import { buildProjects } from "@/lib/projects";
 import type { Category, Find, Review } from "@/lib/site-data";
 import { money } from "@/lib/site-data";
-import type { YouTubeData } from "@/lib/youtube-service";
 import type { TelegramLinks } from "@/lib/telegram";
-
-const fallback: YouTubeData = {
-  channelName: "Imports Tech!",
-  handle: "@Imports_Tech",
-  description: "",
-  subscribers: 3340,
-  totalViews: 610472,
-  videoCount: 80,
-  monthlyGrowth: 0,
-  channelUrl: BRAND_LINKS.youtube,
-  videoCatalogSource: "snapshot",
-  videoCatalogUpdatedAt: "2026-07-10T00:00:00.000Z",
-  videoCatalogPartial: true,
-  videoCatalogStale: true,
-  channelMetricsSource: "snapshot",
-  channelMetricsUpdatedAt: "2026-07-10T00:00:00.000Z",
-  channelMetricsStale: true,
-  indexedVideoCount: 0,
-  syncStatus: "idle",
-  lastAttemptAt: "2026-07-10T00:00:00.000Z",
-  lastFullSyncAt: null,
-  lastError: null,
-  source: "snapshot",
-  isStale: true,
-  isPartial: true,
-  lastSuccessfulSyncAt: "2026-07-10T00:00:00.000Z",
-  syncedAt: "2026-07-10T00:00:00.000Z",
-  videos: [],
-};
+import type { YouTubeMetricsSnapshot } from "@/lib/youtube-service";
 
 export function HomePage({
   reviews,
   finds,
   categories,
-  featuredVideoId,
+  featuredProjectSlugs,
   telegram,
+  youtube,
 }: {
   reviews: Review[];
   finds: Find[];
   categories: Category[];
-  featuredVideoId?: string;
+  featuredProjectSlugs: string[];
   telegram: TelegramLinks;
+  youtube: YouTubeMetricsSnapshot;
 }) {
-  const [data, setData] = useState<YouTubeData>(fallback);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
-
-  const load = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const response = await fetch("/api/youtube", { cache: "no-store" });
-      if (!response.ok) throw new Error("Falha no YouTube");
-      setData(await response.json());
-      setStatus("ready");
-    } catch {
-      setStatus("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => void load(), 15 * 60_000);
-    return () => window.clearInterval(timer);
-  }, [load]);
-
-  const featured = useMemo(
-    () =>
-      data.videos.length
-        ? data.videos.find((video) => video.id === featuredVideoId) ||
-          [...data.videos].sort((a, b) => b.views - a.views)[0]
-        : null,
-    [data.videos, featuredVideoId],
-  );
-  const catalogedProducts = new Set([
-    ...reviews.map((item) => item.videoId),
-    ...finds.map((item) => item.videoId),
-  ]).size;
+  const projects = buildProjects(reviews, finds, featuredProjectSlugs);
+  const repairs = projects.filter((project) => project.repair).length;
   const orbitMetrics = [
     {
-      value: metricValue(data.subscribers, data.channelMetricsSource),
+      value: metricValue(youtube.subscribers),
       label: "inscritos",
-      detail: metricsDetail(data),
+      detail: metricsDetail(youtube),
     },
     {
-      value: String(data.indexedVideoCount),
-      label: "vídeos indexados",
-      detail: data.videoCatalogPartial
-        ? "Catálogo local parcial"
-        : "Catálogo local completo",
+      value: metricValue(youtube.videoCount),
+      label: "vídeos publicados",
+      detail: metricsDetail(youtube),
     },
     {
-      value: metricValue(data.totalViews, data.channelMetricsSource),
+      value: metricValue(youtube.totalViews),
       label: "visualizações",
-      detail: metricsDetail(data),
+      detail: metricsDetail(youtube),
     },
     {
-      value: String(catalogedProducts),
-      label: "produtos",
-      detail: "Produtos realmente catalogados no site",
+      value: String(projects.length),
+      label: "projetos",
+      detail: "Registros editoriais publicados no site",
     },
     {
-      value: String(finds.length),
-      label: "garimpos",
-      detail: "Histórias editoriais catalogadas",
+      value: String(repairs),
+      label: "reparos",
+      detail: "Reparos documentados nos projetos",
     },
   ];
 
@@ -124,7 +59,7 @@ export function HomePage({
         <div className="hero-grid" aria-hidden="true" />
         <div className="hero-message">
           <span className="eyebrow-v2">
-            <i /> REVIEWS · GARIMPOS · TECNOLOGIA
+            <i /> HISTÓRIA · PROJETOS · TECNOLOGIA
           </span>
           <h1>
             Tecnologia testada
@@ -132,24 +67,30 @@ export function HomePage({
             <em>no uso real.</em>
           </h1>
           <p>
-            Do anúncio na OLX até o teste final. Reviews sinceros, compras
-            inteligentes e reparos sem esconder os problemas.
+            Conheça os bastidores do Imports Tech: compras, diagnósticos,
+            reparos, decisões e o que aconteceu depois.
           </p>
           <div className="hero-buttons">
-            <Link className="button primary" href="/videos">
-              ▶ Assistir aos vídeos
+            <Link className="button primary" href="/projetos">
+              Conhecer os projetos
             </Link>
-            <Link className="button secondary" href="/reviews">
-              Explorar reviews
+            <Link className="button secondary" href="/sobre">
+              Minha história
             </Link>
-            <Link className="inline-link" href="/garimpos">
-              Ver garimpos ↗
-            </Link>
+            <a
+              className="inline-link"
+              href={BRAND_LINKS.youtube}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Acessar o YouTube ↗
+            </a>
           </div>
         </div>
 
         <div
           className="orbit-system"
+          data-intro-orbit-target
           aria-label="Métricas do Imports Tech"
           role="list"
         >
@@ -180,143 +121,45 @@ export function HomePage({
           ))}
         </div>
 
-        <div className="hero-proof" role="status" aria-live="polite">
+        <div className="hero-proof" role="status">
           <span
-            className={
-              status === "ready" &&
-              !data.videoCatalogStale &&
-              !data.channelMetricsStale
-                ? "status-dot online"
-                : "status-dot"
-            }
+            className={youtube.stale ? "status-dot" : "status-dot online"}
           />
-          <span>{syncLabel(status, data)}</span>
-          {status === "error" && (
-            <button onClick={() => void load()}>Tentar novamente</button>
-          )}
+          <span>{freshnessLabel(youtube)}</span>
         </div>
       </section>
 
-      <section className="section-shell" id="ultimos-videos">
+      <section className="section-shell home-projects">
         <div className="section-title">
           <div>
-            <span className="eyebrow-v2">PUBLICADO AGORA</span>
-            <h2>Últimos vídeos</h2>
+            <span className="eyebrow-v2">HISTÓRIAS REAIS</span>
+            <h2>Projetos marcantes</h2>
           </div>
-          <Link href="/videos">
-            Ver biblioteca completa <span>↗</span>
+          <Link href="/projetos">
+            Ver todos os projetos <span>↗</span>
           </Link>
         </div>
-        {status === "loading" && !data.videos.length ? (
-          <div
-            className="video-skeleton-grid"
-            aria-label="Carregando vídeos"
-            role="status"
-          >
-            {[1, 2, 3].map((item) => (
-              <div className="video-skeleton" key={item} />
-            ))}
-          </div>
-        ) : data.videos.length ? (
-          <div className="video-grid-v2">
-            {data.videos.slice(0, 6).map((video) => (
-              <VideoCard key={video.id} video={video} />
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state" role="alert">
-            <strong>Os vídeos não puderam ser atualizados.</strong>
-            <p>O restante do site continua disponível.</p>
-            <button onClick={() => void load()}>Tentar novamente</button>
-          </div>
-        )}
-      </section>
-
-      {featured && (
-        <section className="featured-band">
-          <div className="featured-label">
-            <span>EM DESTAQUE</span>
-            <strong>
-              O vídeo com mais visualizações no recorte carregado.
-            </strong>
-            <p>O destaque usa somente o número público disponível.</p>
-          </div>
-          <VideoCard video={featured} featured />
-        </section>
-      )}
-
-      <section className="section-shell muted-section">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow-v2">
-              EXPERIÊNCIA, NÃO SÓ ESPECIFICAÇÃO
-            </span>
-            <h2>Reviews recentes</h2>
-          </div>
-          <Link href="/reviews">
-            Central de reviews <span>↗</span>
-          </Link>
-        </div>
-        <div className="review-grid">
-          {reviews.map((review) => (
-            <Link
-              className="review-card"
-              href={`/reviews/${review.slug}`}
-              key={review.slug}
-            >
-              <div className="review-top">
-                <span className="content-tag">{review.category}</span>
-                <span className="verdict conditional">
-                  {review.verdict || "Sem veredito publicado"}
-                </span>
-              </div>
-              <h3>{review.name}</h3>
-              <p>{review.summary}</p>
-              <div className="review-meta">
-                <span>
-                  Preço pago <strong>{money(review.pricePaid)}</strong>
-                </span>
-                <i>Ver análise →</i>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="section-shell finds-home">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow-v2">DO ANÚNCIO AO TESTE FINAL</span>
-            <h2>Garimpos do canal</h2>
-          </div>
-          <Link href="/garimpos">
-            Todos os garimpos <span>↗</span>
-          </Link>
-        </div>
-        <div className="finds-list">
-          {finds.map((find, index) => (
-            <Link
-              href={`/garimpos/${find.slug}`}
-              className="find-row"
-              key={find.slug}
-            >
-              <span className="find-index">
-                {String(index + 1).padStart(2, "0")}
-              </span>
+        <div className="home-project-grid">
+          {projects.slice(0, 4).map((project) => (
+            <article key={project.slug}>
               <div>
-                <span>{find.currentStatus}</span>
-                <h3>{find.product}</h3>
+                <Image
+                  src={project.image}
+                  alt={`Projeto ${project.title}`}
+                  fill
+                  sizes="(max-width: 760px) 100vw, 50vw"
+                />
               </div>
-              <dl>
-                <dt>Pago</dt>
-                <dd>{money(find.negotiatedPrice)}</dd>
-              </dl>
-              <dl>
-                <dt>Total</dt>
-                <dd>{money(find.totalCost)}</dd>
-              </dl>
-              <strong>Ver história ↗</strong>
-            </Link>
+              <span>
+                {project.kind} · {project.category}
+              </span>
+              <h3>{project.title}</h3>
+              <p>{project.summary}</p>
+              <small>Valor registrado: {money(project.pricePaid)}</small>
+              <Link href={`/projetos#${project.slug}`}>
+                Conhecer o projeto →
+              </Link>
+            </article>
           ))}
         </div>
       </section>
@@ -324,16 +167,13 @@ export function HomePage({
       <section className="category-section">
         <div className="section-title">
           <div>
-            <span className="eyebrow-v2">ENCONTRE SEU ASSUNTO</span>
-            <h2>Categorias</h2>
+            <span className="eyebrow-v2">UM SÓ LUGAR</span>
+            <h2>Assuntos dos projetos</h2>
           </div>
         </div>
         <div className="category-grid">
           {categories.map((category) => (
-            <Link
-              href={`/videos?categoria=${encodeURIComponent(category.name)}`}
-              key={category.name}
-            >
+            <Link href="/projetos" key={category.name}>
               <span>{category.icon}</span>
               <h3>{category.name}</h3>
               <p>{category.description}</p>
@@ -343,27 +183,21 @@ export function HomePage({
         </div>
       </section>
 
-      <TelegramSection links={telegram} />
-
-      <section className="metrics-strip">
+      <section className="metrics-strip editorial-metrics">
         <div>
-          <span>Inscritos</span>
-          <strong>
-            {metricValue(data.subscribers, data.channelMetricsSource)}
-          </strong>
+          <span>Projetos publicados</span>
+          <strong>{projects.length}</strong>
         </div>
         <div>
-          <span>Vídeos publicados</span>
-          <strong>{data.indexedVideoCount}</strong>
+          <span>Garimpos registrados</span>
+          <strong>{finds.length}</strong>
         </div>
         <div>
-          <span>Visualizações</span>
-          <strong>
-            {metricValue(data.totalViews, data.channelMetricsSource)}
-          </strong>
+          <span>Reparos documentados</span>
+          <strong>{repairs}</strong>
         </div>
         <Link href="/metricas">
-          Abrir painel público <span>↗</span>
+          Ver métricas públicas <span>↗</span>
         </Link>
       </section>
 
@@ -371,7 +205,7 @@ export function HomePage({
         <div className="about-image">
           <Image
             src={BRAND_ASSETS.banner}
-            alt="Banner oficial Imports Tech — Reviews, Garimpos, Tecnologia"
+            alt="Banner oficial Imports Tech"
             width={2120}
             height={373}
             sizes="(max-width: 760px) 100vw, 55vw"
@@ -379,54 +213,49 @@ export function HomePage({
         </div>
         <div>
           <span className="eyebrow-v2">POR TRÁS DO CANAL</span>
-          <h2>Tecnologia honesta, com contexto.</h2>
+          <h2>Mais que um vídeo: o caminho completo.</h2>
           <p>
-            O Imports Tech mostra o que acontece depois da compra: o estado em
-            que o produto chegou, o que precisou de atenção, quanto custou e o
-            que aconteceu depois.
+            O site complementa o canal com contexto sobre compra, condição,
+            reparo, custo e situação atual de cada projeto.
           </p>
           <Link className="button secondary" href="/sobre">
-            Conhecer o Imports Tech
+            Conhecer minha história
           </Link>
         </div>
       </section>
+
+      <TelegramSection links={telegram} />
     </main>
   );
 }
 
-function syncLabel(status: "loading" | "ready" | "error", data: YouTubeData) {
-  if (status === "loading") return "Sincronizando com o canal…";
-  if (status === "error")
-    return "Falha completa: não foi possível carregar o retrato disponível";
-  const catalog = data.videoCatalogStale
-    ? "Catálogo: último retrato disponível"
-    : data.videoCatalogPartial
-      ? "Catálogo: sincronização parcial"
-      : "Catálogo: sincronização completa";
-  const metrics = data.channelMetricsStale
-    ? "métricas históricas"
-    : data.channelMetricsSource === "unavailable"
-      ? "métricas indisponíveis"
-      : "métricas atualizadas";
-  return `${catalog} · ${metrics}`;
+function metricValue(value: number | null) {
+  return value === null
+    ? "Indisponível"
+    : new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
 }
 
-function metricValue(
-  value: number,
-  source: YouTubeData["channelMetricsSource"],
-) {
-  return source === "unavailable" ? "Indisponível" : compact(value);
-}
-
-function metricsDetail(data: YouTubeData) {
-  if (data.channelMetricsSource === "unavailable") {
-    return "Métrica pública temporariamente indisponível";
-  }
-  return data.channelMetricsStale
+function metricsDetail(data: YouTubeMetricsSnapshot) {
+  if (data.source === "unavailable") return "Indisponível temporariamente";
+  return data.stale
     ? "Último retrato público disponível"
     : "Métrica pública atualizada pela API oficial";
 }
 
-function compact(value: number) {
-  return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
+function freshnessLabel(data: YouTubeMetricsSnapshot) {
+  if (data.source === "unavailable" || !data.updatedAt) {
+    return "Indisponível temporariamente";
+  }
+  if (data.stale) {
+    return `Último retrato disponível · ${formatDateTime(data.updatedAt)}`;
+  }
+  return `Atualizado em ${formatDateTime(data.updatedAt)}`;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }

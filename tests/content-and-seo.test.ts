@@ -9,7 +9,7 @@ import { publishedReviewsFromEntries } from "../lib/content-repository";
 import { safeJsonLd } from "../lib/json-ld";
 import { getSiteUrl } from "../lib/site-url";
 import { finds, reviews } from "../lib/site-data";
-import { getVersionedYouTubeSnapshot } from "../lib/youtube-service";
+import { getVersionedYouTubeMetricsSnapshot } from "../lib/youtube-service";
 
 test("schemas rejeitam payload arbitrário e aceitam review editorial", () => {
   assert.equal(
@@ -30,6 +30,8 @@ test("schemas rejeitam payload arbitrário e aceitam review editorial", () => {
     updatedAt: "2026-07-14",
   });
   assert.equal(validated.ok, true);
+  // @ts-expect-error "video" foi removido do contrato editorial ativo.
+  assert.equal(validateContentPayload("video", {}).ok, false);
 });
 
 test("PATCH parcial preserva featured quando o campo é omitido", () => {
@@ -109,7 +111,7 @@ test("JSON-LD neutraliza fechamento de script", () => {
 });
 
 test("sitemap usa datas editoriais e exclui recursos desativados", () => {
-  const youtube = getVersionedYouTubeSnapshot();
+  const youtube = getVersionedYouTubeMetricsSnapshot();
   const items = buildSitemap({
     base: new URL("https://site.example"),
     reviews,
@@ -117,16 +119,19 @@ test("sitemap usa datas editoriais e exclui recursos desativados", () => {
     youtube,
     communityEnabled: false,
   });
-  assert.ok(
-    items.some(
-      (item) =>
-        item.url === `https://site.example/videos/${youtube.videos[0].id}`,
-    ),
+  assert.ok(items.some((item) => item.url === "https://site.example/projetos"));
+  assert.ok(items.some((item) => item.url === "https://site.example/metricas"));
+  assert.equal(
+    items.some((item) => item.url.includes("/videos")),
+    false,
   );
-  assert.ok(
-    items.some(
-      (item) => item.url === `https://site.example/garimpos/${finds[0].slug}`,
-    ),
+  assert.equal(
+    items.some((item) => item.url.includes("/garimpos/")),
+    false,
+  );
+  assert.equal(
+    items.some((item) => item.url.includes("/reviews/")),
+    false,
   );
   assert.equal(
     items.some((item) => item.url.endsWith("/comunidade")),

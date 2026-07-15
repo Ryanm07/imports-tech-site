@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
+import { IntroReplayButtons } from "@/components/intro-replay-buttons";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { getTimeline } from "@/lib/content-repository";
 
 export const metadata: Metadata = {
-  title: "Sobre",
+  title: "Minha história",
   description:
     "Conheça a proposta do Imports Tech e como os conteúdos são produzidos.",
   alternates: { canonical: "/sobre" },
@@ -27,8 +27,8 @@ export default async function AboutPage() {
   return (
     <main id="conteudo" className="page-main">
       <header className="page-hero">
-        <span className="eyebrow-v2">SOBRE O IMPORTS TECH</span>
-        <h1>Tecnologia sem esconder o depois.</h1>
+        <span className="eyebrow-v2">MINHA HISTÓRIA</span>
+        <h1>A jornada por trás do Imports Tech.</h1>
         <p>
           Comprar é só o começo. O canal acompanha o produto, testa no cotidiano
           e mostra quando o barato valeu a pena — ou quando virou problema.
@@ -61,10 +61,8 @@ export default async function AboutPage() {
             >
               ▶ Conhecer o canal
             </a>
-            <Link className="button secondary" href="/?intro=replay">
-              Rever abertura
-            </Link>
           </div>
+          <IntroReplayButtons />
         </div>
       </section>
       <section
@@ -84,6 +82,12 @@ export default async function AboutPage() {
             </li>
           ))}
         </ol>
+        {storedTimeline.length === 0 && (
+          <p className="timeline-placeholder">
+            Outros marcos serão publicados aqui depois da revisão e aprovação
+            editorial do proprietário.
+          </p>
+        )}
       </section>
       <section className="principles" aria-label="Princípios editoriais">
         <article>

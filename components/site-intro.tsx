@@ -1,124 +1,351 @@
 "use client";
 
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BRAND_ASSETS } from "@/lib/brand";
-import { shouldShowIntro } from "@/lib/intro";
+import {
+  INTRO_SESSION_KEY,
+  mapIntroGeometry,
+  shouldShowIntro,
+} from "@/lib/intro";
 
-const SESSION_KEY = "imports-tech:intro-seen:v1";
+type ReplayEvent = CustomEvent<{ sound?: boolean }>;
 
 export function SiteIntro({ enabled }: { enabled: boolean }) {
+  const [assetsReady, setAssetsReady] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [closing, setClosing] = useState(false);
+  const [prepared, setPrepared] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
+  const [soundRequested, setSoundRequested] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const skip = useRef<HTMLButtonElement>(null);
+  const flightLogo = useRef<HTMLDivElement>(null);
+  const transitionRings = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
-  const closingRef = useRef(false);
-  const close = useCallback(() => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-    setClosing(true);
+  const transitionStarted = useRef(false);
+  const finishTimer = useRef<number | null>(null);
+
+  const openIntro = useCallback((sound: boolean) => {
+    previousFocus.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    transitionStarted.current = false;
+    setPrepared(false);
+    setTransitioning(false);
+    setAudioBlocked(false);
+    setSoundRequested(sound);
+    setVisible(true);
     try {
-      sessionStorage.setItem(SESSION_KEY, "1");
-    } catch {}
-    window.setTimeout(() => {
-      setVisible(false);
-      setClosing(false);
-      closingRef.current = false;
-      previousFocus.current?.focus();
-    }, 220);
+      sessionStorage.setItem(INTRO_SESSION_KEY, "seen");
+    } catch {
+      // Session storage is an enhancement; failure never blocks the home.
+    }
   }, []);
+
+  const finish = useCallback(() => {
+    document.body.classList.remove(
+      "intro-active",
+      "intro-transitioning",
+      "intro-logo-flight",
+    );
+    setVisible(false);
+    setTransitioning(false);
+    const restore = previousFocus.current;
+    window.setTimeout(() => {
+      if (restore && restore !== document.body) restore.focus();
+    }, 0);
+  }, []);
+
+  const beginTransition = useCallback(
+    (reduced = false) => {
+      if (transitionStarted.current || !flightLogo.current) return;
+      transitionStarted.current = true;
+      setPrepared(true);
+      setTransitioning(true);
+      video.current?.pause();
+      document.body.classList.add("intro-transitioning", "intro-logo-flight");
+
+      const geometry = mapIntroGeometry(window.innerWidth, window.innerHeight);
+      const target = document.querySelector<HTMLElement>(
+        "[data-intro-logo-target]",
+      );
+      const orbitTarget = document.querySelector<HTMLElement>(
+        "[data-intro-orbit-target]",
+      );
+      const targetRect = target?.getBoundingClientRect();
+      const orbitRect = orbitTarget?.getBoundingClientRect();
+      const duration = reduced ? 380 : 760;
+
+      Object.assign(flightLogo.current.style, pxRect(geometry.logo));
+      flightLogo.current.animate(
+        [
+          {
+            ...pxRect(geometry.logo),
+            borderRadius: "2px",
+            opacity: 1,
+            filter: "drop-shadow(0 18px 26px rgba(0,0,0,.36))",
+          },
+          {
+            left: `${targetRect?.left ?? 24}px`,
+            top: `${targetRect?.top ?? 16}px`,
+            width: `${targetRect?.width ?? 44}px`,
+            height: `${targetRect?.height ?? 44}px`,
+            borderRadius: "11px",
+            opacity: 1,
+            filter: "drop-shadow(0 4px 10px rgba(0,0,0,.22))",
+          },
+        ],
+        {
+          duration,
+          delay: reduced ? 20 : 120,
+          easing: "cubic-bezier(.22,.82,.25,1)",
+          fill: "forwards",
+        },
+      );
+
+      if (transitionRings.current) {
+        Object.assign(transitionRings.current.style, pxRect(geometry.rings));
+        transitionRings.current.animate(
+          [
+            {
+              ...pxRect(geometry.rings),
+              opacity: 0.96,
+              transform: "rotate(0deg)",
+            },
+            {
+              left: `${orbitRect?.left ?? geometry.rings.left}px`,
+              top: `${orbitRect?.top ?? geometry.rings.top}px`,
+              width: `${orbitRect?.width ?? geometry.rings.width}px`,
+              height: `${orbitRect?.height ?? geometry.rings.height}px`,
+              opacity: orbitRect ? 0.26 : 0,
+              transform: "rotate(24deg)",
+            },
+          ],
+          {
+            duration: reduced ? 320 : 820,
+            delay: reduced ? 0 : 80,
+            easing: "cubic-bezier(.2,.75,.2,1)",
+            fill: "forwards",
+          },
+        );
+      }
+
+      if (finishTimer.current) window.clearTimeout(finishTimer.current);
+      finishTimer.current = window.setTimeout(
+        () => {
+          if (flightLogo.current) flightLogo.current.style.opacity = "0";
+          document.body.classList.remove("intro-logo-flight");
+          window.setTimeout(finish, 80);
+        },
+        duration + (reduced ? 80 : 220),
+      );
+    },
+    [finish],
+  );
 
   useEffect(() => {
     if (!enabled) return;
-    const replay =
-      new URLSearchParams(window.location.search).get("intro") === "replay";
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const connection = (
-      navigator as Navigator & {
-        connection?: { saveData?: boolean; effectiveType?: string };
-      }
-    ).connection;
-    let seen = false;
-    try {
-      seen = sessionStorage.getItem(SESSION_KEY) === "1";
-    } catch {}
-    const baseInput = {
-      enabled,
-      replay,
-      seenThisSession: seen,
-      reducedMotion: reduced,
-      saveData: Boolean(connection?.saveData),
-      effectiveType: connection?.effectiveType,
-    };
-    if (!shouldShowIntro({ ...baseInput, hasPlayableAsset: true })) return;
     let cancelled = false;
-    Promise.all([
-      fetch(BRAND_ASSETS.introWebm, { method: "HEAD", cache: "force-cache" }),
-      fetch(BRAND_ASSETS.introMp4, { method: "HEAD", cache: "force-cache" }),
-    ])
+    Promise.all(
+      [
+        BRAND_ASSETS.introMp4,
+        BRAND_ASSETS.introWebm,
+        BRAND_ASSETS.introPoster,
+        BRAND_ASSETS.introFinalFrame,
+      ].map((asset) => fetch(asset, { method: "HEAD" })),
+    )
       .then((responses) => {
-        if (
-          !cancelled &&
-          shouldShowIntro({
-            ...baseInput,
-            hasPlayableAsset: responses.some((response) => response.ok),
-          })
-        )
-          previousFocus.current =
-            document.activeElement instanceof HTMLElement
-              ? document.activeElement
-              : null;
-        setVisible(true);
+        if (cancelled || !responses.every((response) => response.ok)) return;
+        setAssetsReady(true);
+        const params = new URLSearchParams(window.location.search);
+        const replay = params.get("intro") === "replay";
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        const connection = (
+          navigator as Navigator & {
+            connection?: { saveData?: boolean; effectiveType?: string };
+          }
+        ).connection;
+        let seenThisSession = false;
+        try {
+          seenThisSession =
+            sessionStorage.getItem(INTRO_SESSION_KEY) === "seen";
+        } catch {
+          seenThisSession = false;
+        }
+        const show = shouldShowIntro({
+          enabled,
+          replay,
+          seenThisSession,
+          reducedMotion,
+          saveData: Boolean(connection?.saveData),
+          effectiveType: connection?.effectiveType,
+          hasPlayableAsset: true,
+        });
+        if (show && (window.location.pathname === "/" || replay)) {
+          openIntro(params.get("sound") === "1");
+        }
       })
-      .catch(() => {});
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, openIntro]);
+
+  useEffect(() => {
+    const replay = (event: Event) => {
+      if (!enabled || !assetsReady) return;
+      const detail = (event as ReplayEvent).detail;
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+      if (reducedMotion) return;
+      openIntro(Boolean(detail?.sound));
+    };
+    window.addEventListener("imports-tech:intro-replay", replay);
+    return () =>
+      window.removeEventListener("imports-tech:intro-replay", replay);
+  }, [assetsReady, enabled, openIntro]);
 
   useEffect(() => {
     if (!visible) return;
+    document.body.classList.add("intro-active");
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     skip.current?.focus();
-    const timeout = window.setTimeout(close, 12_000);
+    const safety = window.setTimeout(() => beginTransition(true), 8_000);
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
+      if (event.key === "Escape") beginTransition(true);
     };
     window.addEventListener("keydown", escape);
-    void video.current?.play().catch(close);
+
+    const element = video.current;
+    if (element) {
+      element.currentTime = 0;
+      element.muted = !soundRequested;
+      void element.play().catch(() => {
+        if (soundRequested) {
+          element.muted = true;
+          setAudioBlocked(true);
+          void element.play().catch(() => beginTransition(true));
+        } else {
+          beginTransition(true);
+        }
+      });
+    }
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.clearTimeout(timeout);
+      window.clearTimeout(safety);
       window.removeEventListener("keydown", escape);
+      if (finishTimer.current) window.clearTimeout(finishTimer.current);
     };
-  }, [close, visible]);
+  }, [beginTransition, soundRequested, visible]);
+
+  function monitorFrames() {
+    const element = video.current as
+      | (HTMLVideoElement & {
+          requestVideoFrameCallback?: (
+            callback: (_now: number, metadata: { mediaTime: number }) => void,
+          ) => number;
+        })
+      | null;
+    if (!element?.requestVideoFrameCallback) return;
+    const watch = (_now: number, metadata: { mediaTime: number }) => {
+      if (metadata.mediaTime >= 4.65) setPrepared(true);
+      if (!transitionStarted.current)
+        element.requestVideoFrameCallback?.(watch);
+    };
+    element.requestVideoFrameCallback(watch);
+  }
+
+  function enableSound() {
+    if (!video.current) return;
+    video.current.muted = false;
+    setAudioBlocked(false);
+    void video.current.play().catch(() => setAudioBlocked(true));
+  }
 
   if (!visible) return null;
   return (
     <div
-      className={`site-intro${closing ? " is-closing" : ""}`}
+      className={`site-intro${prepared ? " is-prepared" : ""}${
+        transitioning ? " is-transitioning" : ""
+      }`}
       role="dialog"
       aria-modal="true"
       aria-label="Abertura Imports Tech"
     >
+      <Image
+        className="intro-final-frame"
+        src={BRAND_ASSETS.introFinalFrame}
+        alt=""
+        fill
+        sizes="100vw"
+        priority
+      />
       <video
         ref={video}
         muted
         playsInline
         preload="metadata"
         poster={BRAND_ASSETS.introPoster}
-        onEnded={close}
-        onError={close}
+        onLoadedMetadata={monitorFrames}
+        onTimeUpdate={(event) => {
+          if (event.currentTarget.currentTime >= 4.65) setPrepared(true);
+        }}
+        onEnded={() => beginTransition(false)}
+        onError={() => {
+          setPrepared(true);
+          window.setTimeout(() => beginTransition(true), 120);
+        }}
       >
         <source src={BRAND_ASSETS.introWebm} type="video/webm" />
         <source src={BRAND_ASSETS.introMp4} type="video/mp4" />
       </video>
-      <button ref={skip} type="button" onClick={close}>
-        Pular intro
-      </button>
+      <div
+        className="intro-transition-rings"
+        ref={transitionRings}
+        aria-hidden="true"
+      >
+        <i />
+        <i />
+        <i />
+      </div>
+      <div className="intro-flight-logo" ref={flightLogo} aria-hidden="true">
+        <Image src={BRAND_ASSETS.logo} alt="" fill sizes="344px" priority />
+      </div>
+      <div className="intro-actions">
+        {audioBlocked && (
+          <button type="button" onClick={enableSound}>
+            Ativar som
+          </button>
+        )}
+        <button ref={skip} type="button" onClick={() => beginTransition(true)}>
+          Pular intro
+        </button>
+      </div>
+      <span className="sr-only" role="status">
+        {transitioning
+          ? "Abrindo a página inicial"
+          : "Introdução em reprodução"}
+      </span>
     </div>
   );
+}
+
+function pxRect(rect: {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}) {
+  return {
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+  };
 }

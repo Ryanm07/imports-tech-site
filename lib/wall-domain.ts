@@ -22,6 +22,43 @@ export type WallCategory = {
   status: "active" | "archived";
 };
 
+export const WALL_CATEGORY_FALLBACKS: WallCategory[] = [
+  { id: "celulares", name: "Celulares", description: null, status: "active" },
+  { id: "notebooks", name: "Notebooks", description: null, status: "active" },
+  { id: "consoles", name: "Consoles", description: null, status: "active" },
+  {
+    id: "perifericos",
+    name: "Periféricos",
+    description: null,
+    status: "active",
+  },
+  {
+    id: "garimpos-olx",
+    name: "Garimpos e OLX",
+    description: null,
+    status: "active",
+  },
+  { id: "reparos", name: "Reparos", description: null, status: "active" },
+  {
+    id: "ajuda-tecnica",
+    name: "Ajuda técnica",
+    description: null,
+    status: "active",
+  },
+  {
+    id: "sugestoes-video",
+    name: "Sugestões de vídeo",
+    description: null,
+    status: "active",
+  },
+  {
+    id: "assuntos-gerais",
+    name: "Assuntos gerais",
+    description: null,
+    status: "active",
+  },
+];
+
 export type PublicWallAuthor = {
   displayName: string;
   isOfficial: boolean;

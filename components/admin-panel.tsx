@@ -73,6 +73,7 @@ type HistoryItem = {
 type YouTubeHealth = {
   state: null | Record<string, unknown>;
   runs: Array<Record<string, unknown>>;
+  configuration?: Record<string, boolean>;
 };
 
 const payloadExamples: Record<string, Record<string, unknown>> = {
@@ -92,6 +93,7 @@ const payloadExamples: Record<string, Record<string, unknown>> = {
     status: "",
     updatedAt: "2026-07-14",
     videoId: "",
+    imageUrl: "",
   },
   find: {
     product: "",
@@ -105,18 +107,10 @@ const payloadExamples: Record<string, Record<string, unknown>> = {
     result: "",
     currentStatus: "",
     videoId: "",
+    imageUrl: "",
     tags: [],
     timeline: [],
     updatedAt: "2026-07-14",
-  },
-  video: {
-    id: "",
-    title: "",
-    category: "Reviews",
-    tags: [],
-    summary: "",
-    relatedReviewSlug: null,
-    relatedFindSlug: null,
   },
   category: { name: "", icon: "10", description: "", relation: "" },
   setting: { key: "telegram_channel_url", value: "" },
@@ -351,10 +345,10 @@ export function AdminPanel() {
     });
   }
 
-  async function syncYouTube(mode: "incremental" | "full") {
+  async function syncYouTube() {
     clearFeedback();
     setLoading(true);
-    const response = await adminFetch("/api/admin/youtube", "POST", { mode });
+    const response = await adminFetch("/api/admin/youtube", "POST", {});
     setLoading(false);
     if (!response.ok) return setError(response.error);
     setMessage("Sincronização concluída. Consulte o estado abaixo.");
@@ -381,10 +375,10 @@ export function AdminPanel() {
             onClick={() => setTab(item)}
           >
             {item === "content"
-              ? "Conteúdo"
+              ? "Projetos e site"
               : item === "mural"
                 ? "Mural"
-                : "YouTube"}
+                : "Métricas do YouTube"}
           </button>
         ))}
       </div>
@@ -403,7 +397,7 @@ export function AdminPanel() {
       {tab === "content" && (
         <>
           <form className="topic-form" onSubmit={createContent}>
-            <h2>Novo conteúdo editorial</h2>
+            <h2>Novo projeto ou conteúdo do site</h2>
             <label>
               Tipo
               <select
@@ -421,7 +415,7 @@ export function AdminPanel() {
               >
                 {Object.keys(payloadExamples).map((type) => (
                   <option value={type} key={type}>
-                    {type}
+                    {contentTypeLabel(type)}
                   </option>
                 ))}
               </select>
@@ -448,7 +442,7 @@ export function AdminPanel() {
             </button>
           </form>
           <section className="admin-entries">
-            <h2>Conteúdo gerenciável</h2>
+            <h2>Projetos e conteúdo gerenciável</h2>
             {entries.map((entry) => (
               <article key={entry.id}>
                 <span>{entry.type}</span>
@@ -790,21 +784,20 @@ export function AdminPanel() {
       {tab === "youtube" && (
         <>
           <div className="admin-row-actions">
-            <button
-              className="button primary"
-              onClick={() => syncYouTube("incremental")}
-            >
-              Sincronizar agora
-            </button>
-            <button
-              className="button secondary"
-              onClick={() => syncYouTube("full")}
-            >
-              Sincronização completa
+            <button className="button primary" onClick={() => syncYouTube()}>
+              Sincronizar métricas agora
             </button>
           </div>
+          <section className="admin-health-grid" aria-label="Estado do site">
+            {Object.entries(youtube.configuration ?? {}).map(([key, value]) => (
+              <div key={key}>
+                <span>{healthLabel(key)}</span>
+                <strong>{value ? "Sim" : "Não"}</strong>
+              </div>
+            ))}
+          </section>
           <section className="admin-preview">
-            <h2>Saúde da sincronização</h2>
+            <h2>Snapshot de métricas do YouTube</h2>
             <pre>{JSON.stringify(youtube.state, null, 2)}</pre>
           </section>
           <section className="admin-entries">
@@ -813,7 +806,7 @@ export function AdminPanel() {
               <article key={String(run.id ?? index)}>
                 <span>{String(run.status ?? "")}</span>
                 <div>
-                  <strong>{String(run.mode ?? "")}</strong>
+                  <strong>métricas do canal</strong>
                   <small>{String(run.startedAt ?? "")}</small>
                   {run.errorMessage ? <p>{String(run.errorMessage)}</p> : null}
                 </div>
@@ -916,4 +909,30 @@ function formatJson(value: string) {
 }
 function messageFrom(value: unknown) {
   return value instanceof Error ? value.message : "Falha inesperada.";
+}
+
+function healthLabel(key: string) {
+  const labels: Record<string, string> = {
+    apiConfigured: "API do YouTube configurada",
+    channelFound: "Canal encontrado",
+    metricsAvailable: "Métricas obtidas",
+    snapshotStale: "Snapshot antigo",
+    telegramConfigured: "Telegram configurado",
+    introAvailable: "Arquivos da intro encontrados",
+    d1Connected: "D1 conectado",
+    muralEnabled: "Mural ativo",
+    introEnabled: "Intro ativa",
+  };
+  return labels[key] || key;
+}
+
+function contentTypeLabel(type: string) {
+  const labels: Record<string, string> = {
+    review: "Projeto · review",
+    find: "Projeto · garimpo/reparo",
+    category: "Categoria de projeto",
+    setting: "Configuração do site",
+    timeline: "Marco da história",
+  };
+  return labels[type] || type;
 }

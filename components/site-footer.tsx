@@ -16,17 +16,19 @@ export function SiteFooter({ telegram }: { telegram: TelegramLinks }) {
         />
         <div>
           <strong>IMPORTS TECH</strong>
-          <span>Reviews · Garimpos · Tecnologia</span>
+          <span>História · Projetos · Tecnologia</span>
         </div>
       </div>
       <div className="footer-links">
         <div>
           <strong>Explorar</strong>
-          <Link href="/videos">Vídeos</Link>
-          <Link href="/reviews">Reviews</Link>
-          <Link href="/garimpos">Garimpos</Link>
-          <Link href="/comunidade">Mural da comunidade</Link>
-          <Link href="/metricas">Métricas</Link>
+          <Link href="/sobre">Minha história</Link>
+          <Link href="/projetos">Projetos</Link>
+          <Link href="/comunidade">Mural</Link>
+          <Link href="/metricas">Métricas públicas</Link>
+          <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">
+            YouTube ↗
+          </a>
         </div>
         <div>
           <strong>Transparência</strong>

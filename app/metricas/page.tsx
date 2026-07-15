@@ -1,172 +1,55 @@
-"use client";
+import Link from "next/link";
+import { getPublicEditorialData } from "@/lib/content-repository";
+import { buildProjects } from "@/lib/projects";
+import { getYouTubeMetrics } from "@/lib/youtube-service";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { VideoCardData } from "@/components/video-card";
-import { finds, reviews } from "@/lib/site-data";
+export const dynamic = "force-dynamic";
 
-type Data = {
-  subscribers: number;
-  totalViews: number;
-  videoCount: number;
-  indexedVideoCount: number;
-  videos: VideoCardData[];
-  syncedAt: string;
-  videoCatalogSource:
-    | "youtube-api"
-    | "youtube-feed"
-    | "snapshot"
-    | "unavailable";
-  videoCatalogUpdatedAt: string | null;
-  videoCatalogStale: boolean;
-  videoCatalogPartial: boolean;
-  channelMetricsSource: "youtube-api" | "snapshot" | "unavailable";
-  channelMetricsUpdatedAt: string | null;
-  channelMetricsStale: boolean;
-};
-
-export default function MetricsPage() {
-  const [data, setData] = useState<Data | null>(null);
-  const [error, setError] = useState(false);
-
-  const load = useCallback(async () => {
-    setError(false);
-    try {
-      const response = await fetch("/api/youtube", { cache: "no-store" });
-      if (!response.ok) throw new Error("YouTube indisponível");
-      setData(await response.json());
-    } catch {
-      setError(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const categories = useMemo(() => {
-    const counts = new Map<string, number>();
-    data?.videos.forEach((video) =>
-      counts.set(video.category, (counts.get(video.category) || 0) + 1),
-    );
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-  }, [data]);
-
+export default async function MetricsPage() {
+  const [youtube, editorial] = await Promise.all([
+    getYouTubeMetrics(),
+    getPublicEditorialData(),
+  ]);
+  const projects = buildProjects(editorial.reviews, editorial.finds);
+  const repairs = projects.filter((project) => project.repair).length;
   return (
-    <main id="conteudo" className="page-main">
+    <main id="conteudo" className="page-main metrics-page">
       <header className="page-hero">
-        <span className="eyebrow-v2">MÉTRICAS PÚBLICAS</span>
-        <h1>Os números que podem ser mostrados.</h1>
+        <span className="eyebrow-v2">RETRATO DO CANAL</span>
+        <h1>Métricas públicas, sem estimativas.</h1>
         <p>
-          Somente dados públicos do canal. Receita, CTR, retenção e informações
-          do YouTube Studio ficam de fora.
+          Os dados do canal vêm exclusivamente da YouTube Data API. Os números
+          editoriais são calculados a partir dos projetos publicados neste site.
         </p>
       </header>
-      {!data && !error && (
-        <div className="metric-loading" role="status">
-          <span className="sr-only">Carregando métricas</span>
-          <i />
-          <i />
-          <i />
-        </div>
-      )}
-      {error && !data && (
-        <div className="empty-state" role="alert">
-          <strong>Não foi possível atualizar as métricas.</strong>
-          <p>O restante do site continua disponível.</p>
-          <button onClick={() => void load()}>Tentar novamente</button>
-        </div>
-      )}
-      {data && (
-        <>
-          <section className="metrics-dashboard" aria-label="Resumo do canal">
-            <Metric
-              label="Inscritos"
-              value={metricValue(data.subscribers, data.channelMetricsSource)}
-              note={metricsNote(data)}
-            />
-            <Metric
-              label="Vídeos indexados"
-              value={String(data.indexedVideoCount)}
-              note={
-                data.videoCatalogPartial
-                  ? "Catálogo local parcial"
-                  : "Catálogo local completo"
-              }
-            />
-            <Metric
-              label="Visualizações totais"
-              value={metricValue(data.totalViews, data.channelMetricsSource)}
-              note={metricsNote(data)}
-            />
-            <Metric
-              label="Reviews mapeadas"
-              value={String(reviews.length)}
-              note="Registros editoriais publicados"
-            />
-            <Metric
-              label="Garimpos catalogados"
-              value={String(finds.length)}
-              note="Histórias editoriais publicadas"
-            />
-          </section>
-          <section className="data-panels">
-            <div>
-              <span className="eyebrow-v2">VÍDEOS RECENTES</span>
-              <h2>Mais assistidos no recorte</h2>
-              <ol>
-                {[...data.videos]
-                  .sort((a, b) => b.views - a.views)
-                  .slice(0, 5)
-                  .map((video, index) => (
-                    <li key={video.id}>
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      <div>
-                        <strong>{video.title}</strong>
-                        <small>{video.category}</small>
-                      </div>
-                      <b>{compact(video.views)}</b>
-                    </li>
-                  ))}
-              </ol>
-            </div>
-            <div>
-              <span className="eyebrow-v2">CATEGORIAS PRESENTES</span>
-              <h2>Assuntos do catálogo sincronizado</h2>
-              <div className="category-bars">
-                {categories.map(([category, count]) => (
-                  <div key={category}>
-                    <span>{category}</span>
-                    <i>
-                      <b
-                        style={{
-                          width: `${(count / Math.max(...categories.map((item) => item[1]), 1)) * 100}%`,
-                        }}
-                      />
-                    </i>
-                    <strong>{count}</strong>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-          <p className="sync-note" role="status">
-            Catálogo: {data.videoCatalogSource}
-            {data.videoCatalogStale
-              ? " · último retrato disponível"
-              : data.videoCatalogPartial
-                ? " · parcial"
-                : " · completo"}
-            {data.videoCatalogUpdatedAt
-              ? ` · atualizado em ${formatDateTime(data.videoCatalogUpdatedAt)}. `
-              : ". "}
-            Métricas: {data.channelMetricsSource}
-            {data.channelMetricsStale ? " · históricas" : " · atuais"}
-            {data.channelMetricsUpdatedAt
-              ? ` · atualizadas em ${formatDateTime(data.channelMetricsUpdatedAt)}.`
-              : "."}
+      <section className="metric-cards" aria-label="Métricas do YouTube">
+        <Metric label="Inscritos" value={youtube.subscribers} />
+        <Metric label="Visualizações" value={youtube.totalViews} />
+        <Metric label="Vídeos publicados" value={youtube.videoCount} />
+      </section>
+      <section className="sync-panel">
+        <span className={youtube.stale ? "status-dot" : "status-dot online"} />
+        <div>
+          <strong>{sourceLabel(youtube.source, youtube.stale)}</strong>
+          <p>
+            {youtube.updatedAt
+              ? formatDateTime(youtube.updatedAt)
+              : "Nenhuma sincronização válida disponível."}
           </p>
-        </>
-      )}
+        </div>
+      </section>
+      <section className="metric-cards" aria-label="Métricas editoriais">
+        <Metric label="Projetos publicados" value={projects.length} exact />
+        <Metric
+          label="Garimpos registrados"
+          value={editorial.finds.length}
+          exact
+        />
+        <Metric label="Reparos documentados" value={repairs} exact />
+      </section>
+      <Link className="button secondary" href="/projetos">
+        Conhecer os projetos
+      </Link>
     </main>
   );
 }
@@ -174,44 +57,35 @@ export default function MetricsPage() {
 function Metric({
   label,
   value,
-  note,
+  exact = false,
 }: {
   label: string;
-  value: string;
-  note: string;
+  value: number | null;
+  exact?: boolean;
 }) {
   return (
     <article>
       <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{note}</small>
+      <strong>
+        {value === null
+          ? "Indisponível"
+          : exact
+            ? String(value)
+            : new Intl.NumberFormat("pt-BR").format(value)}
+      </strong>
     </article>
   );
 }
 
-function compact(value: number) {
-  return new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
-}
-
-function metricValue(value: number, source: Data["channelMetricsSource"]) {
-  return source === "unavailable" ? "Indisponível" : compact(value);
-}
-
-function metricsNote(data: Data) {
-  if (data.channelMetricsSource === "unavailable") {
-    return "Métrica pública temporariamente indisponível";
-  }
-  return data.channelMetricsStale
-    ? "Último retrato público disponível"
-    : "Atualizada pela API oficial";
+function sourceLabel(source: string, stale: boolean) {
+  if (source === "unavailable") return "Indisponível temporariamente";
+  return stale ? "Último retrato disponível" : "Métricas atualizadas";
 }
 
 function formatDateTime(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "data não informada"
-    : new Intl.DateTimeFormat("pt-BR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }

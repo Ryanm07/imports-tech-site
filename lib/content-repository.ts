@@ -96,13 +96,15 @@ export async function getPublishedCategories(): Promise<Category[]> {
   }));
 }
 
-export async function getFeaturedVideos() {
-  const entries = await getStoredEntries("video");
-  return entries.flatMap((entry) => {
-    if (entry.status !== "published" || !entry.featured) return [];
-    const payload = parseEntry(entry);
-    return payload && entry.type === "video" ? [payload] : [];
-  });
+export async function getFeaturedProjectSlugs() {
+  const [reviews, finds] = await Promise.all([
+    getStoredEntries("review"),
+    getStoredEntries("find"),
+  ]);
+  return [...reviews, ...finds]
+    .filter((entry) => entry.status === "published" && entry.featured)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .map((entry) => entry.slug);
 }
 
 export async function getSiteSettings() {
@@ -132,16 +134,23 @@ export async function getTimeline(): Promise<TimelineItem[]> {
 }
 
 export async function getPublicEditorialData() {
-  const [reviews, finds, categories, featuredVideos, settings, timeline] =
+  const [reviews, finds, categories, featuredProjectSlugs, settings, timeline] =
     await Promise.all([
       getPublishedReviews(),
       getPublishedFinds(),
       getPublishedCategories(),
-      getFeaturedVideos(),
+      getFeaturedProjectSlugs(),
       getSiteSettings(),
       getTimeline(),
     ]);
-  return { reviews, finds, categories, featuredVideos, settings, timeline };
+  return {
+    reviews,
+    finds,
+    categories,
+    featuredProjectSlugs,
+    settings,
+    timeline,
+  };
 }
 
 function mergeWithTombstones<T extends { slug: string }>(

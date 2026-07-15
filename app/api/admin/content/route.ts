@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { contentEntries, ownerActions } from "@/db/schema";
 import {
@@ -16,7 +16,6 @@ import { requireOwnerApi, type OwnerAccount } from "@/lib/server-auth";
 const CONTENT_TYPES: ContentType[] = [
   "review",
   "find",
-  "video",
   "category",
   "setting",
   "timeline",
@@ -40,6 +39,7 @@ export async function GET(request: Request) {
   const entries = await getDb()
     .select()
     .from(contentEntries)
+    .where(inArray(contentEntries.type, CONTENT_TYPES))
     .orderBy(desc(contentEntries.updatedAt))
     .limit(limit)
     .offset((page - 1) * limit);

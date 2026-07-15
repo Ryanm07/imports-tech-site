@@ -92,12 +92,10 @@ const worker = {
     env: Env,
     ctx: ExecutionContext,
   ) {
-    const mode = controller.cron === "15 3 * * *" ? "full" : "incremental";
     ctx.waitUntil(
-      import("../lib/youtube-service").then(({ runYouTubeSync }) =>
-        runYouTubeSync({
+      import("../lib/youtube-service").then(({ runYouTubeMetricsSync }) =>
+        runYouTubeMetricsSync({
           trigger: "cron",
-          mode,
           apiKey: env.YOUTUBE_API_KEY,
           channelId: env.YOUTUBE_CHANNEL_ID,
           now: new Date(controller.scheduledTime),

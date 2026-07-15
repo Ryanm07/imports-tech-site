@@ -1,7 +1,7 @@
-import { getYouTubeData } from "@/lib/youtube-service";
+import { getYouTubeMetrics } from "@/lib/youtube-service";
 
 export async function GET() {
-  const data = await getYouTubeData();
+  const data = await getYouTubeMetrics();
   return Response.json(data, {
     headers: {
       "Cache-Control":

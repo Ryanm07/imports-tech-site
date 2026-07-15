@@ -16,9 +16,11 @@ export const BRAND_ASSETS = {
   introWebm: "/intro/imports-tech-intro.webm",
   introMp4: "/intro/imports-tech-intro.mp4",
   introPoster: "/intro/imports-tech-intro-poster.webp",
+  introFinalFrame: "/intro/imports-tech-intro-final.webp",
 } as const;
 
 export const BRAND_LINKS = {
   youtube: "https://www.youtube.com/@Imports_Tech",
   youtubeCommunity: "https://www.youtube.com/@Imports_Tech/community",
+  youtubeWatch: "https://www.youtube.com/watch?v=",
 } as const;

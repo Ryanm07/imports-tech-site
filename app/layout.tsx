@@ -65,7 +65,7 @@ export default async function RootLayout({
     <html lang="pt-BR">
       <body className={`${geist.variable} ${mono.variable}`}>
         <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
-        <SiteHeader />
+        <SiteHeader telegram={telegram} />
         {children}
         <SiteFooter telegram={telegram} />
         <script

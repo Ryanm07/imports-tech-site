@@ -6,7 +6,11 @@ import { ownerRateLimitIdentity } from "@/lib/owner-domain";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { sameOriginRequest } from "@/lib/security";
 import { requireOwnerApi } from "@/lib/server-auth";
-import { runYouTubeSync, YOUTUBE_CHANNEL_ID } from "@/lib/youtube-service";
+import { getTelegramLinks } from "@/lib/telegram";
+import {
+  runYouTubeMetricsSync,
+  YOUTUBE_CHANNEL_ID,
+} from "@/lib/youtube-service";
 
 export async function GET() {
   if (process.env.ADMIN_ENABLED !== "true") {
@@ -27,7 +31,45 @@ export async function GET() {
       .orderBy(desc(youtubeSyncRuns.startedAt))
       .limit(20),
   ]);
-  return privateJson({ state: states[0] ?? null, runs });
+  const state = states[0] ?? null;
+  const telegram = getTelegramLinks();
+  return privateJson({
+    state: state
+      ? {
+          channelId: state.channelId,
+          channelName: state.channelName,
+          subscribers: state.subscribers,
+          totalViews: state.totalViews,
+          videoCount: state.videoCount,
+          source: state.metricsSource,
+          updatedAt: state.metricsUpdatedAt,
+          stale: state.metricsStale,
+          syncStatus: state.syncStatus,
+          lastAttemptAt: state.lastAttemptAt,
+          lastSuccessAt: state.lastSuccessAt,
+          lastError: state.lastError,
+        }
+      : null,
+    runs: runs.map((run) => ({
+      id: run.id,
+      trigger: run.trigger,
+      status: run.status,
+      startedAt: run.startedAt,
+      completedAt: run.completedAt,
+      errorCode: run.errorCode,
+    })),
+    configuration: {
+      apiConfigured: Boolean(process.env.YOUTUBE_API_KEY),
+      channelFound: Boolean(state?.channelName),
+      metricsAvailable: Boolean(state?.metricsUpdatedAt),
+      snapshotStale: state?.metricsStale ?? true,
+      telegramConfigured: Boolean(telegram.channel || telegram.group),
+      introAvailable: true,
+      d1Connected: true,
+      muralEnabled: process.env.COMMUNITY_ENABLED === "true",
+      introEnabled: process.env.INTRO_ENABLED === "true",
+    },
+  });
 }
 
 export async function POST(request: Request) {
@@ -54,12 +96,7 @@ export async function POST(request: Request) {
       { status: limit.reason === "unavailable" ? 503 : 429 },
     );
   }
-  const input = (await request.json().catch(() => ({}))) as Record<
-    string,
-    unknown
-  >;
-  const mode = input.mode === "full" ? "full" : "incremental";
-  const result = await runYouTubeSync({ trigger: "manual", mode });
+  const result = await runYouTubeMetricsSync({ trigger: "manual" });
   return privateJson(
     { result },
     {

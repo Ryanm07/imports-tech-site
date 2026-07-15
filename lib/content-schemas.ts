@@ -5,12 +5,10 @@ import {
   type Review,
 } from "@/lib/site-data";
 import { sanitizePlainText } from "@/lib/security";
-import { VIDEO_CATEGORIES } from "@/lib/video-taxonomy";
 
 export type ContentType =
   | "review"
   | "find"
-  | "video"
   | "category"
   | "setting"
   | "timeline";
@@ -49,7 +47,6 @@ export function validateContentPayload(type: ContentType, value: unknown) {
   if (type === "review") return validateReview(value);
   if (type === "find") return validateFind(value);
   if (type === "category") return validateCategory(value);
-  if (type === "video") return validateVideo(value);
   if (type === "timeline") return validateTimeline(value);
   return validateSetting(value);
 }
@@ -111,6 +108,7 @@ function validateReview(value: Record<string, unknown>) {
     facts: textList(value.facts, 12, 200),
     updatedAt: date(value.updatedAt) || new Date().toISOString().slice(0, 10),
     videoId,
+    imageUrl: editorialImage(value.imageUrl),
   };
   return valid(payload);
 }
@@ -161,6 +159,7 @@ function validateFind(value: Record<string, unknown>) {
     result,
     currentStatus,
     videoId,
+    imageUrl: editorialImage(value.imageUrl),
     tags: textList(value.tags, 12, 60),
     updatedAt: date(value.updatedAt) || new Date().toISOString().slice(0, 10),
     timeline,
@@ -182,28 +181,6 @@ function validateCategory(value: Record<string, unknown>) {
     relation: text(value.relation, 120) || undefined,
   };
   return valid(payload);
-}
-
-function validateVideo(value: Record<string, unknown>) {
-  const id = videoIdValue(value.id);
-  const title = text(value.title, 200);
-  const category = text(value.category, 60);
-  if (
-    !id ||
-    !title ||
-    !VIDEO_CATEGORIES.includes(category as (typeof VIDEO_CATEGORIES)[number])
-  ) {
-    return invalid("Vídeo exige ID, título e categoria.");
-  }
-  return valid({
-    id,
-    title,
-    category,
-    tags: textList(value.tags, 12, 60),
-    summary: text(value.summary, 1000),
-    relatedReviewSlug: sanitizeSlug(value.relatedReviewSlug) || null,
-    relatedFindSlug: sanitizeSlug(value.relatedFindSlug) || null,
-  });
 }
 
 function validateSetting(value: Record<string, unknown>) {
@@ -246,6 +223,27 @@ function date(value: unknown) {
 
 function videoIdValue(value: unknown) {
   return typeof value === "string" && /^[\w-]{11}$/.test(value) ? value : "";
+}
+
+function editorialImage(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const candidate = value.trim();
+  if (/^\/(?!\/)[A-Za-z0-9/_-]+\.(?:avif|jpe?g|png|webp)$/iu.test(candidate)) {
+    return candidate;
+  }
+  try {
+    const url = new URL(candidate);
+    if (
+      url.protocol === "https:" &&
+      url.hostname === "i.ytimg.com" &&
+      /^\/vi\/[A-Za-z0-9_-]{11}\/[A-Za-z0-9_.-]+$/u.test(url.pathname)
+    ) {
+      return url.toString();
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

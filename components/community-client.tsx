@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { WALL_CATEGORY_FALLBACKS } from "@/lib/wall-domain";
 import type {
   PublicWallReply,
   PublicWallTopic,
@@ -36,9 +37,18 @@ declare global {
 
 type CommunityProps = { turnstileSiteKey: string };
 
+const quickActions = [
+  ["Sugerir um vídeo", "Sugestões de vídeo"],
+  ["Mostrar um achado", "Garimpos e OLX"],
+  ["Pedir ajuda", "Ajuda técnica"],
+  ["Conversar sobre tecnologia", "Assuntos gerais"],
+] as const;
+
 export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
   const [topics, setTopics] = useState<PublicWallTopic[]>([]);
-  const [categories, setCategories] = useState<WallCategory[]>([]);
+  const [categories, setCategories] = useState<WallCategory[]>(
+    WALL_CATEGORY_FALLBACKS,
+  );
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState<"recent" | "replied">("recent");
@@ -49,6 +59,9 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
   const [turnstileReady, setTurnstileReady] = useState(0);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileReset, setTurnstileReset] = useState(0);
+  const [presetCategory, setPresetCategory] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,8 +74,8 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
         fetch(`/api/community/topics?${params}`, { cache: "no-store" }),
         fetch("/api/community/categories", { cache: "no-store" }),
       ]);
-      const topicData = await topicsResponse.json();
-      const categoryData = await categoriesResponse.json();
+      const topicData = await topicsResponse.json().catch(() => ({}));
+      const categoryData = await categoriesResponse.json().catch(() => ({}));
       if (!topicsResponse.ok)
         throw new Error(topicData.error || "Falha ao carregar o mural.");
       if (!categoriesResponse.ok)
@@ -87,6 +100,18 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
     () => categories.filter((item) => item.status === "active"),
     [categories],
   );
+
+  function chooseQuickAction(categoryName: string) {
+    const selected = activeCategories.find(
+      (item) => normalizeLabel(item.name) === normalizeLabel(categoryName),
+    );
+    setPresetCategory(selected?.id || "");
+    setOpen(true);
+    window.setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      titleRef.current?.focus();
+    }, 40);
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,6 +144,7 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
       return;
     }
     event.currentTarget.reset();
+    setPresetCategory("");
     setOpen(false);
     setMessage(
       response.status === 202
@@ -145,8 +171,21 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
         </button>
       </div>
 
+      <div className="wall-quick-actions" aria-label="Começar uma conversa">
+        {quickActions.map(([label, categoryName]) => (
+          <button
+            type="button"
+            key={label}
+            onClick={() => chooseQuickAction(categoryName)}
+          >
+            <span aria-hidden="true">→</span>
+            {label}
+          </button>
+        ))}
+      </div>
+
       {open && (
-        <form className="topic-form" onSubmit={submit}>
+        <form className="topic-form" onSubmit={submit} ref={formRef}>
           <label>
             Nome que será exibido
             <input name="displayName" minLength={2} maxLength={30} required />
@@ -154,7 +193,12 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
           <small>O nome é informado pelo visitante e não é verificado.</small>
           <label>
             Categoria
-            <select name="categoryId" required defaultValue="">
+            <select
+              name="categoryId"
+              required
+              value={presetCategory}
+              onChange={(event) => setPresetCategory(event.target.value)}
+            >
               <option value="" disabled>
                 Escolha uma categoria
               </option>
@@ -167,7 +211,13 @@ export function CommunityClient({ turnstileSiteKey }: CommunityProps) {
           </label>
           <label>
             Título
-            <input name="title" minLength={8} maxLength={120} required />
+            <input
+              ref={titleRef}
+              name="title"
+              minLength={8}
+              maxLength={120}
+              required
+            />
           </label>
           <label>
             Mensagem
@@ -584,4 +634,11 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(
     new Date(value),
   );
+}
+
+function normalizeLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
 }

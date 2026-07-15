@@ -7,6 +7,7 @@ import {
   toPublicWallTopic,
   validateWallReply,
   validateWallTopic,
+  WALL_CATEGORY_FALLBACKS,
 } from "../lib/wall-domain";
 import {
   getVisitorIdentity,
@@ -37,6 +38,16 @@ test("nomes reservados bloqueiam variações e o perfil oficial é fixo", () => 
   assert.equal(PUBLIC_OWNER.displayName, "Ryan — Imports Tech");
 });
 
+test("categorias versionadas sustentam os quatro comandos rápidos", () => {
+  const categories = new Map(
+    WALL_CATEGORY_FALLBACKS.map((item) => [item.name, item.id]),
+  );
+  assert.equal(categories.get("Sugestões de vídeo"), "sugestoes-video");
+  assert.equal(categories.get("Garimpos e OLX"), "garimpos-olx");
+  assert.equal(categories.get("Ajuda técnica"), "ajuda-tecnica");
+  assert.equal(categories.get("Assuntos gerais"), "assuntos-gerais");
+});
+
 test("validação do mural aplica comprimentos, links, Unicode e classificação", () => {
   const valid = validateWallTopic({
     displayName: "  João  ",
@@ -49,6 +60,15 @@ test("validação do mural aplica comprimentos, links, Unicode e classificação
     assert.equal(valid.value.displayName, "João");
     assert.equal(statusForRisk(valid.risk), "published");
   }
+
+  const suspicious = validateWallTopic({
+    displayName: "Pessoa",
+    categoryId: "celulares",
+    title: "Uma dúvida normal sobre bateria",
+    body: "Esta dúvida contém aaaaaaaaaaaa caracteres repetidos e precisa passar por revisão.",
+  });
+  assert.equal(suspicious.ok, true);
+  if (suspicious.ok) assert.equal(statusForRisk(suspicious.risk), "pending");
 
   const xss = validateWallTopic({
     displayName: "Pessoa",

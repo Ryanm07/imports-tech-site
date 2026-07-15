@@ -5,7 +5,7 @@ import {
   type Review,
 } from "@/lib/site-data";
 import { sanitizePlainText } from "@/lib/security";
-import { STORY_VISUAL_PRESETS } from "@/lib/story";
+import { STORY_ACCENTS, STORY_VISUAL_PRESETS } from "@/lib/story";
 
 export type ContentType =
   | "review"
@@ -83,6 +83,16 @@ function validateTimeline(value: Record<string, unknown>) {
   )
     ? (value.fallbackMode as "abstract" | "asset" | "minimal")
     : undefined;
+  const accentValue = STORY_ACCENTS.includes(
+    value.accentValue as (typeof STORY_ACCENTS)[number],
+  )
+    ? (value.accentValue as (typeof STORY_ACCENTS)[number])
+    : undefined;
+  const motionVariant = STORY_VISUAL_PRESETS.includes(
+    value.motionVariant as (typeof STORY_VISUAL_PRESETS)[number],
+  )
+    ? (value.motionVariant as (typeof STORY_VISUAL_PRESETS)[number])
+    : undefined;
   return valid({
     dateLabel,
     datePrecision,
@@ -97,18 +107,14 @@ function validateTimeline(value: Record<string, unknown>) {
     ...(editorialImage(value.visualAsset)
       ? { visualAsset: editorialImage(value.visualAsset) }
       : {}),
-    ...(text(value.accentValue, 30)
-      ? { accentValue: text(value.accentValue, 30) }
-      : {}),
+    ...(accentValue ? { accentValue } : {}),
     ...(text(value.primaryMetric, 80)
       ? { primaryMetric: text(value.primaryMetric, 80) }
       : {}),
     ...(text(value.secondaryMetric, 100)
       ? { secondaryMetric: text(value.secondaryMetric, 100) }
       : {}),
-    ...(text(value.motionVariant, 50)
-      ? { motionVariant: text(value.motionVariant, 50) }
-      : {}),
+    ...(motionVariant ? { motionVariant } : {}),
     ...(text(value.visualDescription, 300)
       ? { visualDescription: text(value.visualDescription, 300) }
       : {}),

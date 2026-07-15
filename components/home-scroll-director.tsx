@@ -35,6 +35,9 @@ export function HomeScrollDirector() {
             active = index;
           }
         });
+        items.forEach((item, index) => {
+          item.classList.toggle("is-sequence-active", index === active);
+        });
         sequence.style.setProperty("--sequence-progress", progress.toFixed(4));
         sequence.dataset.sequenceActive = String(active);
       });

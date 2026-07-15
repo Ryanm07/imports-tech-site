@@ -7,6 +7,7 @@ import {
   motionPhases,
   pageProgress,
   sectionProgress,
+  storyScrollPosition,
 } from "../lib/motion";
 import { STORY_VISUAL_PRESETS, storyMilestones } from "../lib/story";
 
@@ -37,13 +38,23 @@ test("modo de movimento respeita redução, economia de dados e capacidade", () 
 });
 
 test("fases narrativas são contínuas, limitadas e reversíveis", () => {
-  const forward = [0, 0.2, 0.4, 0.65, 0.85, 1].map(motionPhases);
+  const checkpoints = [0, 0.18, 0.38, 0.65, 0.86, 1];
+  const forward = checkpoints.map(motionPhases);
+  const backward = [...checkpoints].reverse().map(motionPhases).reverse();
   for (const phases of forward) {
     for (const value of Object.values(phases)) {
       assert.ok(value >= 0 && value <= 1);
     }
   }
-  assert.deepEqual(motionPhases(0.4), motionPhases(0.4));
+  assert.deepEqual(backward, forward);
+  const down = [1_000, 2_500, 4_000].map((scrollY) =>
+    storyScrollPosition(scrollY, 1_000, 3_000, 13),
+  );
+  const up = [4_000, 2_500, 1_000]
+    .map((scrollY) => storyScrollPosition(scrollY, 1_000, 3_000, 13))
+    .reverse();
+  assert.deepEqual(up, down);
+  assert.deepEqual(chapterPhases(7.25, 7), chapterPhases(7.25, 7));
   assert.equal(chapterPhases(7, 7).focus, 1);
   assert.ok(chapterPhases(7.5, 7).focus > 0);
   assert.equal(chapterPhases(7, 7).signed, 0);
@@ -57,8 +68,13 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
     "components/motion/motion-provider.tsx",
     "utf8",
   );
+  const background = readFileSync(
+    "components/motion/interactive-background.tsx",
+    "utf8",
+  );
+  const styles = readFileSync("app/globals.css", "utf8");
   assert.match(story, /aria-label="Navegar pelos capítulos"/);
-  assert.match(story, /tabIndex=\{0\}/);
+  assert.match(story, /tabIndex=\{index === activeIndex \? 0 : -1\}/);
   assert.match(projects, /project-card-mobile-image/);
   assert.match(projects, /tabIndex=\{0\}/);
   assert.match(provider, /visibilitychange/);
@@ -67,10 +83,13 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
   assert.match(story, /chapterPhases/);
   assert.match(scenes, /case "mechanical-switch"/);
   assert.match(scenes, /case "heavy-processing"/);
+  assert.match(background, /if \(!context\) return/);
+  assert.doesNotMatch(background, /getComputedStyle/);
+  assert.match(styles, /html:not\(\.motion-ready\) \.story-documentary/);
 });
 
-test("trajetória publicada continua com os doze fatos confirmados em primeira pessoa", () => {
-  assert.equal(storyMilestones.length, 12);
+test("trajetória publicada mantém treze capítulos únicos em primeira pessoa", () => {
+  assert.equal(storyMilestones.length, 13);
   for (const milestone of storyMilestones) {
     assert.match(
       `${milestone.title} ${milestone.description}`,
@@ -79,7 +98,8 @@ test("trajetória publicada continua com os doze fatos confirmados em primeira p
   }
   assert.equal(storyMilestones.at(-1)?.number, "100 mil inscritos");
   const chapterPresets = storyMilestones.map((item) => item.visualType);
-  assert.equal(new Set(chapterPresets).size, 12);
+  assert.equal(new Set(chapterPresets).size, 13);
+  assert.deepEqual(chapterPresets, [...STORY_VISUAL_PRESETS]);
   assert.ok(STORY_VISUAL_PRESETS.includes("time-balance"));
   assert.ok(STORY_VISUAL_PRESETS.includes("future-target"));
 });

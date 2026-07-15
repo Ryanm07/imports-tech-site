@@ -234,6 +234,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
             "--section-center",
             phases.center.toFixed(4),
           );
+          section.style.setProperty("--section-focus", phases.focus.toFixed(4));
           section.style.setProperty(
             "--section-transform",
             phases.transform.toFixed(4),

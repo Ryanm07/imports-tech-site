@@ -153,6 +153,16 @@ export function HomePage({
               label="Vídeos publicados"
               context="Cada publicação resume horas de trabalho."
             />
+            <MetricStory
+              value="SET 2025"
+              label="O começo"
+              context="Foi quando eu publiquei os primeiros passos dessa história."
+            />
+            <MetricStory
+              value="100 mil"
+              label="Meta até o fim de 2027"
+              context="É um objetivo à frente, não uma conquista atual."
+            />
           </ol>
           <Link href="/metricas">Como estes dados são atualizados ↗</Link>
         </div>
@@ -297,9 +307,20 @@ export function HomePage({
           >
             Acompanhar no YouTube ↗
           </a>
-          <Link className="button secondary" href="/comunidade">
-            Entrar na comunidade
-          </Link>
+          {telegram.group || telegram.channel ? (
+            <a
+              className="button secondary"
+              href={telegram.group || telegram.channel || undefined}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Telegram ↗
+            </a>
+          ) : (
+            <span className="button secondary is-disabled">
+              Telegram · Em breve
+            </span>
+          )}
           {publicLinks.mediaKit && (
             <a
               className="button secondary"
@@ -324,13 +345,13 @@ function MetricStory({
   label,
   context,
 }: {
-  value: number | null;
+  value: number | string | null;
   label: string;
   context: string;
 }) {
   return (
     <li data-sequence-item>
-      <strong>{metricValue(value)}</strong>
+      <strong>{typeof value === "string" ? value : metricValue(value)}</strong>
       <span>{label}</span>
       <p>{context}</p>
     </li>

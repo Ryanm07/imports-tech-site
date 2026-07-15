@@ -1,16 +1,15 @@
 # Imports Tech — site oficial
 
 Site pessoal de Ryan e do canal Imports Tech. A experiência pública apresenta
-a história do canal, projetos selecionados, métricas públicas do YouTube,
-espaços externos da comunidade e contato comercial.
+a história do canal, métricas públicas do YouTube, espaços externos da
+comunidade e contato comercial.
 
 ## Arquitetura pública
 
 Rotas principais:
 
-- `/` — apresentação, métricas, história curta, marcos, projetos, comunidade e empresas;
+- `/` — apresentação, métricas, história curta, marcos, comunidade e empresas;
 - `/sobre` — narrativa visual completa em primeira pessoa;
-- `/projetos` — garimpos, reparos, reviews e periféricos escolhidos editorialmente;
 - `/comunidade` — links oficiais para Telegram e YouTube;
 - `/metricas` — metodologia e retrato público do canal;
 - `/contato` — contato comercial e Media Kit quando configurados.
@@ -19,6 +18,9 @@ As rotas antigas `/videos`, `/reviews` e `/garimpos` existem somente para
 redirecionar visitantes e links antigos. Detalhes de vídeos válidos redirecionam
 para o YouTube. URLs antigas de tópicos da comunidade redirecionam para
 `/comunidade`.
+
+Com `PROJECTS_ENABLED=false`, `/projetos` também redireciona para a história;
+os dados editoriais permanecem preservados para uma possível reativação.
 
 Não existe catálogo público de vídeos, busca de uploads, fórum, mural,
 publicação anônima, contas públicas, denúncias ou moderação na experiência

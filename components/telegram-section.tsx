@@ -1,4 +1,5 @@
 import type { TelegramLinks } from "@/lib/telegram";
+import { BRAND_LINKS } from "@/lib/brand";
 
 export function TelegramSection({
   links,
@@ -58,6 +59,21 @@ export function TelegramSection({
           ) : (
             <span>Grupo · Em breve</span>
           )}
+        </article>
+        <article>
+          <strong>YouTube</strong>
+          <p>
+            Eu publico os vídeos completos e continuo a conversa nas
+            atualizações e nos comentários do canal.
+          </p>
+          <a
+            className="button secondary"
+            href={BRAND_LINKS.youtube}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Acompanhar no YouTube ↗
+          </a>
         </article>
       </div>
       <div className="community-message-preview" aria-hidden="true">

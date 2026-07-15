@@ -14,6 +14,7 @@ import {
   type Review,
 } from "@/lib/site-data";
 import { storyMilestones, type StoryMilestone } from "@/lib/story";
+import { projectsEnabled } from "@/lib/features";
 
 type StoredEntry = typeof contentEntries.$inferSelect;
 export type TimelineItem = StoryMilestone;
@@ -117,20 +118,49 @@ export async function getSiteSettings() {
 }
 
 export async function getTimeline(): Promise<TimelineItem[]> {
-  const entries = await getStoredEntries("timeline");
+  return publishedTimelineFromEntries(await getStoredEntries("timeline"));
+}
+
+export function publishedTimelineFromEntries(
+  entries: StoredEntry[],
+): TimelineItem[] {
   return mergeWithTombstones(storyMilestones, entries, (entry) => {
     const payload = parseEntry(entry);
     if (!payload || entry.type !== "timeline") return null;
     const fallback = storyMilestones.find((item) => item.slug === entry.slug);
+    const timelinePayload = payload as Omit<TimelineItem, "slug">;
+    const isLegacyCombinedGoal =
+      entry.slug === "meta-2027" &&
+      timelinePayload.position === 12 &&
+      timelinePayload.description.includes(
+        "Hoje, minha maior dificuldade é equilibrar o canal",
+      );
     return {
       ...fallback,
       slug: entry.slug,
-      ...(payload as Omit<TimelineItem, "slug">),
+      ...timelinePayload,
+      ...(isLegacyCombinedGoal && fallback
+        ? { description: fallback.description, position: fallback.position }
+        : {}),
     } as TimelineItem;
   }).sort((a, b) => a.position - b.position);
 }
 
 export async function getPublicEditorialData() {
+  if (!projectsEnabled()) {
+    const [settings, timeline] = await Promise.all([
+      getSiteSettings(),
+      getTimeline(),
+    ]);
+    return {
+      reviews: [],
+      finds: [],
+      categories: [],
+      featuredProjectSlugs: [],
+      settings,
+      timeline,
+    };
+  }
   const [reviews, finds, categories, featuredProjectSlugs, settings, timeline] =
     await Promise.all([
       getPublishedReviews(),

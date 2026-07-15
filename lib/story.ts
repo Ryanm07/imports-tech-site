@@ -1,11 +1,11 @@
 export const STORY_VISUAL_PRESETS = [
   "origin",
   "identity-transform",
-  "recording",
+  "first-recording",
   "equipment-build",
   "first-signal",
-  "discovery",
-  "pattern",
+  "unexpected-discovery",
+  "pattern-discovery",
   "mechanical-switch",
   "massive-number",
   "heavy-processing",
@@ -15,6 +15,17 @@ export const STORY_VISUAL_PRESETS = [
 ] as const;
 
 export type StoryVisualPreset = (typeof STORY_VISUAL_PRESETS)[number];
+export const STORY_ACCENTS = [
+  "warm",
+  "blue",
+  "red",
+  "gold",
+  "violet",
+  "cyan",
+  "green",
+  "amber",
+] as const;
+export type StoryAccent = (typeof STORY_ACCENTS)[number];
 export type StoryFallbackMode = "abstract" | "asset" | "minimal";
 
 export type StoryMilestone = {
@@ -30,10 +41,10 @@ export type StoryMilestone = {
   position: number;
   visualType?: StoryVisualPreset;
   visualAsset?: string | null;
-  accentValue?: string | null;
+  accentValue?: StoryAccent | null;
   primaryMetric?: string | null;
   secondaryMetric?: string | null;
-  motionVariant?: string | null;
+  motionVariant?: StoryVisualPreset | null;
   visualDescription?: string | null;
   fallbackMode?: StoryFallbackMode;
 };
@@ -186,17 +197,30 @@ const storyMilestoneBase: StoryMilestone[] = [
     position: 11,
   },
   {
+    slug: "falta-de-tempo",
+    dateLabel: "Hoje",
+    datePrecision: "exact",
+    title: "Hoje eu tento equilibrar o canal com o resto da rotina",
+    description:
+      "Hoje, minha maior dificuldade é equilibrar o canal com trabalhos, responsabilidades, faculdade, academia e descanso. Tem semana em que a academia quase vira meu único momento para respirar.",
+    imageUrl: null,
+    number: null,
+    relatedProject: null,
+    youtubeUrl: null,
+    position: 12,
+  },
+  {
     slug: "meta-2027",
     dateLabel: "Até o fim de 2027",
     datePrecision: "exact",
     title: "Minha meta é chegar a 100 mil inscritos",
     description:
-      "Depois do iPhone XR, eu parei de pensar seriamente em desistir. Hoje, minha maior dificuldade é equilibrar o canal com trabalhos, responsabilidades, faculdade, academia e descanso. Tem semana em que a academia quase vira meu único momento para respirar. Minha meta é chegar a 100 mil inscritos até o fim de 2027 e, mais adiante, construir uma das maiores comunidades de tecnologia do Brasil.",
+      "Depois do iPhone XR, eu parei de pensar seriamente em desistir. Minha meta é chegar a 100 mil inscritos até o fim de 2027 e, mais adiante, construir uma das maiores comunidades de tecnologia do Brasil.",
     imageUrl: null,
     number: "100 mil inscritos",
     relatedProject: null,
     youtubeUrl: null,
-    position: 12,
+    position: 13,
   },
 ];
 
@@ -226,7 +250,7 @@ const storyVisualDefaults: Record<
     visualDescription: "Eu reorganizo a primeira ideia até encontrar meu nome.",
   },
   "primeiro-video": {
-    visualType: "recording",
+    visualType: "first-recording",
     accentValue: "red",
     primaryMetric: "1º vídeo",
     secondaryMetric: "Microsoft Clipchamp",
@@ -247,14 +271,14 @@ const storyVisualDefaults: Record<
     visualDescription: "Eu vejo o primeiro sinal atravessar a incerteza.",
   },
   "iphone-x-historias": {
-    visualType: "discovery",
+    visualType: "unexpected-discovery",
     accentValue: "violet",
     primaryMetric: "Não seria publicado",
     secondaryMetric: "Um caminho inesperado",
     visualDescription: "Eu abro uma história que muda a direção do canal.",
   },
   "iphone-xr": {
-    visualType: "pattern",
+    visualType: "pattern-discovery",
     accentValue: "cyan",
     primaryMetric: "≈ 50 mil",
     secondaryMetric: "≈ 300 inscritos",
@@ -287,6 +311,14 @@ const storyVisualDefaults: Record<
     primaryMetric: "≈ 12h",
     secondaryMetric: "1h → 10–15 min",
     visualDescription: "Eu transformo material bruto em uma história concisa.",
+  },
+  "falta-de-tempo": {
+    visualType: "time-balance",
+    accentValue: "violet",
+    primaryMetric: "Pouco espaço",
+    secondaryMetric: "Canal · rotina · descanso",
+    visualDescription:
+      "Eu tento abrir espaço entre canal, trabalho, faculdade, academia e descanso.",
   },
   "meta-2027": {
     visualType: "future-target",

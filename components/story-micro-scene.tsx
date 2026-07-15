@@ -44,12 +44,17 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <b>TECH</b>
         </div>
       );
-    case "recording":
+    case "first-recording":
       return (
         <>
           <div className="record-phone">
             <i />
             <span>REC</span>
+            <div className="record-keyboard">
+              {Array.from({ length: 12 }, (_, index) => (
+                <b key={index} />
+              ))}
+            </div>
           </div>
           <div className="record-timeline">
             <i />
@@ -57,6 +62,11 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
             <i />
             <i />
             <i />
+          </div>
+          <div className="record-audio">
+            {Array.from({ length: 8 }, (_, index) => (
+              <i key={index} />
+            ))}
           </div>
           <div className="record-cursor" />
         </>
@@ -69,8 +79,12 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <i className="rig-leg b" />
           <span className="rig-light left" />
           <span className="rig-light right" />
+          <span className="rig-bar" />
           <span className="rig-mic" />
           <span className="rig-screen">PC</span>
+          <strong className="equipment-risk">
+            ≈ R$ 300 <small>primeiro risco</small>
+          </strong>
         </div>
       );
     case "first-signal":
@@ -85,9 +99,11 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <span>2 mil</span>
           <strong>≈ 6 mil</strong>
           <small>aprox. na época</small>
+          <b className="signal-line" />
+          <em className="signal-pulse" />
         </div>
       );
-    case "discovery":
+    case "unexpected-discovery":
       return (
         <div className="discovery-box" aria-hidden="true">
           <i className="box-lid" />
@@ -96,7 +112,7 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <span className="route after" />
         </div>
       );
-    case "pattern":
+    case "pattern-discovery":
       return (
         <div className="pattern-field" aria-hidden="true">
           {Array.from({ length: 12 }, (_, index) => (
@@ -105,6 +121,7 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <span className="pattern-path" />
           <strong>≈ 50 mil</strong>
           <small>≈ 300 inscritos</small>
+          <em>Eu acho que estou entendendo um padrão.</em>
         </div>
       );
     case "mechanical-switch":
@@ -113,8 +130,10 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <span className="counter-value before">999</span>
           <span className="counter-value after">1.000</span>
           <i className="counter-lever" />
+          <span className="counter-wait">EM ESPERA</span>
           <b className="counter-circuit" />
           <small>4 JUN 2026</small>
+          <em>monetização liberada</em>
         </div>
       );
     case "massive-number":
@@ -123,7 +142,7 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <i />
           <i />
           <i />
-          <strong>200 mil</strong>
+          <strong>200.000</strong>
           <span>
             Este canal <b>pode</b>
             <em>vai</em> dar certo.
@@ -136,12 +155,28 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
           <div className="processing-laptop">
             <i />
             <span />
+            <div className="processing-components">
+              <b />
+              <b />
+              <b />
+              <b />
+            </div>
           </div>
-          <div className="disk-stack">
+          <div className="storage-drives">
+            <div className="storage-drive">
+              <i />
+            </div>
+            <div className="storage-drive">
+              <i />
+            </div>
+          </div>
+          <div className="processing-time">
             <i />
-            <i />
-            <i />
-            <i />
+            <b />
+            <span>dia</span>
+            <span>noite</span>
+          </div>
+          <div className="processing-edit-line">
             <i />
           </div>
           <strong>≈ 500 GB</strong>
@@ -158,9 +193,23 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
             <i />
             <i />
           </div>
+          <div className="production-inputs">
+            {[
+              "áudio",
+              "roteiro",
+              "cortes",
+              "música",
+              "efeitos",
+              "thumbnail",
+              "título",
+              "descrição",
+            ].map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
           <span className="belt" />
           <div className="final-cut">10–15 min</div>
-          <strong>1h gravada</strong>
+          <strong>1h de gravação</strong>
           <small>≈ 12h no total · ≈ 8h editando</small>
         </div>
       );
@@ -180,16 +229,9 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
         <div className="future-route" aria-hidden="true">
           <i className="future-line" />
           <span className="future-now">HOJE</span>
-          <strong>100 mil</strong>
+          <strong>100.000</strong>
           <small>FIM DE 2027</small>
           <b />
-          <div className="future-balance">
-            <i />
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
         </div>
       );
   }
@@ -197,25 +239,27 @@ function SceneContent({ preset }: { preset: StoryVisualPreset }) {
 
 function sceneLabel(preset: StoryVisualPreset) {
   const labels: Record<StoryVisualPreset, string> = {
-    origin: "Um pequeno sinal começa a ganhar voz.",
+    origin: "Eu começo como um pequeno sinal que ganha voz.",
     "identity-transform":
-      "A identidade R Import se reorganiza como Imports Tech.",
-    recording: "Uma gravação inicial se transforma em uma linha de edição.",
-    "equipment-build": "O equipamento de gravação é montado peça por peça.",
+      "Eu reorganizo a identidade R Import até chegar a Imports Tech.",
+    "first-recording":
+      "Eu transformo uma gravação inicial em uma linha de edição.",
+    "equipment-build": "Eu monto meu equipamento de gravação peça por peça.",
     "first-signal":
-      "Um gráfico cresce dos primeiros acessos até cerca de seis mil.",
-    discovery: "Uma caixa se abre e revela um novo caminho narrativo.",
-    pattern: "Pontos se conectam e revelam um padrão.",
-    "mechanical-switch": "Um contador mecânico muda de 999 para mil.",
+      "Eu vejo o gráfico crescer dos primeiros acessos até cerca de seis mil.",
+    "unexpected-discovery":
+      "Eu abro uma caixa e encontro um novo caminho narrativo.",
+    "pattern-discovery": "Eu conecto os pontos e reconheço um padrão.",
+    "mechanical-switch": "Eu vejo um contador mecânico mudar de 999 para mil.",
     "massive-number":
-      "Ondas de impacto surgem ao redor de duzentas mil visualizações.",
-    "heavy-processing": "Discos se acumulam durante uma edição pesada.",
+      "Eu vejo ondas de impacto ao redor de duzentas mil visualizações.",
+    "heavy-processing": "Eu acumulo dados e esforço durante uma edição pesada.",
     "production-line":
-      "Material bruto atravessa uma linha e vira um vídeo conciso.",
+      "Eu faço o material bruto atravessar uma linha e virar um vídeo conciso.",
     "time-balance":
-      "Canal, trabalho, faculdade, academia e descanso disputam equilíbrio.",
+      "Eu tento equilibrar canal, trabalho, faculdade, academia e descanso.",
     "future-target":
-      "Uma linha aberta segue em direção à meta de cem mil inscritos.",
+      "Eu sigo por uma linha aberta em direção à meta de cem mil inscritos.",
   };
   return labels[preset];
 }

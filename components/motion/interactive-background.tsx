@@ -40,6 +40,13 @@ export function InteractiveBackground() {
     let narrativeEnergy = 0.72;
     let narrativeDensity = 0.72;
     let narrativeSpread = 0.5;
+    let progress = 0;
+    let velocity = 0;
+    let pointerX = 0.5;
+    let pointerY = 0.5;
+    let direction = 1;
+    let activeSection = "hero";
+    let activeVisual = "";
 
     const resize = () => {
       width = window.innerWidth;
@@ -54,26 +61,11 @@ export function InteractiveBackground() {
 
     const draw = (time: number) => {
       if (!running) return;
-      const styles = getComputedStyle(document.documentElement);
-      const progress =
-        Number.parseFloat(styles.getPropertyValue("--page-progress")) || 0;
-      const velocity =
-        Number.parseFloat(styles.getPropertyValue("--scroll-velocity")) || 0;
-      const pointerX =
-        Number.parseFloat(styles.getPropertyValue("--pointer-x")) || 0.5;
-      const pointerY =
-        Number.parseFloat(styles.getPropertyValue("--pointer-y")) || 0.5;
       const t = time * 0.00012;
-      const root = document.documentElement;
-      const activeSection = root.dataset.activeSection || "hero";
-      const target = narrativeState(
-        activeSection,
-        root.dataset.storyVisual || "",
-      );
+      const target = narrativeState(activeSection, activeVisual);
       narrativeEnergy += (target.energy - narrativeEnergy) * 0.035;
       narrativeDensity += (target.density - narrativeDensity) * 0.028;
       narrativeSpread += (target.spread - narrativeSpread) * 0.03;
-      const direction = root.dataset.scrollDirection === "up" ? -1 : 1;
 
       context.clearRect(0, 0, width, height);
       const glow = context.createRadialGradient(
@@ -104,7 +96,7 @@ export function InteractiveBackground() {
             Math.cos(t * 2 + node.phase) * 6 + (pointerY - 0.5) * 6;
           const x = node.x * width + driftX;
           const y =
-            ((node.y + progress * (0.07 + lane * 0.018) * direction) % 1) *
+            wrap01(node.y + progress * (0.07 + lane * 0.018) * direction) *
               height +
             driftY;
           if (index === 0) context.moveTo(x, y);
@@ -121,7 +113,7 @@ export function InteractiveBackground() {
           Math.sin(t * 3 + node.phase) * 8 +
           (pointerX - 0.5) * 10;
         const y =
-          ((node.y + progress * (0.07 + node.lane * 0.018) * direction) % 1) *
+          wrap01(node.y + progress * (0.07 + node.lane * 0.018) * direction) *
             height +
           Math.cos(t * 2 + node.phase) * 6;
         context.beginPath();
@@ -142,15 +134,38 @@ export function InteractiveBackground() {
       if (running) raf = window.requestAnimationFrame(draw);
       else window.cancelAnimationFrame(raf);
     };
+    const onMotionFrame = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{
+          progress?: number;
+          velocity?: number;
+          direction?: "up" | "down";
+          section?: string;
+        }>
+      ).detail;
+      progress = detail?.progress ?? progress;
+      velocity = detail?.velocity ?? velocity;
+      direction = detail?.direction === "up" ? -1 : 1;
+      activeSection = detail?.section || activeSection;
+      activeVisual = document.documentElement.dataset.storyVisual || "";
+    };
+    const onPointer = (event: PointerEvent) => {
+      pointerX = event.clientX / Math.max(1, window.innerWidth);
+      pointerY = event.clientY / Math.max(1, window.innerHeight);
+    };
 
     resize();
     window.addEventListener("resize", resize, { passive: true });
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("imports-tech:motion-frame", onMotionFrame);
     document.addEventListener("visibilitychange", onVisibility);
     if (!paused) raf = window.requestAnimationFrame(draw);
     return () => {
       running = false;
       window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("pointermove", onPointer);
+      window.removeEventListener("imports-tech:motion-frame", onMotionFrame);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [mode, paused]);
@@ -162,6 +177,10 @@ export function InteractiveBackground() {
       <span className="global-signal-thread" />
     </div>
   );
+}
+
+function wrap01(value: number) {
+  return ((value % 1) + 1) % 1;
 }
 
 function narrativeState(section: string, visual: string) {

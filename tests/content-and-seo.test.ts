@@ -5,10 +5,14 @@ import {
   explicitContentPatch,
   validateContentPayload,
 } from "../lib/content-schemas";
-import { publishedReviewsFromEntries } from "../lib/content-repository";
+import {
+  publishedReviewsFromEntries,
+  publishedTimelineFromEntries,
+} from "../lib/content-repository";
 import { safeJsonLd } from "../lib/json-ld";
 import { getSiteUrl } from "../lib/site-url";
 import { finds, reviews } from "../lib/site-data";
+import { storyMilestones } from "../lib/story";
 import { getVersionedYouTubeMetricsSnapshot } from "../lib/youtube-service";
 
 test("schemas rejeitam payload arbitrário e aceitam review editorial", () => {
@@ -196,4 +200,43 @@ test("timeline editorial exige campos estruturados e posição inteira", () => {
     validateContentPayload("timeline", { title: "incompleto" }).ok,
     false,
   );
+});
+
+test("timeline antiga separa falta de tempo da meta sem perder o conteúdo editorial", () => {
+  const goal = storyMilestones.find((item) => item.slug === "meta-2027");
+  assert.ok(goal);
+  const goalPayload = Object.fromEntries(
+    Object.entries(goal).filter(([key]) => key !== "slug"),
+  );
+  const entries = [
+    {
+      id: "legacy-goal",
+      type: "timeline" as const,
+      slug: "meta-2027",
+      title: goal.title,
+      payload: JSON.stringify({
+        ...goalPayload,
+        position: 12,
+        description:
+          "Depois do iPhone XR, eu parei de pensar seriamente em desistir. Hoje, minha maior dificuldade é equilibrar o canal com trabalhos, responsabilidades, faculdade, academia e descanso. Minha meta é chegar a 100 mil inscritos até o fim de 2027.",
+      }),
+      status: "published" as const,
+      featured: false,
+      createdById: null,
+      updatedById: null,
+      createdAt: "2026-07-14T00:00:00.000Z",
+      updatedAt: "2026-07-14T00:00:00.000Z",
+      publishedAt: "2026-07-14T00:00:00.000Z",
+      deletedAt: null,
+    },
+  ];
+  const timeline = publishedTimelineFromEntries(entries);
+  const balanceIndex = timeline.findIndex(
+    (item) => item.slug === "falta-de-tempo",
+  );
+  const goalIndex = timeline.findIndex((item) => item.slug === "meta-2027");
+  assert.ok(balanceIndex >= 0);
+  assert.equal(goalIndex, balanceIndex + 1);
+  assert.equal(timeline[goalIndex]?.position, 13);
+  assert.equal(timeline[goalIndex]?.description, goal.description);
 });

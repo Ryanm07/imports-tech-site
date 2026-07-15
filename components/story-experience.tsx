@@ -12,7 +12,12 @@ import {
 import { useMotionExperience } from "@/components/motion/motion-provider";
 import { StoryMicroScene } from "@/components/story-micro-scene";
 import type { TimelineItem } from "@/lib/content-repository";
-import { chapterPhases, clamp01, sectionProgress } from "@/lib/motion";
+import {
+  chapterPhases,
+  clamp01,
+  sectionProgress,
+  storyScrollPosition,
+} from "@/lib/motion";
 import { storyVisualTypeForSlug } from "@/lib/story";
 
 type ChapterStyle = CSSProperties & {
@@ -20,6 +25,11 @@ type ChapterStyle = CSSProperties & {
   "--chapter-focus": number;
   "--chapter-exit": number;
   "--chapter-signed": number;
+  "--chapter-progress": number;
+  "--chapter-approach": number;
+  "--chapter-transform": number;
+  "--chapter-cycle": number;
+  "--chapter-eased": number;
 };
 
 export function StoryExperience({
@@ -37,15 +47,22 @@ export function StoryExperience({
   const active = timeline[activeIndex] || timeline[0];
 
   const goTo = useCallback(
-    (index: number) => {
+    (index: number, updateHistory = true, instant = false) => {
       const documentary = documentaryRef.current;
       if (!documentary) return;
-      const mobile = window.matchMedia("(max-width: 760px)").matches;
+      const mobile = window.matchMedia("(max-width: 820px)").matches;
+      const root = document.documentElement;
+      const previousScrollBehavior = root.style.scrollBehavior;
+      if (instant) root.style.scrollBehavior = "auto";
       if (mobile || mode === "reduced") {
-        itemRefs.current[index]?.scrollIntoView({
-          behavior: mode === "reduced" ? "auto" : "smooth",
-          block: "center",
-        });
+        const target = itemRefs.current[index];
+        if (target) {
+          const targetTop = target.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({
+            top: Math.max(0, targetTop - (mobile ? 128 : 84)),
+            behavior: instant || mode === "reduced" ? "auto" : "smooth",
+          });
+        }
       } else {
         const top = documentary.getBoundingClientRect().top + window.scrollY;
         const travel = Math.max(
@@ -54,12 +71,19 @@ export function StoryExperience({
         );
         window.scrollTo({
           top: top + (index / Math.max(1, timeline.length - 1)) * travel,
-          behavior: "smooth",
+          behavior: instant ? "auto" : "smooth",
+        });
+      }
+      if (instant) {
+        requestAnimationFrame(() => {
+          root.style.scrollBehavior = previousScrollBehavior;
         });
       }
       activeIndexRef.current = index;
       setActiveIndex(index);
-      history.replaceState(null, "", `#${timeline[index]?.slug || ""}`);
+      if (updateHistory) {
+        history.pushState(null, "", `#${timeline[index]?.slug || ""}`);
+      }
     },
     [mode, timeline],
   );
@@ -71,12 +95,23 @@ export function StoryExperience({
     let top = 0;
     let travel = 1;
     let mobile = false;
+    let hashCorrection = 0;
+    let mobileItems: Array<{ top: number; height: number } | undefined> = [];
 
     const measure = () => {
-      mobile = window.matchMedia("(max-width: 760px)").matches;
+      mobile = window.matchMedia("(max-width: 820px)").matches;
       const rect = documentary.getBoundingClientRect();
       top = rect.top + window.scrollY;
       travel = Math.max(1, documentary.offsetHeight - window.innerHeight);
+      mobileItems = itemRefs.current.map((element) => {
+        const stableBox = element?.parentElement;
+        if (!stableBox) return undefined;
+        const itemRect = stableBox.getBoundingClientRect();
+        return {
+          top: itemRect.top + window.scrollY,
+          height: itemRect.height,
+        };
+      });
       update();
     };
     const setActive = (next: number) => {
@@ -93,6 +128,20 @@ export function StoryExperience({
       element.style.setProperty("--chapter-focus", phases.focus.toFixed(4));
       element.style.setProperty("--chapter-exit", phases.exit.toFixed(4));
       element.style.setProperty("--chapter-signed", phases.signed.toFixed(4));
+      element.style.setProperty(
+        "--chapter-progress",
+        phases.progress.toFixed(4),
+      );
+      element.style.setProperty(
+        "--chapter-approach",
+        phases.approach.toFixed(4),
+      );
+      element.style.setProperty(
+        "--chapter-transform",
+        phases.transform.toFixed(4),
+      );
+      element.style.setProperty("--chapter-cycle", phases.cycle.toFixed(4));
+      element.style.setProperty("--chapter-eased", phases.eased.toFixed(4));
     };
     const update = () => {
       raf = 0;
@@ -101,11 +150,12 @@ export function StoryExperience({
         let closest = 0;
         let distance = Number.POSITIVE_INFINITY;
         itemRefs.current.forEach((element, index) => {
-          if (!element) return;
-          const rect = element.getBoundingClientRect();
+          const item = mobileItems[index];
+          if (!element || !item) return;
+          const rectTop = item.top - window.scrollY;
           const local = sectionProgress(
-            rect.top,
-            rect.height,
+            rectTop,
+            item.height,
             window.innerHeight,
           );
           const position = clamp01((local - 0.16) / 0.68);
@@ -120,8 +170,26 @@ export function StoryExperience({
             "--chapter-signed",
             (position - 0.5).toFixed(4),
           );
+          element.style.setProperty("--chapter-progress", position.toFixed(4));
+          element.style.setProperty(
+            "--chapter-approach",
+            clamp01(position / 0.18).toFixed(4),
+          );
+          element.style.setProperty(
+            "--chapter-transform",
+            clamp01((position - 0.62) / 0.22).toFixed(4),
+          );
+          element.style.setProperty(
+            "--chapter-cycle",
+            Math.abs(Math.sin(position * Math.PI * 2)).toFixed(4),
+          );
+          element.style.setProperty(
+            "--chapter-eased",
+            (1 - Math.pow(1 - position, 3)).toFixed(4),
+          );
+          const focusLine = Math.min(window.innerHeight * 0.38, 240);
           const nextDistance = Math.abs(
-            rect.top + rect.height * 0.48 - window.innerHeight * 0.5,
+            rectTop + Math.min(item.height * 0.16, 140) - focusLine,
           );
           if (nextDistance < distance) {
             distance = nextDistance;
@@ -130,8 +198,13 @@ export function StoryExperience({
         });
         setActive(closest);
       } else {
-        const progress = clamp01((window.scrollY - top) / travel);
-        const position = progress * Math.max(0, timeline.length - 1);
+        const position = storyScrollPosition(
+          window.scrollY,
+          top,
+          travel,
+          timeline.length,
+        );
+        const progress = position / Math.max(1, timeline.length - 1);
         timeline.forEach((_, index) => paintChapter(index, position));
         setActive(Math.round(position));
         documentary.style.setProperty("--story-progress", progress.toFixed(4));
@@ -152,15 +225,28 @@ export function StoryExperience({
     const observer = new ResizeObserver(measure);
     observer.observe(documentary);
 
-    const hash = decodeURIComponent(window.location.hash.slice(1));
-    const hashIndex = timeline.findIndex((item) => item.slug === hash);
-    if (hashIndex >= 0) requestAnimationFrame(() => goTo(hashIndex));
+    const goToCurrentHash = () => {
+      const hash = decodeURIComponent(window.location.hash.slice(1));
+      const hashIndex = timeline.findIndex((item) => item.slug === hash);
+      if (hashIndex >= 0) {
+        const applyHash = () => goTo(hashIndex, false, true);
+        requestAnimationFrame(applyHash);
+        window.clearTimeout(hashCorrection);
+        hashCorrection = window.setTimeout(applyHash, 360);
+      }
+    };
+    goToCurrentHash();
+    window.addEventListener("hashchange", goToCurrentHash);
+    window.addEventListener("popstate", goToCurrentHash);
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(hashCorrection);
       observer.disconnect();
       window.removeEventListener("scroll", requestUpdate);
       window.removeEventListener("resize", measure);
+      window.removeEventListener("hashchange", goToCurrentHash);
+      window.removeEventListener("popstate", goToCurrentHash);
       delete document.documentElement.dataset.storyVisual;
       delete document.documentElement.dataset.storyChapter;
     };
@@ -219,9 +305,15 @@ export function StoryExperience({
             </div>
           </aside>
 
+          <div className="story-scene-connector" aria-hidden="true">
+            <i />
+            <b />
+            <span />
+          </div>
           <ol className="story-stage">
             {timeline.map((item, index) => {
               const initial = chapterPhases(0, index);
+              const visualAsset = item.visualAsset || item.imageUrl;
               return (
                 <li key={item.slug}>
                   <article
@@ -233,6 +325,8 @@ export function StoryExperience({
                     data-story-visual={
                       item.visualType || storyVisualTypeForSlug(item.slug)
                     }
+                    data-story-accent={item.accentValue || undefined}
+                    data-motion-variant={item.motionVariant || undefined}
                     className={
                       index === activeIndex
                         ? "story-chapter is-active"
@@ -244,16 +338,32 @@ export function StoryExperience({
                         "--chapter-focus": initial.focus,
                         "--chapter-exit": initial.exit,
                         "--chapter-signed": initial.signed,
+                        "--chapter-progress": initial.progress,
+                        "--chapter-approach": initial.approach,
+                        "--chapter-transform": initial.transform,
+                        "--chapter-cycle": initial.cycle,
+                        "--chapter-eased": initial.eased,
                       } as ChapterStyle
                     }
-                    tabIndex={0}
+                    tabIndex={index === activeIndex ? 0 : -1}
                     onFocus={() => {
                       activeIndexRef.current = index;
                       setActiveIndex(index);
                     }}
                   >
                     <div className="story-chapter-scene">
-                      <StoryMicroScene item={item} />
+                      {visualAsset && item.fallbackMode === "asset" ? (
+                        <div className="story-visual-asset">
+                          <Image
+                            src={visualAsset}
+                            alt={item.visualDescription || ""}
+                            fill
+                            sizes="(max-width: 820px) 100vw, 42vw"
+                          />
+                        </div>
+                      ) : (
+                        <StoryMicroScene item={item} />
+                      )}
                     </div>
                     <div className="story-chapter-copy">
                       <div className="story-chapter-meta">
@@ -288,16 +398,6 @@ export function StoryExperience({
                         )}
                       </div>
                     </div>
-                    {item.imageUrl && item.fallbackMode === "asset" && (
-                      <div className="story-entry-image">
-                        <Image
-                          src={item.imageUrl}
-                          alt=""
-                          fill
-                          sizes="(max-width: 760px) 100vw, 24vw"
-                        />
-                      </div>
-                    )}
                   </article>
                 </li>
               );

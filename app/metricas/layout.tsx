@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Métricas públicas",
   description:
-    "Métricas públicas e catálogo sincronizado do canal Imports Tech.",
+    "Métricas públicas oficiais do canal Imports Tech e data do último retrato disponível.",
   alternates: { canonical: "/metricas" },
 };
 

@@ -33,26 +33,44 @@ export function sectionProgress(
 
 export function motionPhases(progress: number) {
   const value = clamp01(progress);
+  const focus = Math.min(
+    clamp01((value - 0.32) / 0.06),
+    clamp01((0.72 - value) / 0.07),
+  );
   return {
-    approach: clamp01(value / 0.2),
-    enter: clamp01((value - 0.2) / 0.2),
-    center: Math.min(
-      clamp01((value - 0.36) / 0.1),
-      clamp01((0.72 - value) / 0.1),
-    ),
-    transform: clamp01((value - 0.65) / 0.2),
-    exit: clamp01((value - 0.85) / 0.15),
+    approach: clamp01(value / 0.18),
+    enter: clamp01((value - 0.18) / 0.2),
+    focus,
+    center: focus,
+    transform: clamp01((value - 0.65) / 0.21),
+    exit: clamp01((value - 0.86) / 0.14),
   };
 }
 
 export function chapterPhases(position: number, index: number) {
   const signed = position - index;
+  const progress = clamp01((signed + 1) / 2);
   return {
     signed,
-    enter: clamp01(signed + 1),
+    progress,
+    approach: clamp01(progress / 0.18),
+    enter: clamp01((progress - 0.1) / 0.35),
     focus: clamp01(1 - Math.abs(signed) / 1.18),
-    exit: clamp01(signed),
+    transform: clamp01((progress - 0.62) / 0.22),
+    exit: clamp01((progress - 0.68) / 0.32),
+    cycle: Math.abs(Math.sin(progress * Math.PI * 2)),
+    eased: 1 - Math.pow(1 - progress, 3),
   };
+}
+
+export function storyScrollPosition(
+  scrollY: number,
+  sectionTop: number,
+  travel: number,
+  chapterCount: number,
+) {
+  const progress = clamp01((scrollY - sectionTop) / Math.max(1, travel));
+  return progress * Math.max(0, chapterCount - 1);
 }
 
 export function chooseMotionMode(input: MotionCapabilityInput): MotionMode {

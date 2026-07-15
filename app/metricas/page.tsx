@@ -10,9 +10,8 @@ export default async function MetricsPage() {
         <span className="eyebrow-v2">RETRATO DO CANAL</span>
         <h1>Métricas públicas, sem estimativas.</h1>
         <p>
-          Os dados do canal vêm exclusivamente da YouTube Data API. Os números
-          que eu mostro aqui vêm exclusivamente da YouTube Data API, sem
-          estimativas de desempenho.
+          Os números que eu mostro aqui vêm exclusivamente da YouTube Data API,
+          sem estimativas de desempenho.
         </p>
       </header>
       <section className="metric-cards" aria-label="Métricas do YouTube">
@@ -32,7 +31,7 @@ export default async function MetricsPage() {
         </div>
       </section>
       <section className="metric-cards" aria-label="Contexto do canal">
-        <MetricText label="Canal criado" value="2025" />
+        <MetricText label="Canal criado" value="Setembro de 2025" />
         <MetricText label="Meta" value="100 mil inscritos" />
         <MetricText label="Prazo da meta" value="Fim de 2027" />
       </section>

@@ -31,6 +31,30 @@ export function sectionProgress(
   return clamp01((viewportHeight - sectionTop) / travel);
 }
 
+export function motionPhases(progress: number) {
+  const value = clamp01(progress);
+  return {
+    approach: clamp01(value / 0.2),
+    enter: clamp01((value - 0.2) / 0.2),
+    center: Math.min(
+      clamp01((value - 0.36) / 0.1),
+      clamp01((0.72 - value) / 0.1),
+    ),
+    transform: clamp01((value - 0.65) / 0.2),
+    exit: clamp01((value - 0.85) / 0.15),
+  };
+}
+
+export function chapterPhases(position: number, index: number) {
+  const signed = position - index;
+  return {
+    signed,
+    enter: clamp01(signed + 1),
+    focus: clamp01(1 - Math.abs(signed) / 1.18),
+    exit: clamp01(signed),
+  };
+}
+
 export function chooseMotionMode(input: MotionCapabilityInput): MotionMode {
   if (input.reducedMotion) return "reduced";
   if (

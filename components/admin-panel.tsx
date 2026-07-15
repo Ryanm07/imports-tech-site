@@ -36,7 +36,11 @@ const statusOptions: { value: ContentStatus; label: string }[] = [
   { value: "archived", label: "Arquivado" },
 ];
 
-export function AdminPanel() {
+export function AdminPanel({
+  projectsEnabled = false,
+}: {
+  projectsEnabled?: boolean;
+}) {
   const [tab, setTab] = useState<"content" | "youtube">("content");
   const [entries, setEntries] = useState<Entry[]>([]);
   const [youtube, setYoutube] = useState<YouTubeState>({
@@ -150,6 +154,13 @@ export function AdminPanel() {
 
   return (
     <section className="admin-panel" aria-busy={busy}>
+      {!projectsEnabled && (
+        <p className="admin-notice" role="note">
+          Projetos estão desativados na experiência pública. Eu mantenho os
+          reviews e garimpos preservados aqui para edição e uso futuro, mas eles
+          não recebem links, destaques ou páginas públicas agora.
+        </p>
+      )}
       {notice && (
         <p className="admin-notice" role="status">
           {notice}
@@ -199,8 +210,9 @@ export function AdminPanel() {
             </label>
           </div>
           <div className="admin-create-actions" aria-label="Criar conteúdo">
-            {(
-              ["timeline", "review", "find", "category", "setting"] as const
+            {(projectsEnabled
+              ? (["timeline", "review", "find", "category", "setting"] as const)
+              : (["timeline", "category", "setting"] as const)
             ).map((type) => (
               <button key={type} onClick={() => setCreating(type)}>
                 + {contentTypeLabel(type)}
@@ -222,14 +234,23 @@ export function AdminPanel() {
                   <small>
                     {contentTypeLabel(entry.type)} · {entry.slug}
                   </small>
-                  {entry.featured && <small>Destaque da home/projetos</small>}
+                  {!projectsEnabled &&
+                    (entry.type === "review" || entry.type === "find") && (
+                      <small>Projeto preservado · sem publicação pública</small>
+                    )}
+                  {projectsEnabled && entry.featured && (
+                    <small>Destaque de projetos</small>
+                  )}
                   <small>Atualizado em {formatDate(entry.updatedAt)}</small>
                 </div>
                 <div className="admin-row-actions">
                   <button onClick={() => setEditing(entry)}>Editar</button>
-                  <button onClick={() => toggleFeatured(entry)}>
-                    {entry.featured ? "Remover destaque" : "Destacar"}
-                  </button>
+                  {(projectsEnabled ||
+                    (entry.type !== "review" && entry.type !== "find")) && (
+                    <button onClick={() => toggleFeatured(entry)}>
+                      {entry.featured ? "Remover destaque" : "Destacar"}
+                    </button>
+                  )}
                   <select
                     aria-label={`Alterar estado de ${entry.title}`}
                     value={
@@ -395,6 +416,14 @@ function templateFor(type: ContentType) {
       relatedProject: null,
       youtubeUrl: null,
       position: 1,
+      visualType: "origin",
+      visualAsset: null,
+      accentValue: "warm",
+      primaryMetric: null,
+      secondaryMetric: null,
+      motionVariant: "origin",
+      visualDescription: "",
+      fallbackMode: "abstract",
     };
   }
   if (type === "setting") return { key: "", value: "" };

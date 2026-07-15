@@ -6,11 +6,12 @@ import { ScrollSection } from "@/components/motion/scroll-section";
 import { StoryExperience } from "@/components/story-experience";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { getTimeline } from "@/lib/content-repository";
+import { projectsEnabled } from "@/lib/features";
 
 export const metadata: Metadata = {
   title: "Minha história",
   description:
-    "Eu conto como comecei o Imports Tech, como minha comunicação evoluiu e o que aprendi construindo cada projeto.",
+    "Eu conto como comecei o Imports Tech, como minha comunicação evoluiu e o que aprendi em cada fase do canal.",
   alternates: { canonical: "/sobre" },
 };
 
@@ -71,7 +72,10 @@ export default async function AboutPage() {
         </div>
       </ScrollSection>
 
-      <StoryExperience timeline={timeline} />
+      <StoryExperience
+        timeline={timeline}
+        projectsEnabled={projectsEnabled()}
+      />
 
       <ScrollSection name="processo" className="story-process">
         <div>
@@ -118,8 +122,11 @@ export default async function AboutPage() {
           isso começar.
         </p>
         <div className="hero-buttons">
-          <Link className="button secondary" href="/projetos">
-            Conhecer meus projetos
+          <Link className="button secondary" href="/comunidade">
+            Entrar na comunidade
+          </Link>
+          <Link className="inline-link" href="/">
+            Voltar ao início
           </Link>
           <a
             className="button primary"

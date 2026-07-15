@@ -5,6 +5,7 @@ import {
   type Review,
 } from "@/lib/site-data";
 import { sanitizePlainText } from "@/lib/security";
+import { STORY_VISUAL_PRESETS } from "@/lib/story";
 
 export type ContentType =
   | "review"
@@ -72,6 +73,16 @@ function validateTimeline(value: Record<string, unknown>) {
   const number = text(value.number, 80) || null;
   const relatedProject = sanitizeSlug(value.relatedProject) || null;
   const youtubeUrl = editorialYouTubeUrl(value.youtubeUrl);
+  const visualType = STORY_VISUAL_PRESETS.includes(
+    value.visualType as (typeof STORY_VISUAL_PRESETS)[number],
+  )
+    ? (value.visualType as (typeof STORY_VISUAL_PRESETS)[number])
+    : undefined;
+  const fallbackMode = ["abstract", "asset", "minimal"].includes(
+    String(value.fallbackMode),
+  )
+    ? (value.fallbackMode as "abstract" | "asset" | "minimal")
+    : undefined;
   return valid({
     dateLabel,
     datePrecision,
@@ -82,6 +93,26 @@ function validateTimeline(value: Record<string, unknown>) {
     relatedProject,
     youtubeUrl,
     position,
+    ...(visualType ? { visualType } : {}),
+    ...(editorialImage(value.visualAsset)
+      ? { visualAsset: editorialImage(value.visualAsset) }
+      : {}),
+    ...(text(value.accentValue, 30)
+      ? { accentValue: text(value.accentValue, 30) }
+      : {}),
+    ...(text(value.primaryMetric, 80)
+      ? { primaryMetric: text(value.primaryMetric, 80) }
+      : {}),
+    ...(text(value.secondaryMetric, 100)
+      ? { secondaryMetric: text(value.secondaryMetric, 100) }
+      : {}),
+    ...(text(value.motionVariant, 50)
+      ? { motionVariant: text(value.motionVariant, 50) }
+      : {}),
+    ...(text(value.visualDescription, 300)
+      ? { visualDescription: text(value.visualDescription, 300) }
+      : {}),
+    ...(fallbackMode ? { fallbackMode } : {}),
   });
 }
 

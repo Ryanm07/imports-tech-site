@@ -1,5 +1,6 @@
-import { permanentRedirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { BRAND_LINKS } from "@/lib/brand";
 
 export default function VideosRedirect() {
-  permanentRedirect("/projetos");
+  redirect(BRAND_LINKS.youtube);
 }

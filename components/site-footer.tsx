@@ -7,9 +7,11 @@ import type { PublicLinks } from "@/lib/public-links";
 export function SiteFooter({
   telegram,
   publicLinks,
+  projectsEnabled,
 }: {
   telegram: TelegramLinks;
   publicLinks: PublicLinks;
+  projectsEnabled: boolean;
 }) {
   return (
     <footer className="site-footer">
@@ -23,14 +25,14 @@ export function SiteFooter({
         />
         <div>
           <strong>IMPORTS TECH</strong>
-          <span>História · Projetos · Tecnologia</span>
+          <span>História · Comunidade · Tecnologia</span>
         </div>
       </div>
       <div className="footer-links">
         <div>
           <strong>Explorar</strong>
           <Link href="/sobre">Minha história</Link>
-          <Link href="/projetos">Projetos</Link>
+          {projectsEnabled && <Link href="/projetos">Projetos</Link>}
           <Link href="/comunidade">Comunidade</Link>
           <Link href="/metricas">Métricas públicas</Link>
           <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">

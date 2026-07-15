@@ -14,9 +14,6 @@ export default async function Home() {
   ]);
   return (
     <HomePage
-      reviews={data.reviews}
-      finds={data.finds}
-      featuredProjectSlugs={data.featuredProjectSlugs}
       telegram={getTelegramLinks(data.settings)}
       publicLinks={getPublicLinks(data.settings)}
       youtube={youtube}

@@ -5,11 +5,13 @@ import {
 } from "@/lib/content-repository";
 import { getSiteUrl } from "@/lib/site-url";
 import { getYouTubeMetrics } from "@/lib/youtube-service";
+import { projectsEnabled } from "@/lib/features";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const enabled = projectsEnabled();
   const [reviews, finds, youtube] = await Promise.all([
-    getPublishedReviews(),
-    getPublishedFinds(),
+    enabled ? getPublishedReviews() : Promise.resolve([]),
+    enabled ? getPublishedFinds() : Promise.resolve([]),
     getYouTubeMetrics(),
   ]);
   return buildSitemap({
@@ -17,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     reviews,
     finds,
     youtube,
+    projectsEnabled: enabled,
   });
 }
 
@@ -25,21 +28,27 @@ export function buildSitemap({
   reviews,
   finds,
   youtube,
+  projectsEnabled = false,
 }: {
   base: URL;
   reviews: Awaited<ReturnType<typeof getPublishedReviews>>;
   finds: Awaited<ReturnType<typeof getPublishedFinds>>;
   youtube: Awaited<ReturnType<typeof getYouTubeMetrics>>;
+  projectsEnabled?: boolean;
 }): MetadataRoute.Sitemap {
   const fixedRoutes = [
     ["", "2026-07-14"],
-    [
-      "/projetos",
-      latest([
-        ...reviews.map((item) => item.updatedAt),
-        ...finds.map((item) => item.updatedAt),
-      ]),
-    ],
+    ...(projectsEnabled
+      ? ([
+          [
+            "/projetos",
+            latest([
+              ...reviews.map((item) => item.updatedAt),
+              ...finds.map((item) => item.updatedAt),
+            ]),
+          ],
+        ] as const)
+      : []),
     ["/metricas", youtube.updatedAt || "2026-07-14"],
     ["/sobre", "2026-07-14"],
     ["/comunidade", "2026-07-14"],

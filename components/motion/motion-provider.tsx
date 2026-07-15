@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   chooseMotionMode,
+  motionPhases,
   pageProgress,
   sectionProgress,
   type MotionMode,
@@ -136,6 +137,22 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     let currentSection = "top";
     let pointerX = 0.5;
     let pointerY = 0.5;
+    let measures: Array<{
+      element: HTMLElement;
+      top: number;
+      height: number;
+    }> = [];
+
+    const measureSections = () => {
+      const y = window.scrollY;
+      measures = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-motion-section]"),
+      ).map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { element, top: rect.top + y, height: rect.height };
+      });
+      dirty = true;
+    };
 
     const syncMode = () => {
       currentMode = getMode();
@@ -149,6 +166,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
     const onResize = () => {
       syncMode();
+      measureSections();
       dirty = true;
     };
     const onPointer = (event: PointerEvent) => {
@@ -188,29 +206,51 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         );
         root.style.setProperty("--page-progress", progress.toFixed(4));
         root.style.setProperty("--scroll-velocity", velocity.toFixed(4));
+        root.style.setProperty(
+          "--scroll-direction",
+          nextDirection === "down" ? "1" : "-1",
+        );
         root.dataset.scrollDirection = nextDirection;
 
-        const sections = Array.from(
-          document.querySelectorAll<HTMLElement>("[data-motion-section]"),
-        );
         let bestId = "top";
         let bestDistance = Number.POSITIVE_INFINITY;
-        for (const section of sections) {
-          const rect = section.getBoundingClientRect();
+        for (const measure of measures) {
+          const section = measure.element;
+          const top = measure.top - y;
+          const bottom = top + measure.height;
           const local = sectionProgress(
-            rect.top,
-            rect.height,
+            top,
+            measure.height,
             window.innerHeight,
           );
+          const phases = motionPhases(local);
           section.style.setProperty("--section-progress", local.toFixed(4));
+          section.style.setProperty(
+            "--section-approach",
+            phases.approach.toFixed(4),
+          );
+          section.style.setProperty("--section-enter", phases.enter.toFixed(4));
+          section.style.setProperty(
+            "--section-center",
+            phases.center.toFixed(4),
+          );
+          section.style.setProperty(
+            "--section-transform",
+            phases.transform.toFixed(4),
+          );
+          section.style.setProperty("--section-exit", phases.exit.toFixed(4));
+          section.style.setProperty(
+            "--section-direction",
+            nextDirection === "down" ? "1" : "-1",
+          );
           const distance = Math.abs(
-            rect.top +
-              Math.min(rect.height, window.innerHeight) / 2 -
+            top +
+              Math.min(measure.height, window.innerHeight) / 2 -
               window.innerHeight / 2,
           );
           if (
-            rect.bottom > 0 &&
-            rect.top < window.innerHeight &&
+            bottom > 0 &&
+            top < window.innerHeight &&
             distance < bestDistance
           ) {
             bestId = section.dataset.motionSection || section.id || "top";
@@ -244,6 +284,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     };
 
     syncMode();
+    measureSections();
     root.classList.add("motion-ready");
     root.style.setProperty("--pointer-x", pointerX.toString());
     root.style.setProperty("--pointer-y", pointerY.toString());
@@ -253,6 +294,9 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     window.addEventListener("imports-tech:intro-complete", onIntroComplete);
     document.addEventListener("visibilitychange", onVisibility);
     reducedQuery.addEventListener("change", syncMode);
+    const resizeObserver = new ResizeObserver(measureSections);
+    resizeObserver.observe(document.body);
+    if (document.fonts) void document.fonts.ready.then(measureSections);
     raf = window.requestAnimationFrame(frame);
 
     return () => {
@@ -266,6 +310,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
       );
       document.removeEventListener("visibilitychange", onVisibility);
       reducedQuery.removeEventListener("change", syncMode);
+      resizeObserver.disconnect();
       root.classList.remove("motion-ready");
     };
   }, []);

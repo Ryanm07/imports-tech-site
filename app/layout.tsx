@@ -12,6 +12,7 @@ import { safeJsonLd } from "@/lib/json-ld";
 import { getSiteUrl } from "@/lib/site-url";
 import { getTelegramLinks } from "@/lib/telegram";
 import { getPublicLinks } from "@/lib/public-links";
+import { projectsEnabled } from "@/lib/features";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Imports Tech",
   },
   description:
-    "Eu compartilho garimpos, reparos e experiências reais com celulares, notebooks e tecnologia.",
+    "Eu conto minha evolução criando conteúdo sobre celulares, notebooks e tecnologia no uso real.",
   icons: {
     icon: BRAND_ASSETS.icon,
     shortcut: BRAND_ASSETS.favicon,
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     title: "Imports Tech — Tecnologia testada no uso real",
-    description: "A história, os projetos e a evolução do Imports Tech.",
+    description: "A história, a evolução e a comunidade do Imports Tech.",
     type: "website",
     url: "/",
     siteName: "Imports Tech",
@@ -62,7 +63,7 @@ export default async function RootLayout({
     logo: new URL(BRAND_ASSETS.logoMain, site).toString(),
     sameAs: [BRAND_LINKS.youtube],
     description:
-      "Eu compartilho reviews, garimpos, reparos e tecnologia testada no uso real.",
+      "Eu compartilho minha história, meus aprendizados e tecnologia testada no uso real.",
   };
   const settings = await getSiteSettings();
   const telegram = getTelegramLinks(settings);
@@ -73,9 +74,16 @@ export default async function RootLayout({
         <MotionProvider>
           <InteractiveBackground />
           <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
-          <SiteHeader publicLinks={publicLinks} />
+          <SiteHeader
+            publicLinks={publicLinks}
+            projectsEnabled={projectsEnabled()}
+          />
           <PageTransition>{children}</PageTransition>
-          <SiteFooter telegram={telegram} publicLinks={publicLinks} />
+          <SiteFooter
+            telegram={telegram}
+            publicLinks={publicLinks}
+            projectsEnabled={projectsEnabled()}
+          />
         </MotionProvider>
         <script
           type="application/ld+json"

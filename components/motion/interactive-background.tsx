@@ -13,7 +13,7 @@ type SignalNode = {
 
 export function InteractiveBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { mode, paused, activeSection } = useMotionExperience();
+  const { mode, paused } = useMotionExperience();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,6 +37,9 @@ export function InteractiveBackground() {
     let dpr = 1;
     let raf = 0;
     let running = !paused;
+    let narrativeEnergy = 0.72;
+    let narrativeDensity = 0.72;
+    let narrativeSpread = 0.5;
 
     const resize = () => {
       width = window.innerWidth;
@@ -61,25 +64,36 @@ export function InteractiveBackground() {
       const pointerY =
         Number.parseFloat(styles.getPropertyValue("--pointer-y")) || 0.5;
       const t = time * 0.00012;
-      const sectionEnergy =
-        activeSection === "historia" || activeSection === "projetos" ? 1 : 0.74;
+      const root = document.documentElement;
+      const activeSection = root.dataset.activeSection || "hero";
+      const target = narrativeState(
+        activeSection,
+        root.dataset.storyVisual || "",
+      );
+      narrativeEnergy += (target.energy - narrativeEnergy) * 0.035;
+      narrativeDensity += (target.density - narrativeDensity) * 0.028;
+      narrativeSpread += (target.spread - narrativeSpread) * 0.03;
+      const direction = root.dataset.scrollDirection === "up" ? -1 : 1;
 
       context.clearRect(0, 0, width, height);
       const glow = context.createRadialGradient(
-        width * (0.28 + pointerX * 0.08),
-        height * (0.24 + pointerY * 0.08),
+        width * (0.24 + pointerX * 0.1 + narrativeSpread * 0.06),
+        height * (0.2 + pointerY * 0.08),
         0,
         width * 0.45,
         height * 0.4,
         Math.max(width, height) * 0.72,
       );
-      glow.addColorStop(0, `rgba(246, 183, 19, ${0.035 * sectionEnergy})`);
+      glow.addColorStop(
+        0,
+        `rgba(246, 183, 19, ${0.028 + 0.03 * narrativeEnergy})`,
+      );
       glow.addColorStop(0.46, "rgba(13, 58, 100, .045)");
       glow.addColorStop(1, "rgba(4, 13, 25, 0)");
       context.fillStyle = glow;
       context.fillRect(0, 0, width, height);
 
-      for (let lane = 0; lane < 3; lane += 1) {
+      for (let lane = 0; lane < (narrativeDensity > 0.86 ? 3 : 2); lane += 1) {
         const laneNodes = nodes.filter((node) => node.lane === lane);
         context.beginPath();
         laneNodes.forEach((node, index) => {
@@ -90,12 +104,14 @@ export function InteractiveBackground() {
             Math.cos(t * 2 + node.phase) * 6 + (pointerY - 0.5) * 6;
           const x = node.x * width + driftX;
           const y =
-            ((node.y + progress * (0.08 + lane * 0.018)) % 1) * height + driftY;
+            ((node.y + progress * (0.07 + lane * 0.018) * direction) % 1) *
+              height +
+            driftY;
           if (index === 0) context.moveTo(x, y);
           else context.lineTo(x, y);
         });
-        context.strokeStyle = `rgba(97, 151, 202, ${0.045 + velocity * 0.035})`;
-        context.lineWidth = 0.75;
+        context.strokeStyle = `rgba(97, 151, 202, ${0.025 + narrativeDensity * 0.035 + velocity * 0.04})`;
+        context.lineWidth = 0.55 + narrativeDensity * 0.35;
         context.stroke();
       }
 
@@ -105,15 +121,18 @@ export function InteractiveBackground() {
           Math.sin(t * 3 + node.phase) * 8 +
           (pointerX - 0.5) * 10;
         const y =
-          ((node.y + progress * (0.08 + node.lane * 0.018)) % 1) * height +
+          ((node.y + progress * (0.07 + node.lane * 0.018) * direction) % 1) *
+            height +
           Math.cos(t * 2 + node.phase) * 6;
         context.beginPath();
         context.arc(x, y, node.size + velocity * 0.8, 0, Math.PI * 2);
+        context.globalAlpha = 0.5 + narrativeEnergy * 0.5;
         context.fillStyle =
           node.size > 1
             ? "rgba(246, 183, 19, .36)"
             : "rgba(160, 199, 232, .24)";
         context.fill();
+        context.globalAlpha = 1;
       }
       raf = window.requestAnimationFrame(draw);
     };
@@ -134,7 +153,7 @@ export function InteractiveBackground() {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [activeSection, mode, paused]);
+  }, [mode, paused]);
 
   return (
     <div className="interactive-background" aria-hidden="true">
@@ -143,4 +162,33 @@ export function InteractiveBackground() {
       <span className="global-signal-thread" />
     </div>
   );
+}
+
+function narrativeState(section: string, visual: string) {
+  if (section === "historia") {
+    if (visual === "heavy-processing") {
+      return { energy: 0.94, density: 1, spread: 0.34 };
+    }
+    if (visual === "massive-number" || visual === "mechanical-switch") {
+      return { energy: 1, density: 0.9, spread: 0.62 };
+    }
+    if (visual === "future-target") {
+      return { energy: 0.7, density: 0.42, spread: 1 };
+    }
+    return { energy: 0.82, density: 0.76, spread: 0.56 };
+  }
+  const states: Record<
+    string,
+    { energy: number; density: number; spread: number }
+  > = {
+    hero: { energy: 0.92, density: 0.82, spread: 0.64 },
+    metricas: { energy: 0.78, density: 0.7, spread: 0.52 },
+    apresentacao: { energy: 0.52, density: 0.48, spread: 0.42 },
+    trajetoria: { energy: 0.88, density: 0.84, spread: 0.58 },
+    comunidade: { energy: 0.72, density: 0.62, spread: 0.92 },
+    empresas: { energy: 0.46, density: 0.34, spread: 0.5 },
+    continuar: { energy: 0.7, density: 0.48, spread: 0.5 },
+    meta: { energy: 0.66, density: 0.38, spread: 1 },
+  };
+  return states[section] || { energy: 0.65, density: 0.55, spread: 0.5 };
 }

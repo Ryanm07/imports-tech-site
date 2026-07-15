@@ -1,3 +1,22 @@
+export const STORY_VISUAL_PRESETS = [
+  "origin",
+  "identity-transform",
+  "recording",
+  "equipment-build",
+  "first-signal",
+  "discovery",
+  "pattern",
+  "mechanical-switch",
+  "massive-number",
+  "heavy-processing",
+  "production-line",
+  "time-balance",
+  "future-target",
+] as const;
+
+export type StoryVisualPreset = (typeof STORY_VISUAL_PRESETS)[number];
+export type StoryFallbackMode = "abstract" | "asset" | "minimal";
+
 export type StoryMilestone = {
   slug: string;
   dateLabel: string;
@@ -9,12 +28,20 @@ export type StoryMilestone = {
   relatedProject: string | null;
   youtubeUrl: string | null;
   position: number;
+  visualType?: StoryVisualPreset;
+  visualAsset?: string | null;
+  accentValue?: string | null;
+  primaryMetric?: string | null;
+  secondaryMetric?: string | null;
+  motionVariant?: string | null;
+  visualDescription?: string | null;
+  fallbackMode?: StoryFallbackMode;
 };
 
 // Every fallback below is based only on facts confirmed by Ryan in the brief.
 // Published D1 entries with the same slug can replace them; archived entries
 // act as tombstones. Draft and review states never reach the public site.
-export const storyMilestones: StoryMilestone[] = [
+const storyMilestoneBase: StoryMilestone[] = [
   {
     slug: "comeco-setembro-2025",
     dateLabel: "Setembro de 2025",
@@ -172,3 +199,115 @@ export const storyMilestones: StoryMilestone[] = [
     position: 12,
   },
 ];
+
+const storyVisualDefaults: Record<
+  string,
+  Pick<
+    StoryMilestone,
+    | "visualType"
+    | "accentValue"
+    | "primaryMetric"
+    | "secondaryMetric"
+    | "visualDescription"
+  >
+> = {
+  "comeco-setembro-2025": {
+    visualType: "origin",
+    accentValue: "warm",
+    primaryMetric: "SET 2025",
+    secondaryMetric: "O primeiro sinal",
+    visualDescription: "Eu começo como um sinal pequeno que ganha voz.",
+  },
+  "r-import-imports-tech": {
+    visualType: "identity-transform",
+    accentValue: "blue",
+    primaryMetric: "R IMPORT",
+    secondaryMetric: "IMPORTS TECH",
+    visualDescription: "Eu reorganizo a primeira ideia até encontrar meu nome.",
+  },
+  "primeiro-video": {
+    visualType: "recording",
+    accentValue: "red",
+    primaryMetric: "1º vídeo",
+    secondaryMetric: "Microsoft Clipchamp",
+    visualDescription: "Eu gravo, hesito e começo a aprender a cortar.",
+  },
+  "primeiros-equipamentos": {
+    visualType: "equipment-build",
+    accentValue: "blue",
+    primaryMetric: "3–4 anos",
+    secondaryMetric: "Galaxy S23 → S21 FE",
+    visualDescription: "Eu monto a estrutura com o que já tenho.",
+  },
+  "primeiro-investimento": {
+    visualType: "first-signal",
+    accentValue: "gold",
+    primaryMetric: "≈ 6 mil",
+    secondaryMetric: "≈ R$ 300",
+    visualDescription: "Eu vejo o primeiro sinal atravessar a incerteza.",
+  },
+  "iphone-x-historias": {
+    visualType: "discovery",
+    accentValue: "violet",
+    primaryMetric: "Não seria publicado",
+    secondaryMetric: "Um caminho inesperado",
+    visualDescription: "Eu abro uma história que muda a direção do canal.",
+  },
+  "iphone-xr": {
+    visualType: "pattern",
+    accentValue: "cyan",
+    primaryMetric: "≈ 50 mil",
+    secondaryMetric: "≈ 300 inscritos",
+    visualDescription: "Eu conecto os pontos e reconheço um formato.",
+  },
+  "mil-inscritos": {
+    visualType: "mechanical-switch",
+    accentValue: "green",
+    primaryMetric: "999 → 1.000",
+    secondaryMetric: "4 JUN 2026",
+    visualDescription: "Eu acompanho o contador atravessar um marco exato.",
+  },
+  "acer-nitro-5": {
+    visualType: "massive-number",
+    accentValue: "red",
+    primaryMetric: "> 200 mil",
+    secondaryMetric: "Pode → vai dar certo",
+    visualDescription: "Eu vejo um número grande mudar minha convicção.",
+  },
+  "dell-g7": {
+    visualType: "heavy-processing",
+    accentValue: "amber",
+    primaryMetric: "≈ 500 GB",
+    secondaryMetric: "≈ 2 dias",
+    visualDescription: "Eu atravesso camadas pesadas de gravação e edição.",
+  },
+  "processo-atual": {
+    visualType: "production-line",
+    accentValue: "blue",
+    primaryMetric: "≈ 12h",
+    secondaryMetric: "1h → 10–15 min",
+    visualDescription: "Eu transformo material bruto em uma história concisa.",
+  },
+  "meta-2027": {
+    visualType: "future-target",
+    accentValue: "gold",
+    primaryMetric: "Meta: 100 mil",
+    secondaryMetric: "Fim de 2027",
+    visualDescription:
+      "Eu sigo por uma linha aberta até uma meta ainda à frente.",
+  },
+};
+
+export function storyVisualTypeForSlug(slug: string): StoryVisualPreset {
+  return storyVisualDefaults[slug]?.visualType || "origin";
+}
+
+export const storyMilestones: StoryMilestone[] = storyMilestoneBase.map(
+  (milestone) => ({
+    ...milestone,
+    ...storyVisualDefaults[milestone.slug],
+    visualAsset: milestone.imageUrl,
+    motionVariant: storyVisualDefaults[milestone.slug]?.visualType || "origin",
+    fallbackMode: "abstract",
+  }),
+);

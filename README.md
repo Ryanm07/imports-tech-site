@@ -70,7 +70,8 @@ Flags, sempre desativadas até homologação explícita:
 
 - `ADMIN_ENABLED=false`;
 - `EDITORIAL_DB_ENABLED=false`;
-- `INTRO_ENABLED=false`.
+- `INTRO_ENABLED=false`;
+- `PROJECTS_ENABLED=false` mantém reviews e garimpos preservados no painel, mas fora da experiência pública.
 
 `MEDIA_KIT_URL` aceita somente HTTPS. Telegram aceita somente HTTPS nos hosts
 `t.me` e `telegram.me`. Ausência ou valor inválido resulta em “Em breve”.

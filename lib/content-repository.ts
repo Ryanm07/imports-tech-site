@@ -120,9 +120,13 @@ export async function getTimeline(): Promise<TimelineItem[]> {
   const entries = await getStoredEntries("timeline");
   return mergeWithTombstones(storyMilestones, entries, (entry) => {
     const payload = parseEntry(entry);
-    return payload && entry.type === "timeline"
-      ? { slug: entry.slug, ...(payload as Omit<TimelineItem, "slug">) }
-      : null;
+    if (!payload || entry.type !== "timeline") return null;
+    const fallback = storyMilestones.find((item) => item.slug === entry.slug);
+    return {
+      ...fallback,
+      slug: entry.slug,
+      ...(payload as Omit<TimelineItem, "slug">),
+    } as TimelineItem;
   }).sort((a, b) => a.position - b.position);
 }
 

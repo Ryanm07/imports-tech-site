@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { chooseMotionMode, pageProgress, sectionProgress } from "../lib/motion";
-import { storyMilestones } from "../lib/story";
+import {
+  chapterPhases,
+  chooseMotionMode,
+  motionPhases,
+  pageProgress,
+  sectionProgress,
+} from "../lib/motion";
+import { STORY_VISUAL_PRESETS, storyMilestones } from "../lib/story";
 
 test("progresso global e local permanece limitado entre zero e um", () => {
   assert.equal(pageProgress(0, 2_000, 1_000), 0);
@@ -30,8 +36,22 @@ test("modo de movimento respeita redução, economia de dados e capacidade", () 
   );
 });
 
+test("fases narrativas são contínuas, limitadas e reversíveis", () => {
+  const forward = [0, 0.2, 0.4, 0.65, 0.85, 1].map(motionPhases);
+  for (const phases of forward) {
+    for (const value of Object.values(phases)) {
+      assert.ok(value >= 0 && value <= 1);
+    }
+  }
+  assert.deepEqual(motionPhases(0.4), motionPhases(0.4));
+  assert.equal(chapterPhases(7, 7).focus, 1);
+  assert.ok(chapterPhases(7.5, 7).focus > 0);
+  assert.equal(chapterPhases(7, 7).signed, 0);
+});
+
 test("experiência mantém os componentes narrativos e fallback acessível", () => {
   const story = readFileSync("components/story-experience.tsx", "utf8");
+  const scenes = readFileSync("components/story-micro-scene.tsx", "utf8");
   const projects = readFileSync("components/project-experience.tsx", "utf8");
   const provider = readFileSync(
     "components/motion/motion-provider.tsx",
@@ -43,6 +63,10 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
   assert.match(projects, /tabIndex=\{0\}/);
   assert.match(provider, /visibilitychange/);
   assert.match(provider, /prefers-reduced-motion/);
+  assert.match(story, /story-documentary-sticky/);
+  assert.match(story, /chapterPhases/);
+  assert.match(scenes, /case "mechanical-switch"/);
+  assert.match(scenes, /case "heavy-processing"/);
 });
 
 test("trajetória publicada continua com os doze fatos confirmados em primeira pessoa", () => {
@@ -54,4 +78,8 @@ test("trajetória publicada continua com os doze fatos confirmados em primeira p
     );
   }
   assert.equal(storyMilestones.at(-1)?.number, "100 mil inscritos");
+  const chapterPresets = storyMilestones.map((item) => item.visualType);
+  assert.equal(new Set(chapterPresets).size, 12);
+  assert.ok(STORY_VISUAL_PRESETS.includes("time-balance"));
+  assert.ok(STORY_VISUAL_PRESETS.includes("future-target"));
 });

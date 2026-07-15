@@ -1,12 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { TelegramSection } from "@/components/telegram-section";
 import { ScrollSection } from "@/components/motion/scroll-section";
+import { HomeScrollDirector } from "@/components/home-scroll-director";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
-import { buildProjects } from "@/lib/projects";
 import type { PublicLinks } from "@/lib/public-links";
-import type { Find, Review } from "@/lib/site-data";
-import { money } from "@/lib/site-data";
 import type { TimelineItem } from "@/lib/content-repository";
 import type { TelegramLinks } from "@/lib/telegram";
 import type { YouTubeMetricsSnapshot } from "@/lib/youtube-service";
@@ -15,9 +14,6 @@ const fallbackIntroduction =
   "Eu sou o Ryan. Criei o Imports Tech em setembro de 2025 porque queria perder a timidez e aprender a me comunicar melhor falando sobre uma coisa que sempre gostei: tecnologia. Comecei com reviews simples de periféricos. Aos poucos, vieram os achados da OLX, os reparos, os testes no dia a dia e projetos que eu nem imaginava conseguir produzir.";
 
 export function HomePage({
-  reviews,
-  finds,
-  featuredProjectSlugs,
   telegram,
   publicLinks,
   youtube,
@@ -25,9 +21,6 @@ export function HomePage({
   homeIntroduction,
   commercialIntroduction,
 }: {
-  reviews: Review[];
-  finds: Find[];
-  featuredProjectSlugs: string[];
   telegram: TelegramLinks;
   publicLinks: PublicLinks;
   youtube: YouTubeMetricsSnapshot;
@@ -35,24 +28,35 @@ export function HomePage({
   homeIntroduction?: string;
   commercialIntroduction?: string;
 }) {
-  const projects = buildProjects(reviews, finds, featuredProjectSlugs);
-  const repairs = projects.filter((project) => project.repair).length;
   const orbitMetrics = [
-    { value: metricValue(youtube.subscribers), label: "inscritos" },
-    { value: metricValue(youtube.videoCount), label: "vídeos" },
-    { value: metricValue(youtube.totalViews), label: "visualizações" },
-    { value: String(projects.length), label: "projetos no site" },
-    { value: String(repairs), label: "reparos registrados" },
+    {
+      value: metricValue(youtube.subscribers),
+      label: "inscritos",
+      kind: "current",
+    },
+    {
+      value: metricValue(youtube.videoCount),
+      label: "vídeos publicados",
+      kind: "current",
+    },
+    {
+      value: metricValue(youtube.totalViews),
+      label: "visualizações",
+      kind: "current",
+    },
+    { value: "2025", label: "canal criado em", kind: "origin" },
+    { value: "100 MIL", label: "meta · até o fim de 2027", kind: "goal" },
   ];
   const featuredMilestones = pickMilestones(timeline);
 
   return (
     <main id="conteudo">
+      <HomeScrollDirector />
       <ScrollSection name="hero" className="hero-v2">
         <div className="hero-grid" aria-hidden="true" />
         <div className="hero-message">
           <span className="eyebrow-v2">
-            <i /> HISTÓRIA · PROJETOS · TECNOLOGIA
+            <i /> HISTÓRIA · COMUNIDADE · TECNOLOGIA
           </span>
           <h1>
             Tecnologia testada
@@ -67,8 +71,8 @@ export function HomePage({
             <Link className="button primary" href="/sobre">
               Minha história
             </Link>
-            <Link className="button secondary" href="/projetos">
-              Projetos
+            <Link className="button secondary" href="/comunidade">
+              Comunidade
             </Link>
             <a
               className="inline-link"
@@ -102,7 +106,7 @@ export function HomePage({
           </div>
           {orbitMetrics.map((metric, index) => (
             <div
-              className={`orbit-node node-${index + 1}`}
+              className={`orbit-node node-${index + 1} is-${metric.kind}`}
               key={metric.label}
               role="listitem"
             >
@@ -123,12 +127,35 @@ export function HomePage({
         </div>
       </ScrollSection>
 
-      <ScrollSection name="metricas" className="home-metrics-band">
-        <span className="sr-only">Métricas públicas</span>
-        <Metric value={youtube.subscribers} label="Inscritos" />
-        <Metric value={youtube.totalViews} label="Visualizações" />
-        <Metric value={youtube.videoCount} label="Vídeos publicados" />
-        <Link href="/metricas">Como estes dados são atualizados ↗</Link>
+      <ScrollSection name="metricas" className="home-metrics-story">
+        <div className="home-metrics-sticky" data-scroll-sequence>
+          <div className="home-metrics-heading">
+            <span className="eyebrow-v2">O CANAL EM NÚMEROS</span>
+            <h2>Cada número marca uma parte do caminho.</h2>
+            <p>{freshnessLabel(youtube)}</p>
+          </div>
+          <div className="home-metrics-track" aria-hidden="true">
+            <i />
+          </div>
+          <ol aria-label="Métricas públicas do canal">
+            <MetricStory
+              value={youtube.subscribers}
+              label="Inscritos"
+              context="A comunidade que decidiu continuar comigo."
+            />
+            <MetricStory
+              value={youtube.totalViews}
+              label="Visualizações"
+              context="Histórias assistidas no canal oficial."
+            />
+            <MetricStory
+              value={youtube.videoCount}
+              label="Vídeos publicados"
+              context="Cada publicação resume horas de trabalho."
+            />
+          </ol>
+          <Link href="/metricas">Como estes dados são atualizados ↗</Link>
+        </div>
       </ScrollSection>
 
       <ScrollSection
@@ -144,6 +171,7 @@ export function HomePage({
           </Link>
         </div>
         <div className="home-personal-visual">
+          <span className="personal-mask-line" aria-hidden="true" />
           <Image
             src={BRAND_ASSETS.banner}
             alt="Banner oficial do canal Imports Tech"
@@ -160,55 +188,33 @@ export function HomePage({
       </ScrollSection>
 
       <ScrollSection name="trajetoria" className="home-milestones">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow-v2">O CAMINHO ATÉ AQUI</span>
-            <h2>Alguns momentos que mudaram o rumo dessa história.</h2>
+        <div className="home-milestones-sticky" data-scroll-sequence>
+          <div className="section-title">
+            <div>
+              <span className="eyebrow-v2">O CAMINHO ATÉ AQUI</span>
+              <h2>Alguns momentos que mudaram o rumo dessa história.</h2>
+            </div>
+            <Link href="/sobre">Ver a história completa ↗</Link>
           </div>
-          <Link href="/sobre">Ver a história completa ↗</Link>
-        </div>
-        <ol>
-          {featuredMilestones.map((milestone) => (
-            <li key={milestone.slug}>
-              <span>{milestone.dateLabel}</span>
-              {milestone.number && <strong>{milestone.number}</strong>}
-              <h3>{milestone.title}</h3>
-              <p>{milestone.description}</p>
-            </li>
-          ))}
-        </ol>
-      </ScrollSection>
-
-      <ScrollSection name="projetos" className="section-shell home-projects">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow-v2">HISTÓRIAS REAIS</span>
-            <h2>Projetos que me ensinaram alguma coisa.</h2>
+          <div className="home-milestone-line" aria-hidden="true">
+            <i />
           </div>
-          <Link href="/projetos">Ver todos os projetos ↗</Link>
-        </div>
-        <div className="home-project-grid">
-          {projects.slice(0, 3).map((project) => (
-            <article key={project.slug}>
-              <div>
-                <Image
-                  src={project.image}
-                  alt={`Projeto ${project.title}`}
-                  fill
-                  sizes="(max-width: 760px) 100vw, 33vw"
-                />
-              </div>
-              <span>
-                {project.collection} · {project.category}
-              </span>
-              <h3>{project.title}</h3>
-              <p>{project.summary}</p>
-              <small>Eu paguei: {money(project.pricePaid)}</small>
-              <Link href={`/projetos#${project.slug}`}>
-                Conhecer o projeto →
-              </Link>
-            </article>
-          ))}
+          <ol aria-label="Quatro viradas da minha trajetória">
+            {featuredMilestones.map((milestone, index) => (
+              <li
+                key={milestone.slug}
+                data-sequence-item
+                style={{ "--milestone-index": index } as CSSProperties}
+              >
+                <span>
+                  {String(index + 1).padStart(2, "0")} · {milestone.dateLabel}
+                </span>
+                {milestone.number && <strong>{milestone.number}</strong>}
+                <h3>{milestone.title}</h3>
+                <p>{milestone.description}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </ScrollSection>
 
@@ -216,6 +222,20 @@ export function HomePage({
 
       <ScrollSection name="empresas" className="brand-home section-shell">
         <div>
+          <div
+            className="brand-public-numbers"
+            aria-label="Números públicos do canal"
+          >
+            <span>
+              <strong>{metricValue(youtube.subscribers)}</strong> inscritos
+            </span>
+            <span>
+              <strong>{metricValue(youtube.totalViews)}</strong> visualizações
+            </span>
+            <span>
+              <strong>{metricValue(youtube.videoCount)}</strong> vídeos
+            </span>
+          </div>
           <span className="eyebrow-v2">PARA MARCAS E EMPRESAS</span>
           <h2>
             Eu transformo experiências reais em conteúdo que ajuda a decidir.
@@ -258,8 +278,12 @@ export function HomePage({
       </ScrollSection>
 
       <ScrollSection name="continuar" className="home-final-cta">
+        <div className="final-brand-return" aria-hidden="true">
+          <i />
+          <Image src={BRAND_ASSETS.logo} alt="" width={76} height={76} />
+        </div>
         <span className="eyebrow-v2">CONTINUE COMIGO</span>
-        <h2>O próximo projeto já pode estar na minha bancada.</h2>
+        <h2>A história continua daqui.</h2>
         <p>
           No YouTube, eu mostro a história completa. Aqui, eu deixo organizado o
           que aprendi pelo caminho.
@@ -273,6 +297,9 @@ export function HomePage({
           >
             Acompanhar no YouTube ↗
           </a>
+          <Link className="button secondary" href="/comunidade">
+            Entrar na comunidade
+          </Link>
           {publicLinks.mediaKit && (
             <a
               className="button secondary"
@@ -283,27 +310,39 @@ export function HomePage({
               Media Kit ↗
             </a>
           )}
+          <a className="inline-link" href="#conteudo">
+            Voltar ao topo ↑
+          </a>
         </div>
       </ScrollSection>
     </main>
   );
 }
 
-function Metric({ value, label }: { value: number | null; label: string }) {
+function MetricStory({
+  value,
+  label,
+  context,
+}: {
+  value: number | null;
+  label: string;
+  context: string;
+}) {
   return (
-    <div>
+    <li data-sequence-item>
       <strong>{metricValue(value)}</strong>
       <span>{label}</span>
-    </div>
+      <p>{context}</p>
+    </li>
   );
 }
 
 function pickMilestones(timeline: TimelineItem[]) {
   const wanted = [
     "comeco-setembro-2025",
-    "iphone-x-historias",
+    "iphone-xr",
     "mil-inscritos",
-    "meta-2027",
+    "acer-nitro-5",
   ];
   const matches = wanted.flatMap((slug) =>
     timeline.filter((item) => item.slug === slug),

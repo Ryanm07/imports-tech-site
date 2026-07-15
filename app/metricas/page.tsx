@@ -1,17 +1,9 @@
-import Link from "next/link";
-import { getPublicEditorialData } from "@/lib/content-repository";
-import { buildProjects } from "@/lib/projects";
 import { getYouTubeMetrics } from "@/lib/youtube-service";
 
 export const dynamic = "force-dynamic";
 
 export default async function MetricsPage() {
-  const [youtube, editorial] = await Promise.all([
-    getYouTubeMetrics(),
-    getPublicEditorialData(),
-  ]);
-  const projects = buildProjects(editorial.reviews, editorial.finds);
-  const repairs = projects.filter((project) => project.repair).length;
+  const youtube = await getYouTubeMetrics();
   return (
     <main id="conteudo" className="page-main metrics-page">
       <header className="page-hero">
@@ -19,7 +11,8 @@ export default async function MetricsPage() {
         <h1>Métricas públicas, sem estimativas.</h1>
         <p>
           Os dados do canal vêm exclusivamente da YouTube Data API. Os números
-          editoriais são calculados a partir dos projetos publicados neste site.
+          que eu mostro aqui vêm exclusivamente da YouTube Data API, sem
+          estimativas de desempenho.
         </p>
       </header>
       <section className="metric-cards" aria-label="Métricas do YouTube">
@@ -38,19 +31,21 @@ export default async function MetricsPage() {
           </p>
         </div>
       </section>
-      <section className="metric-cards" aria-label="Métricas editoriais">
-        <Metric label="Projetos publicados" value={projects.length} exact />
-        <Metric
-          label="Garimpos registrados"
-          value={editorial.finds.length}
-          exact
-        />
-        <Metric label="Reparos documentados" value={repairs} exact />
+      <section className="metric-cards" aria-label="Contexto do canal">
+        <MetricText label="Canal criado" value="2025" />
+        <MetricText label="Meta" value="100 mil inscritos" />
+        <MetricText label="Prazo da meta" value="Fim de 2027" />
       </section>
-      <Link className="button secondary" href="/projetos">
-        Conhecer os projetos
-      </Link>
     </main>
+  );
+}
+
+function MetricText({ label, value }: { label: string; value: string }) {
+  return (
+    <article>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
   );
 }
 

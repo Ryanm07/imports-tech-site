@@ -62,14 +62,15 @@ test("navegação pública é curta e rotas antigas têm redirect seguro", async
       source("app/garimpos/page.tsx"),
       source("app/comunidade/page.tsx"),
     ]);
-  for (const label of ["Início", "Minha história", "Projetos", "Comunidade"]) {
+  for (const label of ["Início", "Minha história", "Comunidade"]) {
     assert.equal(header.includes(label), true, label);
   }
+  assert.match(header, /projectsEnabled/);
   assert.equal(header.includes("Ctrl"), false);
   assert.equal(header.includes("Pesquisar"), false);
-  assert.match(videos, /permanentRedirect\("\/projetos"\)/);
-  assert.match(reviews, /permanentRedirect\("\/projetos"\)/);
-  assert.match(finds, /permanentRedirect\("\/projetos"\)/);
+  assert.match(videos, /redirect\(BRAND_LINKS\.youtube\)/);
+  assert.match(reviews, /redirect\("\/sobre"\)/);
+  assert.match(finds, /redirect\("\/sobre"\)/);
   assert.match(videoDetail, /BRAND_LINKS\.youtubeWatch/);
   assert.match(videoDetail, /\^\[A-Za-z0-9_-\]\{11\}\$/);
   assert.equal(community.includes("TelegramSection"), true);

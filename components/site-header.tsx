@@ -7,17 +7,26 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import type { PublicLinks } from "@/lib/public-links";
 
-const nav = [
+const baseNav = [
   ["Início", "/"],
   ["Minha história", "/sobre"],
-  ["Projetos", "/projetos"],
   ["Comunidade", "/comunidade"],
 ] as const;
 
-export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
+export function SiteHeader({
+  publicLinks,
+  projectsEnabled,
+}: {
+  publicLinks: PublicLinks;
+  projectsEnabled: boolean;
+}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const header = useRef<HTMLElement>(null);
+  const sceneLabel = useRef<HTMLSpanElement>(null);
+  const nav = projectsEnabled
+    ? ([...baseNav.slice(0, 2), ["Projetos", "/projetos"], baseNav[2]] as const)
+    : baseNav;
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
@@ -39,11 +48,20 @@ export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
       window.cancelAnimationFrame(raf);
       raf = window.requestAnimationFrame(update);
     };
+    const onMotionFrame = (event: Event) => {
+      const detail = (event as CustomEvent<{ section?: string }>).detail;
+      if (!header.current || !sceneLabel.current) return;
+      const section = detail?.section || "top";
+      header.current.dataset.scene = section;
+      sceneLabel.current.textContent = sceneName(section);
+    };
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("imports-tech:motion-frame", onMotionFrame);
     return () => {
       window.cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("imports-tech:motion-frame", onMotionFrame);
     };
   }, []);
 
@@ -71,6 +89,13 @@ export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
             IMPORTS <strong>TECH</strong>
           </span>
         </Link>
+        <span
+          className="header-scene-label"
+          ref={sceneLabel}
+          aria-hidden="true"
+        >
+          Início
+        </span>
         <nav
           id="main-navigation"
           className={menuOpen ? "main-nav is-open" : "main-nav"}
@@ -140,4 +165,19 @@ export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
       </header>
     </>
   );
+}
+
+function sceneName(section: string) {
+  const labels: Record<string, string> = {
+    hero: "Início",
+    metricas: "Canal em números",
+    apresentacao: "Eu sou o Ryan",
+    trajetoria: "Minha trajetória",
+    historia: "Documentário",
+    comunidade: "Comunidade",
+    empresas: "Para empresas",
+    continuar: "Continue comigo",
+    meta: "Próximo capítulo",
+  };
+  return labels[section] || "Imports Tech";
 }

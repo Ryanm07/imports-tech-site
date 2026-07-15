@@ -118,7 +118,21 @@ test("sitemap usa datas editoriais e exclui recursos desativados", () => {
     finds,
     youtube,
   });
-  assert.ok(items.some((item) => item.url === "https://site.example/projetos"));
+  assert.equal(
+    items.some((item) => item.url === "https://site.example/projetos"),
+    false,
+  );
+  const withProjects = buildSitemap({
+    base: new URL("https://site.example"),
+    reviews,
+    finds,
+    youtube,
+    projectsEnabled: true,
+  });
+  assert.equal(
+    withProjects.some((item) => item.url === "https://site.example/projetos"),
+    true,
+  );
   assert.ok(items.some((item) => item.url === "https://site.example/metricas"));
   assert.equal(
     items.some((item) => item.url.includes("/videos")),

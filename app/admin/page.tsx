@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireChatGPTUser } from "@/app/chatgpt-auth";
 import { AdminPanel } from "@/components/admin-panel";
 import { authorizeOwnerUser } from "@/lib/server-auth";
+import { projectsEnabled } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -46,11 +47,11 @@ export default async function AdminPage() {
         <span className="eyebrow-v2">PAINEL DO PROPRIETÁRIO</span>
         <h1>Conteúdo, história e métricas.</h1>
         <p>
-          Eu reviso textos, projetos, links e marcos antes de publicar. O painel
-          também mostra somente o estado sanitizado da sincronização do YouTube.
+          Eu reviso textos, links e marcos da minha história antes de publicar.
+          Também acompanho aqui o estado sanitizado da sincronização do YouTube.
         </p>
       </header>
-      <AdminPanel />
+      <AdminPanel projectsEnabled={projectsEnabled()} />
     </main>
   );
 }

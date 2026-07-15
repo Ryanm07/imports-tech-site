@@ -125,7 +125,7 @@ test("sincronização manual é privada e a chave não possui caminho cliente", 
   assert.equal(containsPublicYouTubeSecret("const value = 'público'"), false);
   assert.equal(
     containsPublicYouTubeSecret(
-      "const key = 'AIzaabcdefghijklmnopqrstuvwxyz123456789'",
+      "const key = 'TEST_YOUTUBE_API_KEY_NOT_REAL'",
     ),
     true,
   );

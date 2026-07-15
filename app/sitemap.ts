@@ -17,7 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     reviews,
     finds,
     youtube,
-    communityEnabled: process.env.COMMUNITY_ENABLED === "true",
   });
 }
 
@@ -26,13 +25,11 @@ export function buildSitemap({
   reviews,
   finds,
   youtube,
-  communityEnabled,
 }: {
   base: URL;
   reviews: Awaited<ReturnType<typeof getPublishedReviews>>;
   finds: Awaited<ReturnType<typeof getPublishedFinds>>;
   youtube: Awaited<ReturnType<typeof getYouTubeMetrics>>;
-  communityEnabled: boolean;
 }): MetadataRoute.Sitemap {
   const fixedRoutes = [
     ["", "2026-07-14"],
@@ -45,14 +42,12 @@ export function buildSitemap({
     ],
     ["/metricas", youtube.updatedAt || "2026-07-14"],
     ["/sobre", "2026-07-14"],
+    ["/comunidade", "2026-07-14"],
     ["/privacidade", "2026-07-14"],
     ["/termos", "2026-07-14"],
     ["/afiliados", "2026-07-14"],
     ["/contato", "2026-07-14"],
   ];
-  if (communityEnabled) {
-    fixedRoutes.push(["/comunidade", "2026-07-14"]);
-  }
   return [
     ...fixedRoutes.map(([route, modified]) => ({
       url: new URL(route || "/", base).toString(),

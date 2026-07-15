@@ -8,6 +8,7 @@ import { getSiteSettings } from "@/lib/content-repository";
 import { safeJsonLd } from "@/lib/json-ld";
 import { getSiteUrl } from "@/lib/site-url";
 import { getTelegramLinks } from "@/lib/telegram";
+import { getPublicLinks } from "@/lib/public-links";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Imports Tech",
   },
   description:
-    "Reviews sinceros, garimpos, reparos e tecnologia testada no uso real.",
+    "Eu compartilho garimpos, reparos e experiências reais com celulares, notebooks e tecnologia.",
   icons: {
     icon: BRAND_ASSETS.icon,
     shortcut: BRAND_ASSETS.favicon,
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     title: "Imports Tech — Tecnologia testada no uso real",
-    description: "Reviews, garimpos e reparos sem enrolação.",
+    description: "A história, os projetos e a evolução do Imports Tech.",
     type: "website",
     url: "/",
     siteName: "Imports Tech",
@@ -58,16 +59,18 @@ export default async function RootLayout({
     logo: new URL(BRAND_ASSETS.logoMain, site).toString(),
     sameAs: [BRAND_LINKS.youtube],
     description:
-      "Canal brasileiro de reviews, garimpos, reparos e tecnologia testada no uso real.",
+      "Eu compartilho reviews, garimpos, reparos e tecnologia testada no uso real.",
   };
-  const telegram = getTelegramLinks(await getSiteSettings());
+  const settings = await getSiteSettings();
+  const telegram = getTelegramLinks(settings);
+  const publicLinks = getPublicLinks(settings);
   return (
     <html lang="pt-BR">
       <body className={`${geist.variable} ${mono.variable}`}>
         <SiteIntro enabled={process.env.INTRO_ENABLED === "true"} />
-        <SiteHeader telegram={telegram} />
+        <SiteHeader publicLinks={publicLinks} />
         {children}
-        <SiteFooter telegram={telegram} />
+        <SiteFooter telegram={telegram} publicLinks={publicLinks} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}

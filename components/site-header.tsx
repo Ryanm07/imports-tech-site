@@ -5,19 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
-import type { TelegramLinks } from "@/lib/telegram";
+import type { PublicLinks } from "@/lib/public-links";
 
 const nav = [
   ["Início", "/"],
   ["Minha história", "/sobre"],
   ["Projetos", "/projetos"],
-  ["Mural", "/comunidade"],
+  ["Comunidade", "/comunidade"],
 ] as const;
 
-export function SiteHeader({ telegram }: { telegram: TelegramLinks }) {
+export function SiteHeader({ publicLinks }: { publicLinks: PublicLinks }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const telegramUrl = telegram.group || telegram.channel;
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
@@ -65,12 +64,12 @@ export function SiteHeader({ telegram }: { telegram: TelegramLinks }) {
             );
           })}
           <div className="mobile-external-links">
-            {telegramUrl ? (
-              <a href={telegramUrl} target="_blank" rel="noreferrer">
-                Telegram ↗
+            {publicLinks.mediaKit ? (
+              <a href={publicLinks.mediaKit} target="_blank" rel="noreferrer">
+                Media Kit ↗
               </a>
             ) : (
-              <span>Telegram · Em breve</span>
+              <span>Media Kit · Em breve</span>
             )}
             <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">
               YouTube ↗
@@ -78,17 +77,17 @@ export function SiteHeader({ telegram }: { telegram: TelegramLinks }) {
           </div>
         </nav>
         <div className="header-actions header-external">
-          {telegramUrl ? (
+          {publicLinks.mediaKit ? (
             <a
               className="telegram-cta"
-              href={telegramUrl}
+              href={publicLinks.mediaKit}
               target="_blank"
               rel="noreferrer"
             >
-              Telegram
+              Media Kit
             </a>
           ) : (
-            <span className="telegram-cta is-disabled">Telegram</span>
+            <span className="telegram-cta is-disabled">Media Kit</span>
           )}
           <a
             className="youtube-cta"

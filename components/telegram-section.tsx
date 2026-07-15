@@ -13,18 +13,18 @@ export function TelegramSection({
     >
       <div>
         <span className="eyebrow-v2">IMPORTS TECH NO TELEGRAM</span>
-        <h2>Achados e conversas além do site.</h2>
+        <h2>Eu quero manter a conversa perto.</h2>
         <p>
-          Duas entradas oficiais, exibidas somente quando o endereço foi
-          configurado e validado.
+          No Telegram, eu separo as promoções do espaço de conversa para você
+          escolher como prefere acompanhar.
         </p>
       </div>
       <div className="telegram-actions">
         <article>
           <strong>Canal de promoções</strong>
           <p>
-            Promoções, cupons e oportunidades de tecnologia selecionadas pelo
-            Imports Tech.
+            Eu seleciono promoções, cupons e oportunidades de tecnologia para
+            compartilhar por lá.
           </p>
           {links.channel ? (
             <a
@@ -33,7 +33,7 @@ export function TelegramSection({
               target="_blank"
               rel="noreferrer"
             >
-              Entrar no canal ↗
+              Ver promoções ↗
             </a>
           ) : (
             <span>Canal · Em breve</span>
@@ -42,8 +42,9 @@ export function TelegramSection({
         <article>
           <strong>Grupo da comunidade</strong>
           <p>
-            Converse sobre celulares, notebooks, garimpos, reparos e tecnologia
-            com a comunidade.
+            No grupo, você pode conversar sobre celulares, notebooks, garimpos,
+            reparos e tecnologia com outras pessoas que acompanham o Imports
+            Tech.
           </p>
           {links.group ? (
             <a
@@ -59,6 +60,10 @@ export function TelegramSection({
           )}
         </article>
       </div>
+      <small className="telegram-notice">
+        O Telegram é um serviço externo e possui seus próprios termos e práticas
+        de privacidade.
+      </small>
     </section>
   );
 }

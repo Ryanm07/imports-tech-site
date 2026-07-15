@@ -9,9 +9,6 @@ export type D1DatabaseLike = {
 };
 
 export const RATE_LIMITS = {
-  topic: { max: 3, windowMinutes: 60 },
-  reply: { max: 12, windowMinutes: 60 },
-  report: { max: 10, windowMinutes: 60 },
   admin: { max: 60, windowMinutes: 10 },
   youtubeSync: { max: 6, windowMinutes: 60 },
 } as const;

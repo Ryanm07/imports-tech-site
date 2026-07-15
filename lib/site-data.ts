@@ -22,6 +22,7 @@ export type Review = {
     value: number;
   } | null;
   status: string;
+  learning?: string;
   facts: string[];
   updatedAt: string;
   videoId: string;
@@ -40,6 +41,7 @@ export type Find = {
   reimbursement: number | null;
   result: string;
   currentStatus: string;
+  learning?: string;
   videoId: string;
   imageUrl?: string | null;
   tags: string[];
@@ -58,48 +60,48 @@ export const categories: Category[] = [
   {
     name: "Smartphones",
     icon: "01",
-    description: "iPhone, Galaxy e usados que ainda entregam.",
+    description: "Eu testo iPhones, Galaxys e usados no cotidiano.",
   },
   {
     name: "Notebooks",
     icon: "02",
-    description: "Máquinas novas e usadas no trabalho real.",
+    description: "Eu acompanho máquinas novas e usadas no trabalho real.",
   },
   {
     name: "Consoles",
     icon: "03",
-    description: "Jogos, reparos e custo por diversão.",
+    description: "Eu comparo jogos, reparos e custo por diversão.",
   },
   {
     name: "Periféricos",
     icon: "04",
-    description: "Acessórios úteis, sem marketing vazio.",
+    description: "Eu testo acessórios úteis sem repetir marketing.",
   },
   {
     name: "Garimpos",
     icon: "05",
-    description: "Compras de risco, negociação e custo total.",
+    description: "Eu mostro compra, negociação, risco e custo total.",
   },
   {
     name: "OLX",
     icon: "06",
-    description: "Garimpos cuja origem foi a OLX.",
+    description: "Eu registro os garimpos que encontrei na OLX.",
     relation: "Subtema de Garimpos",
   },
   {
     name: "Reparos",
     icon: "07",
-    description: "Defeito, peça, custo e resultado.",
+    description: "Eu documento defeito, peça, custo e resultado.",
   },
   {
     name: "Comparativos",
     icon: "08",
-    description: "Escolhas lado a lado, com contexto.",
+    description: "Eu coloco escolhas lado a lado e explico o contexto.",
   },
   {
     name: "Reviews",
     icon: "09",
-    description: "Experiência de uso acima da ficha técnica.",
+    description: "Eu coloco a experiência de uso acima da ficha técnica.",
   },
 ];
 
@@ -110,7 +112,7 @@ export const reviews: Review[] = [
     manufacturer: "Apple",
     category: "Smartphones",
     summary:
-      "Uso real de um iPhone 12 comprado usado, incluindo bateria, reparo e histórico pós-venda.",
+      "Eu usei um iPhone 12 comprado usado e registrei a bateria, o reparo e o que aconteceu no pós-venda.",
     testedAt: "2026-07-10",
     pricePaid: 658.36,
     marketPrice: null,
@@ -121,6 +123,8 @@ export const reviews: Review[] = [
     negatives: ["Bateria com 76% de saúde", "Ocorrência pós-venda registrada"],
     scores: null,
     status: "Vendido por R$ 1.100; houve reembolso posterior de R$ 220.",
+    learning:
+      "Eu aprendi que o resultado de uma venda não termina quando o aparelho muda de dono; o pós-venda também faz parte da história.",
     facts: [
       "Vidro traseiro: aproximadamente R$ 22",
       "Custo total aproximado: R$ 680",
@@ -135,7 +139,7 @@ export const reviews: Review[] = [
     manufacturer: "Samsung",
     category: "Smartphones",
     summary:
-      "Review de uso do S21 Ultra reparado, com as limitações reais da tela substituta e da bateria.",
+      "Eu testei um S21 Ultra reparado e documentei as limitações reais da tela substituta e da bateria.",
     testedAt: "2026-06-30",
     pricePaid: 502.89,
     marketPrice: null,
@@ -152,6 +156,8 @@ export const reviews: Review[] = [
     scores: null,
     status:
       "Review publicada; o vídeo de garimpo permanece relacionado separadamente.",
+    learning:
+      "Eu confirmei que um reparo pode recuperar o aparelho sem devolver toda a experiência original.",
     facts: [
       "Tela e frame: R$ 408",
       "Custo total conhecido: aproximadamente R$ 910,89",
@@ -165,7 +171,7 @@ export const reviews: Review[] = [
     manufacturer: "Apple",
     category: "Notebooks",
     summary:
-      "MacBook Air M1 comprado com caixa e bateria em 90%, avaliado pelo uso cotidiano.",
+      "Eu comprei um MacBook Air M1 com caixa e bateria em 90% e avaliei o aparelho no uso cotidiano.",
     testedAt: "2026-06-23",
     pricePaid: 2567,
     marketPrice: null,
@@ -176,6 +182,8 @@ export const reviews: Review[] = [
     negatives: ["Upgrade de armazenamento não é possível"],
     scores: null,
     status: "Configuração confirmada: 256 GB.",
+    learning:
+      "Eu percebi que condição, bateria e armazenamento pesam tanto quanto o chip na compra de um notebook usado.",
     facts: ["Apple M1", "256 GB", "Saúde da bateria: 90%", "Com caixa"],
     updatedAt: "2026-07-14",
     videoId: "cbodYFxeINo",
@@ -188,36 +196,39 @@ export const finds: Find[] = [
     product: "iPhone 12 por R$ 658,36",
     announcedPrice: null,
     negotiatedPrice: 658.36,
-    announcedProblem: "Vidro traseiro danificado e bateria em 76%.",
+    announcedProblem:
+      "Eu encontrei o vidro traseiro danificado e a bateria em 76%.",
     repairCost: 22,
     totalCost: 680,
     salePrice: 1100,
     reimbursement: 220,
     result: "Vendido, com ocorrência pós-venda registrada",
     currentStatus: "Vendido",
+    learning:
+      "Eu aprendi que preciso acompanhar também o que acontece depois da venda.",
     videoId: "i4LXDsWlc8Q",
     tags: ["Smartphones", "Garimpos", "Reparos"],
     updatedAt: "2026-07-14",
     timeline: [
       {
         label: "Compra",
-        detail: "R$ 658,36 pagos no aparelho.",
+        detail: "Eu paguei R$ 658,36 no aparelho.",
         state: "done",
       },
       {
         label: "Reparo",
-        detail: "Vidro traseiro: aproximadamente R$ 22.",
+        detail: "Eu gastei aproximadamente R$ 22 no vidro traseiro.",
         state: "done",
       },
       {
         label: "Custo total",
-        detail: "Aproximadamente R$ 680.",
+        detail: "Meu custo total ficou em aproximadamente R$ 680.",
         state: "done",
       },
-      { label: "Venda", detail: "Vendido por R$ 1.100.", state: "done" },
+      { label: "Venda", detail: "Eu vendi por R$ 1.100.", state: "done" },
       {
         label: "Pós-venda",
-        detail: "Reembolso posterior de R$ 220 registrado.",
+        detail: "Eu registrei um reembolso posterior de R$ 220.",
         state: "done",
       },
     ],
@@ -227,22 +238,24 @@ export const finds: Find[] = [
     product: "Galaxy S21 Ultra da OLX",
     announcedPrice: null,
     negotiatedPrice: 502.89,
-    announcedProblem: "Aparelho comprado sem tela funcional.",
+    announcedProblem: "Eu comprei o aparelho sem tela funcional.",
     repairCost: 408,
     totalCost: 910.89,
     salePrice: null,
     reimbursement: null,
     result: "Recuperado com limitações documentadas",
     currentStatus: "Resultado publicado",
+    learning:
+      "Eu aprendi a separar aparelho recuperado de aparelho realmente restaurado às condições originais.",
     videoId: "ScBB5TZ-Py8",
     tags: ["Smartphones", "Garimpos", "OLX", "Reparos"],
     updatedAt: "2026-07-14",
     timeline: [
-      { label: "Compra na OLX", detail: "R$ 502,89.", state: "done" },
-      { label: "Tela e frame", detail: "R$ 408.", state: "done" },
+      { label: "Compra na OLX", detail: "Eu paguei R$ 502,89.", state: "done" },
+      { label: "Tela e frame", detail: "Eu gastei R$ 408.", state: "done" },
       {
         label: "Custo total",
-        detail: "Aproximadamente R$ 910,89.",
+        detail: "Meu custo total ficou em aproximadamente R$ 910,89.",
         state: "done",
       },
       {
@@ -258,18 +271,21 @@ export const finds: Find[] = [
     product: "Acer Nitro 5 AN515-54",
     announcedPrice: null,
     negotiatedPrice: 1247.99,
-    announcedProblem: "Condição e configuração verificadas durante a compra.",
+    announcedProblem:
+      "Eu verifiquei a condição e a configuração durante a compra.",
     repairCost: null,
     totalCost: 1247.99,
     salePrice: null,
     reimbursement: null,
     result: "Configuração e preço final catalogados",
     currentStatus: "História publicada",
+    learning:
+      "Eu percebi que mostrar a configuração e o preço dentro de uma história real aproxima muito mais do que apenas listar especificações.",
     videoId: "Y1nStLptXY0",
     tags: ["Notebooks", "Garimpos"],
     updatedAt: "2026-07-14",
     timeline: [
-      { label: "Preço final", detail: "R$ 1.247,99.", state: "done" },
+      { label: "Preço final", detail: "Eu paguei R$ 1.247,99.", state: "done" },
       { label: "Modelo", detail: "Acer Nitro 5 AN515-54.", state: "done" },
       { label: "GPU", detail: "NVIDIA GeForce GTX 1650.", state: "done" },
       { label: "Memória", detail: "8 GB.", state: "done" },
@@ -280,17 +296,6 @@ export const finds: Find[] = [
       },
     ],
   },
-];
-
-export const communityCategories = [
-  "Celulares",
-  "Notebooks",
-  "Consoles",
-  "Periféricos",
-  "Garimpos e OLX",
-  "Ajuda técnica",
-  "Sugestões de vídeo",
-  "Assuntos gerais",
 ];
 
 export function money(value: number | null) {

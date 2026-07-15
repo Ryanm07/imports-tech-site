@@ -19,34 +19,18 @@ export default function PrivacyPage() {
         <Link href="/contato">página de contato</Link>.
       </p>
 
-      <h2>Dados do Mural da Comunidade</h2>
+      <h2>Navegação pública</h2>
       <p>
-        Quando o Mural for ativado, o visitante poderá informar um nome de
-        exibição e enviar categoria, título, mensagem, respostas e denúncias. O
-        site não solicita nem armazena e-mail do visitante para essa finalidade.
-        O nome informado não é uma identidade verificada.
+        O site não mantém fórum, contas públicas, comentários próprios ou
+        formulários de publicação. Os links para Telegram e YouTube levam a
+        serviços externos, sujeitos às políticas de cada plataforma.
       </p>
 
-      <h2>Prevenção de abuso</h2>
+      <h2>Infraestrutura</h2>
       <p>
-        Para aplicar limites, combater spam e permitir bloqueios temporários, o
-        endereço de origem recebido da infraestrutura é combinado com um segredo
-        privado e transformado em hash antes da persistência. O endereço em
-        texto simples não é gravado nas tabelas do Mural. Tentativas, inclusive
-        inválidas, podem consumir limites temporários. O Cloudflare Turnstile é
-        usado para verificação anti-spam e está sujeito às práticas da
-        Cloudflare.
-      </p>
-
-      <h2>Moderação e retenção</h2>
-      <p>
-        Publicações normais podem aparecer automaticamente; conteúdo suspeito
-        pode aguardar análise ou ser classificado como spam. Publicações,
-        respostas, denúncias, hashes bloqueados e histórico de moderação podem
-        ser mantidos pelo período necessário à segurança, à integridade das
-        conversas e ao cumprimento de obrigações aplicáveis. A remoção lógica
-        preserva o histórico; a exclusão definitiva é uma ação reforçada do
-        proprietário.
+        O site usa infraestrutura Cloudflare para hospedagem e banco editorial,
+        além da API oficial do YouTube para sincronizar métricas públicas. Eu
+        não instalo analytics ou cookies próprios de publicidade nesta versão.
       </p>
 
       <h2>Painel privado e conteúdo editorial</h2>
@@ -61,21 +45,16 @@ export default function PrivacyPage() {
 
       <h2>Infraestrutura e compartilhamento</h2>
       <p>
-        O site usa infraestrutura Cloudflare para hospedagem, banco e proteção
-        contra abuso, e a API oficial do YouTube para sincronizar dados públicos
-        do canal. O Imports Tech não vende dados pessoais e não instala
-        analytics ou cookies próprios de publicidade nesta versão.
-        Transferências internacionais podem ocorrer conforme a operação desses
-        fornecedores.
+        O Imports Tech não vende dados pessoais. Transferências internacionais
+        podem ocorrer conforme a operação desses fornecedores.
       </p>
 
       <h2>Seus direitos</h2>
       <p>
         Você pode solicitar confirmação de tratamento, acesso, correção,
         informação sobre compartilhamento, oposição e exclusão quando aplicável.
-        Pode ser necessário indicar o conteúdo e fornecer elementos suficientes
-        para localizar a solicitação, pois o Mural não mantém conta ou e-mail do
-        visitante.
+        Pode ser necessário fornecer elementos suficientes para localizar a
+        solicitação.
       </p>
 
       <p className="legal-date">Última atualização: 14 de julho de 2026.</p>

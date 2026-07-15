@@ -117,7 +117,6 @@ test("sitemap usa datas editoriais e exclui recursos desativados", () => {
     reviews,
     finds,
     youtube,
-    communityEnabled: false,
   });
   assert.ok(items.some((item) => item.url === "https://site.example/projetos"));
   assert.ok(items.some((item) => item.url === "https://site.example/metricas"));
@@ -135,7 +134,7 @@ test("sitemap usa datas editoriais e exclui recursos desativados", () => {
   );
   assert.equal(
     items.some((item) => item.url.endsWith("/comunidade")),
-    false,
+    true,
   );
   assert.ok(items.every((item) => item.lastModified instanceof Date));
 });
@@ -167,9 +166,14 @@ test("tombstones arquivados e removidos não reaparecem pelo fallback versionado
 test("timeline editorial exige campos estruturados e posição inteira", () => {
   assert.equal(
     validateContentPayload("timeline", {
-      year: "2026",
+      dateLabel: "2026",
+      datePrecision: "exact",
       title: "Novo marco",
       description: "Um marco verdadeiro e suficientemente explicado.",
+      imageUrl: null,
+      number: null,
+      relatedProject: null,
+      youtubeUrl: null,
       position: 2,
     }).ok,
     true,

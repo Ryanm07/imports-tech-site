@@ -7,6 +7,7 @@ import { consumeRateLimit } from "@/lib/rate-limit";
 import { sameOriginRequest } from "@/lib/security";
 import { requireOwnerApi } from "@/lib/server-auth";
 import { getTelegramLinks } from "@/lib/telegram";
+import { getPublicLinks } from "@/lib/public-links";
 import {
   runYouTubeMetricsSync,
   YOUTUBE_CHANNEL_ID,
@@ -33,6 +34,7 @@ export async function GET() {
   ]);
   const state = states[0] ?? null;
   const telegram = getTelegramLinks();
+  const publicLinks = getPublicLinks();
   return privateJson({
     state: state
       ? {
@@ -64,9 +66,10 @@ export async function GET() {
       metricsAvailable: Boolean(state?.metricsUpdatedAt),
       snapshotStale: state?.metricsStale ?? true,
       telegramConfigured: Boolean(telegram.channel || telegram.group),
+      mediaKitConfigured: Boolean(publicLinks.mediaKit),
+      commercialEmailConfigured: Boolean(publicLinks.commercialEmail),
       introAvailable: true,
       d1Connected: true,
-      muralEnabled: process.env.COMMUNITY_ENABLED === "true",
       introEnabled: process.env.INTRO_ENABLED === "true",
     },
   });

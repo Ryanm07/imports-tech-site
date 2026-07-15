@@ -2,8 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import type { TelegramLinks } from "@/lib/telegram";
+import type { PublicLinks } from "@/lib/public-links";
 
-export function SiteFooter({ telegram }: { telegram: TelegramLinks }) {
+export function SiteFooter({
+  telegram,
+  publicLinks,
+}: {
+  telegram: TelegramLinks;
+  publicLinks: PublicLinks;
+}) {
   return (
     <footer className="site-footer">
       <div className="footer-brand">
@@ -24,7 +31,7 @@ export function SiteFooter({ telegram }: { telegram: TelegramLinks }) {
           <strong>Explorar</strong>
           <Link href="/sobre">Minha história</Link>
           <Link href="/projetos">Projetos</Link>
-          <Link href="/comunidade">Mural</Link>
+          <Link href="/comunidade">Comunidade</Link>
           <Link href="/metricas">Métricas públicas</Link>
           <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">
             YouTube ↗
@@ -33,9 +40,16 @@ export function SiteFooter({ telegram }: { telegram: TelegramLinks }) {
         <div>
           <strong>Transparência</strong>
           <Link href="/privacidade">Privacidade</Link>
-          <Link href="/termos">Termos da comunidade</Link>
+          <Link href="/termos">Termos do site</Link>
           <Link href="/afiliados">Aviso de afiliados</Link>
           <Link href="/contato">Contato</Link>
+          {publicLinks.mediaKit ? (
+            <a href={publicLinks.mediaKit} target="_blank" rel="noreferrer">
+              Media Kit ↗
+            </a>
+          ) : (
+            <span>Media Kit · Em breve</span>
+          )}
         </div>
         <div>
           <strong>Telegram</strong>

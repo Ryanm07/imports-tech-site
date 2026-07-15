@@ -1,782 +1,256 @@
 "use client";
 
-import {
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type ContentType = "review" | "find" | "category" | "setting" | "timeline";
+type ContentStatus =
+  | "draft"
+  | "review"
+  | "reviewed"
+  | "published"
+  | "archived"
+  | "removed";
 
 type Entry = {
   id: string;
-  type: string;
+  type: ContentType;
   title: string;
   slug: string;
   payload: string;
-  status: string;
+  status: ContentStatus;
   featured: boolean;
   updatedAt: string;
 };
-type WallTopic = {
-  id: string;
-  categoryId: string;
-  displayName: string;
-  title: string;
-  body: string;
-  status: string;
-  isOfficial: boolean;
-  replyCount: number;
-  closedAt: string | null;
-  pinnedAt: string | null;
-  createdAt: string;
-};
-type WallReply = {
-  id: string;
-  topicId: string;
-  displayName: string;
-  body: string;
-  status: string;
-  isOfficial: boolean;
-  createdAt: string;
-};
-type WallReport = {
-  id: string;
-  targetType: "topic" | "reply";
-  targetId: string;
-  reason: string;
-  status: string;
-  createdAt: string;
-};
-type WallCategory = {
-  id: string;
-  name: string;
-  description: string;
-  status: "active" | "archived";
-  position: number;
-};
-type WallBlock = {
-  id: string;
-  reason: string;
-  expiresAt: string;
-  active: boolean;
-  createdAt: string;
-};
-type HistoryItem = {
-  id: string;
-  action: string;
-  targetType: string;
-  targetId: string;
-  reason: string | null;
-  createdAt: string;
-};
-type YouTubeHealth = {
-  state: null | Record<string, unknown>;
-  runs: Array<Record<string, unknown>>;
-  configuration?: Record<string, boolean>;
+
+type YouTubeState = {
+  state: Record<string, unknown> | null;
+  runs: Record<string, unknown>[];
+  configuration: Record<string, boolean>;
 };
 
-const payloadExamples: Record<string, Record<string, unknown>> = {
-  review: {
-    manufacturer: "",
-    category: "Smartphones",
-    summary: "",
-    testedAt: "2026-07-14",
-    pricePaid: null,
-    marketPrice: null,
-    repairCost: null,
-    totalCost: null,
-    verdict: null,
-    positives: [],
-    negatives: [],
-    facts: [],
-    status: "",
-    updatedAt: "2026-07-14",
-    videoId: "",
-    imageUrl: "",
-  },
-  find: {
-    product: "",
-    negotiatedPrice: 0,
-    announcedPrice: null,
-    announcedProblem: "",
-    repairCost: null,
-    totalCost: null,
-    salePrice: null,
-    reimbursement: null,
-    result: "",
-    currentStatus: "",
-    videoId: "",
-    imageUrl: "",
-    tags: [],
-    timeline: [],
-    updatedAt: "2026-07-14",
-  },
-  category: { name: "", icon: "10", description: "", relation: "" },
-  setting: { key: "telegram_channel_url", value: "" },
-  timeline: { year: "", title: "", description: "", position: 1 },
-};
+const statusOptions: { value: ContentStatus; label: string }[] = [
+  { value: "draft", label: "Rascunho" },
+  { value: "review", label: "Aguardando revisão" },
+  { value: "reviewed", label: "Revisado" },
+  { value: "published", label: "Publicado" },
+  { value: "archived", label: "Arquivado" },
+];
 
 export function AdminPanel() {
-  const [tab, setTab] = useState<"content" | "mural" | "youtube">("content");
+  const [tab, setTab] = useState<"content" | "youtube">("content");
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [topics, setTopics] = useState<WallTopic[]>([]);
-  const [replies, setReplies] = useState<WallReply[]>([]);
-  const [reports, setReports] = useState<WallReport[]>([]);
-  const [categories, setCategories] = useState<WallCategory[]>([]);
-  const [blocks, setBlocks] = useState<WallBlock[]>([]);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [youtube, setYoutube] = useState<YouTubeHealth>({
+  const [youtube, setYoutube] = useState<YouTubeState>({
     state: null,
     runs: [],
+    configuration: {},
   });
-  const [editing, setEditing] = useState<Entry | null>(null);
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("all");
+  const [editing, setEditing] = useState<Entry | null>(null);
+  const [creating, setCreating] = useState<ContentType | null>(null);
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(true);
 
-  const loadContent = useCallback(async () => {
-    const data = await getJson("/api/admin/content");
-    setEntries(data.entries ?? []);
-  }, []);
-  const loadMural = useCallback(async () => {
-    const data = await getJson("/api/admin/moderation");
-    setTopics(data.topics ?? []);
-    setReplies(data.replies ?? []);
-    setReports(data.reports ?? []);
-    setCategories(data.categories ?? []);
-    setBlocks(data.blocks ?? []);
-    setHistory(data.history ?? []);
-  }, []);
-  const loadYouTube = useCallback(async () => {
-    setYoutube(await getJson("/api/admin/youtube"));
+  const load = useCallback(async () => {
+    setBusy(true);
+    try {
+      const [content, metrics] = await Promise.all([
+        getJson("/api/admin/content"),
+        getJson("/api/admin/youtube"),
+      ]);
+      setEntries(content.entries || []);
+      setYoutube(metrics);
+    } catch (error) {
+      setNotice(messageFrom(error));
+    } finally {
+      setBusy(false);
+    }
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
-    const operation =
-      tab === "content"
-        ? loadContent()
-        : tab === "mural"
-          ? loadMural()
-          : loadYouTube();
-    operation
-      .catch((caught) => setError(messageFrom(caught)))
-      .finally(() => setLoading(false));
-  }, [loadContent, loadMural, loadYouTube, tab]);
+    void load();
+  }, [load]);
 
-  const visibleTopics = useMemo(
-    () => topics.filter((item) => matches(item, query, statusFilter)),
-    [query, statusFilter, topics],
-  );
-  const visibleReplies = useMemo(
-    () => replies.filter((item) => matches(item, query, statusFilter)),
-    [query, replies, statusFilter],
-  );
-  const visibleReports = useMemo(
-    () => reports.filter((item) => matches(item, query, statusFilter)),
-    [query, reports, statusFilter],
+  const visibleEntries = useMemo(
+    () =>
+      entries.filter((entry) => {
+        const statusMatches = status === "all" || entry.status === status;
+        const text = `${entry.title} ${entry.slug} ${entry.type}`.toLowerCase();
+        return statusMatches && text.includes(query.trim().toLowerCase());
+      }),
+    [entries, query, status],
   );
 
-  async function createContent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    clearFeedback();
-    const form = new FormData(event.currentTarget);
-    const payload = parseJson(form.get("payload"));
-    if (!payload.ok) return setError(payload.error);
-    const response = await adminFetch("/api/admin/content", "POST", {
-      type: form.get("type"),
-      title: form.get("title"),
-      slug: form.get("slug"),
-      payload: payload.value,
+  async function changeStatus(entry: Entry, nextStatus: ContentStatus) {
+    const result = await adminFetch("/api/admin/content", "PATCH", {
+      id: entry.id,
+      status: nextStatus,
     });
-    if (!response.ok) return setError(response.error);
-    event.currentTarget.reset();
-    setMessage("Rascunho validado e criado.");
-    await loadContent();
+    setNotice(
+      result.ok
+        ? `Estado alterado para ${statusLabel(nextStatus)}.`
+        : result.error,
+    );
+    if (result.ok) await load();
   }
 
-  async function saveEdit(event: FormEvent<HTMLFormElement>) {
+  async function toggleFeatured(entry: Entry) {
+    const result = await adminFetch("/api/admin/content", "PATCH", {
+      id: entry.id,
+      featured: !entry.featured,
+    });
+    setNotice(result.ok ? "Destaque atualizado." : result.error);
+    if (result.ok) await load();
+  }
+
+  async function saveEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) return;
     const form = new FormData(event.currentTarget);
     const payload = parseJson(form.get("payload"));
-    if (!payload.ok) return setError(payload.error);
-    const response = await adminFetch("/api/admin/content", "PATCH", {
+    if (!payload.ok) return setNotice(payload.error);
+    const result = await adminFetch("/api/admin/content", "PATCH", {
       id: editing.id,
-      title: form.get("title"),
-      slug: form.get("slug"),
+      title: String(form.get("title") || ""),
+      slug: String(form.get("slug") || ""),
+      payload: payload.value,
+      featured: form.get("featured") === "on",
+    });
+    setNotice(result.ok ? "Conteúdo validado e salvo." : result.error);
+    if (result.ok) {
+      setEditing(null);
+      await load();
+    }
+  }
+
+  async function createEntry(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!creating) return;
+    const form = new FormData(event.currentTarget);
+    const payload = parseJson(form.get("payload"));
+    if (!payload.ok) return setNotice(payload.error);
+    const result = await adminFetch("/api/admin/content", "POST", {
+      type: creating,
+      title: String(form.get("title") || ""),
+      slug: String(form.get("slug") || ""),
       payload: payload.value,
     });
-    if (!response.ok) return setError(response.error);
-    setEditing(null);
-    setMessage("Conteúdo validado e salvo.");
-    await loadContent();
-  }
-
-  async function updateEntry(id: string, changes: Record<string, unknown>) {
-    const response = await adminFetch("/api/admin/content", "PATCH", {
-      id,
-      ...changes,
-    });
-    if (!response.ok) return setError(response.error);
-    setMessage("Conteúdo atualizado e auditado.");
-    await loadContent();
-  }
-
-  async function removeEntry(id: string) {
-    const reason = window.prompt(
-      "Motivo da remoção lógica (mínimo de 8 caracteres):",
-    );
-    if (!reason) return;
-    const response = await adminFetch("/api/admin/content", "DELETE", {
-      id,
-      reason,
-    });
-    if (!response.ok) return setError(response.error);
-    setMessage("Conteúdo removido logicamente.");
-    await loadContent();
-  }
-
-  async function moderate(
-    action: string,
-    targetType: string,
-    targetId: string,
-    extra: Record<string, unknown> = {},
-  ) {
-    clearFeedback();
-    let reason = "";
-    if (
-      [
-        "hide",
-        "remove",
-        "spam",
-        "block-hash",
-        "hard-delete",
-        "dismiss-report",
-      ].includes(action)
-    ) {
-      reason = window.prompt("Motivo da ação (mínimo de 8 caracteres):") || "";
-      if (!reason) return;
+    setNotice(result.ok ? "Rascunho criado." : result.error);
+    if (result.ok) {
+      setCreating(null);
+      await load();
     }
-    let confirmation: string | undefined;
-    if (action === "hard-delete") {
-      confirmation =
-        window.prompt('Digite "EXCLUIR PERMANENTEMENTE" para confirmar:') || "";
-      if (confirmation !== "EXCLUIR PERMANENTEMENTE") return;
-    }
-    const response = await adminFetch("/api/admin/moderation", "POST", {
-      action,
-      targetType,
-      targetId,
-      reason,
-      confirmation,
-      ...extra,
-    });
-    if (!response.ok) return setError(response.error);
-    setMessage("Ação concluída e registrada no histórico.");
-    await loadMural();
-  }
-
-  async function createOfficialTopic(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await adminFetch("/api/admin/moderation", "POST", {
-      action: "official-create",
-      targetType: "topic",
-      targetId: "new",
-      categoryId: form.get("categoryId"),
-      title: form.get("title"),
-      body: form.get("body"),
-    });
-    if (!response.ok) return setError(response.error);
-    event.currentTarget.reset();
-    setMessage("Publicação oficial criada.");
-    await loadMural();
-  }
-
-  async function createOfficialReply(topicId: string) {
-    const body = window.prompt("Resposta oficial:");
-    if (!body) return;
-    await moderate("official-create", "reply", "new", { topicId, body });
-  }
-
-  async function createCategory(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await adminFetch("/api/admin/moderation", "POST", {
-      action: "create",
-      targetType: "category",
-      targetId: "new",
-      name: form.get("name"),
-      description: form.get("description"),
-      position: form.get("position"),
-    });
-    if (!response.ok) return setError(response.error);
-    event.currentTarget.reset();
-    await loadMural();
-  }
-
-  async function moveTopic(topic: WallTopic) {
-    const categoryId = window.prompt(
-      `ID da nova categoria:\n${categories
-        .map((item) => `${item.id} — ${item.name}`)
-        .join("\n")}`,
-      topic.categoryId,
-    );
-    if (categoryId && categoryId !== topic.categoryId) {
-      await moderate("move", "topic", topic.id, { categoryId });
-    }
-  }
-
-  async function editCategory(item: WallCategory) {
-    const name = window.prompt("Nome da categoria:", item.name);
-    if (!name) return;
-    const description = window.prompt("Descrição:", item.description);
-    if (description === null) return;
-    const position = Number(window.prompt("Posição:", String(item.position)));
-    await moderate("update", "category", item.id, {
-      name,
-      description,
-      position,
-    });
   }
 
   async function syncYouTube() {
-    clearFeedback();
-    setLoading(true);
-    const response = await adminFetch("/api/admin/youtube", "POST", {});
-    setLoading(false);
-    if (!response.ok) return setError(response.error);
-    setMessage("Sincronização concluída. Consulte o estado abaixo.");
-    await loadYouTube();
-  }
-
-  function clearFeedback() {
-    setMessage("");
-    setError("");
+    const result = await adminFetch("/api/admin/youtube", "POST", {});
+    setNotice(result.ok ? "Sincronização concluída." : result.error);
+    await load();
   }
 
   return (
-    <section className="admin-workspace">
-      <div
-        className="admin-tabs"
-        role="tablist"
-        aria-label="Áreas do proprietário"
-      >
-        {(["content", "mural", "youtube"] as const).map((item) => (
-          <button
-            key={item}
-            role="tab"
-            aria-selected={tab === item}
-            onClick={() => setTab(item)}
-          >
-            {item === "content"
-              ? "Projetos e site"
-              : item === "mural"
-                ? "Mural"
-                : "Métricas do YouTube"}
-          </button>
-        ))}
+    <section className="admin-panel" aria-busy={busy}>
+      {notice && (
+        <p className="admin-notice" role="status">
+          {notice}
+        </p>
+      )}
+      <div className="admin-tabs" role="tablist" aria-label="Áreas do painel">
+        <button
+          role="tab"
+          aria-selected={tab === "content"}
+          onClick={() => setTab("content")}
+        >
+          Conteúdo editorial
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "youtube"}
+          onClick={() => setTab("youtube")}
+        >
+          Métricas do YouTube
+        </button>
       </div>
-      {message && (
-        <p className="form-message" role="status">
-          {message}
-        </p>
-      )}
-      {error && (
-        <p className="form-message error" role="alert">
-          {error}
-        </p>
-      )}
-      {loading && <p role="status">Carregando área privada…</p>}
 
       {tab === "content" && (
         <>
-          <form className="topic-form" onSubmit={createContent}>
-            <h2>Novo projeto ou conteúdo do site</h2>
+          <div className="admin-toolbar">
             <label>
-              Tipo
-              <select
-                name="type"
-                onChange={(event) => {
-                  const textarea =
-                    event.currentTarget.form?.elements.namedItem("payload");
-                  if (textarea instanceof HTMLTextAreaElement)
-                    textarea.value = JSON.stringify(
-                      payloadExamples[event.target.value],
-                      null,
-                      2,
-                    );
-                }}
-              >
-                {Object.keys(payloadExamples).map((type) => (
-                  <option value={type} key={type}>
-                    {contentTypeLabel(type)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Título
-              <input name="title" required minLength={3} maxLength={160} />
-            </label>
-            <label>
-              Slug
-              <input name="slug" required minLength={3} pattern="[a-z0-9-]+" />
-            </label>
-            <label>
-              Dados estruturados
-              <textarea
-                name="payload"
-                rows={12}
-                defaultValue={JSON.stringify(payloadExamples.review, null, 2)}
-                required
-              />
-            </label>
-            <button className="button primary">
-              Validar e salvar rascunho
-            </button>
-          </form>
-          <section className="admin-entries">
-            <h2>Projetos e conteúdo gerenciável</h2>
-            {entries.map((entry) => (
-              <article key={entry.id}>
-                <span>{entry.type}</span>
-                <div>
-                  <strong>{entry.title}</strong>
-                  <small>
-                    /{entry.slug} · {entry.status}
-                  </small>
-                </div>
-                <div className="admin-row-actions">
-                  <button onClick={() => setEditing(entry)}>Editar</button>
-                  <button
-                    onClick={() =>
-                      updateEntry(entry.id, { featured: !entry.featured })
-                    }
-                  >
-                    {entry.featured ? "Remover destaque" : "Destacar"}
-                  </button>
-                  <button
-                    onClick={() =>
-                      updateEntry(entry.id, { status: "published" })
-                    }
-                  >
-                    Publicar/restaurar
-                  </button>
-                  <button
-                    onClick={() =>
-                      updateEntry(entry.id, { status: "archived" })
-                    }
-                  >
-                    Arquivar
-                  </button>
-                  <button onClick={() => removeEntry(entry.id)}>Remover</button>
-                </div>
-              </article>
-            ))}
-          </section>
-        </>
-      )}
-
-      {tab === "mural" && (
-        <>
-          <div className="community-tools">
-            <label>
-              <span>Pesquisar</span>
+              Buscar
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                placeholder="Título, slug ou tipo"
               />
             </label>
             <label>
-              <span>Status</span>
+              Estado
               <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
               >
                 <option value="all">Todos</option>
-                {[
-                  "pending",
-                  "published",
-                  "hidden",
-                  "removed",
-                  "spam",
-                  "open",
-                  "reviewing",
-                  "resolved",
-                  "dismissed",
-                ].map((status) => (
-                  <option key={status}>{status}</option>
+                {statusOptions.map((item) => (
+                  <option value={item.value} key={item.value}>
+                    {item.label}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
-          <form className="topic-form" onSubmit={createOfficialTopic}>
-            <h2>Publicação oficial</h2>
-            <label>
-              Categoria
-              <select name="categoryId">
-                {categories.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Título
-              <input name="title" minLength={8} maxLength={120} required />
-            </label>
-            <label>
-              Mensagem
-              <textarea name="body" minLength={15} maxLength={4000} required />
-            </label>
-            <button className="button primary">
-              Publicar como Ryan — Imports Tech
-            </button>
-          </form>
+          <div className="admin-create-actions" aria-label="Criar conteúdo">
+            {(
+              ["timeline", "review", "find", "category", "setting"] as const
+            ).map((type) => (
+              <button key={type} onClick={() => setCreating(type)}>
+                + {contentTypeLabel(type)}
+              </button>
+            ))}
+          </div>
+          <p className="admin-editorial-rule">
+            Textos pessoais devem permanecer em primeira pessoa. Rascunhos,
+            itens aguardando revisão e revisados não aparecem no site; somente o
+            estado Publicado é público.
+          </p>
           <section className="admin-entries">
-            <h2>Publicações</h2>
-            {visibleTopics.map((topic) => (
-              <article key={topic.id}>
-                <span>{topic.status}</span>
+            <h2>Conteúdos ativos</h2>
+            {visibleEntries.map((entry) => (
+              <article key={entry.id}>
+                <span>{statusLabel(entry.status)}</span>
                 <div>
-                  <strong>{topic.title}</strong>
+                  <strong>{entry.title}</strong>
                   <small>
-                    {topic.displayName} · {topic.replyCount} respostas ·{" "}
-                    {topic.categoryId}
+                    {contentTypeLabel(entry.type)} · {entry.slug}
                   </small>
-                  <p>{topic.body}</p>
+                  {entry.featured && <small>Destaque da home/projetos</small>}
+                  <small>Atualizado em {formatDate(entry.updatedAt)}</small>
                 </div>
                 <div className="admin-row-actions">
-                  <button
-                    onClick={() =>
-                      moderate(
-                        topic.status === "published" ? "hide" : "restore",
-                        "topic",
-                        topic.id,
-                      )
+                  <button onClick={() => setEditing(entry)}>Editar</button>
+                  <button onClick={() => toggleFeatured(entry)}>
+                    {entry.featured ? "Remover destaque" : "Destacar"}
+                  </button>
+                  <select
+                    aria-label={`Alterar estado de ${entry.title}`}
+                    value={
+                      entry.status === "removed" ? "archived" : entry.status
+                    }
+                    onChange={(event) =>
+                      changeStatus(entry, event.target.value as ContentStatus)
                     }
                   >
-                    {topic.status === "published" ? "Ocultar" : "Restaurar"}
-                  </button>
-                  <button
-                    onClick={() =>
-                      moderate(
-                        topic.pinnedAt ? "unpin" : "pin",
-                        "topic",
-                        topic.id,
-                      )
-                    }
-                  >
-                    {topic.pinnedAt ? "Desafixar" : "Fixar"}
-                  </button>
-                  <button
-                    onClick={() =>
-                      moderate(
-                        topic.closedAt ? "reopen" : "close",
-                        "topic",
-                        topic.id,
-                      )
-                    }
-                  >
-                    {topic.closedAt ? "Reabrir" : "Encerrar"}
-                  </button>
-                  <button onClick={() => createOfficialReply(topic.id)}>
-                    Responder oficial
-                  </button>
-                  <button onClick={() => moveTopic(topic)}>Mover</button>
-                  {!topic.isOfficial && (
-                    <button
-                      onClick={() =>
-                        moderate("block-hash", "topic", topic.id, {
-                          blockHours: 24,
-                        })
-                      }
-                    >
-                      Bloquear 24h
-                    </button>
-                  )}
-                  <button onClick={() => moderate("spam", "topic", topic.id)}>
-                    Spam
-                  </button>
-                  <button onClick={() => moderate("remove", "topic", topic.id)}>
-                    Remover
-                  </button>
-                  <button
-                    onClick={() => moderate("hard-delete", "topic", topic.id)}
-                  >
-                    Excluir definitivamente
-                  </button>
+                    {statusOptions.map((item) => (
+                      <option value={item.value} key={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </article>
             ))}
-          </section>
-          <section className="admin-entries">
-            <h2>Respostas</h2>
-            {visibleReplies.map((reply) => (
-              <article key={reply.id}>
-                <span>{reply.status}</span>
-                <div>
-                  <strong>{reply.displayName}</strong>
-                  <small>Tópico {reply.topicId}</small>
-                  <p>{reply.body}</p>
-                </div>
-                <div className="admin-row-actions">
-                  <button
-                    onClick={() =>
-                      moderate(
-                        reply.status === "published" ? "hide" : "restore",
-                        "reply",
-                        reply.id,
-                      )
-                    }
-                  >
-                    {reply.status === "published" ? "Ocultar" : "Restaurar"}
-                  </button>
-                  <button onClick={() => moderate("spam", "reply", reply.id)}>
-                    Spam
-                  </button>
-                  {!reply.isOfficial && (
-                    <button
-                      onClick={() =>
-                        moderate("block-hash", "reply", reply.id, {
-                          blockHours: 24,
-                        })
-                      }
-                    >
-                      Bloquear 24h
-                    </button>
-                  )}
-                  <button
-                    onClick={() => moderate("hard-delete", "reply", reply.id)}
-                  >
-                    Excluir definitivamente
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
-          <section className="admin-entries">
-            <h2>Denúncias</h2>
-            {visibleReports.map((report) => (
-              <article key={report.id}>
-                <span>{report.status}</span>
-                <div>
-                  <strong>
-                    {report.targetType} · {report.targetId}
-                  </strong>
-                  <p>{report.reason}</p>
-                </div>
-                <div className="admin-row-actions">
-                  <button
-                    onClick={() =>
-                      moderate("review-report", "report", report.id)
-                    }
-                  >
-                    Analisar
-                  </button>
-                  <button
-                    onClick={() =>
-                      moderate("resolve-report", "report", report.id)
-                    }
-                  >
-                    Resolver
-                  </button>
-                  <button
-                    onClick={() =>
-                      moderate("dismiss-report", "report", report.id)
-                    }
-                  >
-                    Dispensar
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
-          <form className="topic-form" onSubmit={createCategory}>
-            <h2>Nova categoria</h2>
-            <label>
-              Nome
-              <input name="name" minLength={3} required />
-            </label>
-            <label>
-              Descrição
-              <input name="description" />
-            </label>
-            <label>
-              Posição
-              <input name="position" type="number" defaultValue={99} />
-            </label>
-            <button>Criar categoria</button>
-          </form>
-          <section className="admin-entries">
-            <h2>Categorias</h2>
-            {categories.map((item) => (
-              <article key={item.id}>
-                <span>{item.status}</span>
-                <div>
-                  <strong>{item.name}</strong>
-                  <small>{item.description}</small>
-                </div>
-                <div className="admin-row-actions">
-                  <button onClick={() => editCategory(item)}>Editar</button>
-                  <button
-                    onClick={() =>
-                      moderate(
-                        item.status === "active" ? "archive" : "restore",
-                        "category",
-                        item.id,
-                      )
-                    }
-                  >
-                    {item.status === "active" ? "Arquivar" : "Restaurar"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
-          <section className="admin-entries">
-            <h2>Bloqueios de origem</h2>
-            {blocks.map((item) => (
-              <article key={item.id}>
-                <span>{item.active ? "ativo" : "encerrado"}</span>
-                <div>
-                  <strong>{item.reason}</strong>
-                  <small>
-                    Expira em {new Date(item.expiresAt).toLocaleString("pt-BR")}
-                  </small>
-                </div>
-                <div className="admin-row-actions">
-                  {item.active && (
-                    <button onClick={() => moderate("lift", "block", item.id)}>
-                      Encerrar bloqueio
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-          </section>
-          <section className="admin-entries">
-            <h2>Histórico</h2>
-            {history.map((item) => (
-              <article key={item.id}>
-                <span>{item.targetType}</span>
-                <div>
-                  <strong>{item.action}</strong>
-                  <small>
-                    {item.targetId} ·{" "}
-                    {new Date(item.createdAt).toLocaleString("pt-BR")}
-                  </small>
-                  {item.reason && <p>{item.reason}</p>}
-                </div>
-              </article>
-            ))}
+            {!busy && !visibleEntries.length && (
+              <p>Nenhum conteúdo corresponde aos filtros.</p>
+            )}
           </section>
         </>
       )}
@@ -784,12 +258,15 @@ export function AdminPanel() {
       {tab === "youtube" && (
         <>
           <div className="admin-row-actions">
-            <button className="button primary" onClick={() => syncYouTube()}>
+            <button className="button primary" onClick={syncYouTube}>
               Sincronizar métricas agora
             </button>
           </div>
-          <section className="admin-health-grid" aria-label="Estado do site">
-            {Object.entries(youtube.configuration ?? {}).map(([key, value]) => (
+          <section
+            className="admin-health-grid"
+            aria-label="Estado das integrações"
+          >
+            {Object.entries(youtube.configuration || {}).map(([key, value]) => (
               <div key={key}>
                 <span>{healthLabel(key)}</span>
                 <strong>{value ? "Sim" : "Não"}</strong>
@@ -797,7 +274,7 @@ export function AdminPanel() {
             ))}
           </section>
           <section className="admin-preview">
-            <h2>Snapshot de métricas do YouTube</h2>
+            <h2>Snapshot público do canal</h2>
             <pre>{JSON.stringify(youtube.state, null, 2)}</pre>
           </section>
           <section className="admin-entries">
@@ -806,9 +283,9 @@ export function AdminPanel() {
               <article key={String(run.id ?? index)}>
                 <span>{String(run.status ?? "")}</span>
                 <div>
-                  <strong>métricas do canal</strong>
+                  <strong>Métricas do canal</strong>
                   <small>{String(run.startedAt ?? "")}</small>
-                  {run.errorMessage ? <p>{String(run.errorMessage)}</p> : null}
+                  {run.errorCode ? <p>Erro: {String(run.errorCode)}</p> : null}
                 </div>
               </article>
             ))}
@@ -817,53 +294,150 @@ export function AdminPanel() {
       )}
 
       {editing && (
-        <div
-          className="admin-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Editar conteúdo"
-        >
-          <form className="topic-form" onSubmit={saveEdit}>
-            <h2>Editar {editing.title}</h2>
-            <label>
-              Título
-              <input name="title" defaultValue={editing.title} required />
-            </label>
-            <label>
-              Slug
-              <input name="slug" defaultValue={editing.slug} required />
-            </label>
-            <label>
-              Dados estruturados
-              <textarea
-                name="payload"
-                rows={16}
-                defaultValue={formatJson(editing.payload)}
-                required
-              />
-            </label>
-            <div className="admin-row-actions">
-              <button className="button primary">Validar e salvar</button>
-              <button type="button" onClick={() => setEditing(null)}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
+        <EditorModal
+          title={`Editar ${editing.title}`}
+          entry={editing}
+          onClose={() => setEditing(null)}
+          onSubmit={saveEdit}
+        />
+      )}
+      {creating && (
+        <EditorModal
+          title={`Novo ${contentTypeLabel(creating)}`}
+          entry={{
+            id: "",
+            type: creating,
+            title: "",
+            slug: "",
+            payload: JSON.stringify(templateFor(creating), null, 2),
+            status: "draft",
+            featured: false,
+            updatedAt: "",
+          }}
+          creating
+          onClose={() => setCreating(null)}
+          onSubmit={createEntry}
+        />
       )}
     </section>
   );
 }
 
-function matches(item: Record<string, unknown>, query: string, status: string) {
-  const matchesStatus = status === "all" || item.status === status;
-  const haystack = Object.values(item)
-    .filter((value) => typeof value === "string")
-    .join(" ")
-    .toLocaleLowerCase("pt-BR");
+function EditorModal({
+  title,
+  entry,
+  creating = false,
+  onClose,
+  onSubmit,
+}: {
+  title: string;
+  entry: Entry;
+  creating?: boolean;
+  onClose: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
   return (
-    matchesStatus && haystack.includes(query.trim().toLocaleLowerCase("pt-BR"))
+    <div
+      className="admin-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <form className="topic-form" onSubmit={onSubmit}>
+        <h2>{title}</h2>
+        <label>
+          Título
+          <input name="title" defaultValue={entry.title} required />
+        </label>
+        <label>
+          Slug
+          <input name="slug" defaultValue={entry.slug} required />
+        </label>
+        <label>
+          Dados estruturados
+          <textarea
+            name="payload"
+            rows={18}
+            defaultValue={formatJson(entry.payload)}
+            required
+          />
+        </label>
+        {!creating && (
+          <label className="admin-check">
+            <input
+              name="featured"
+              type="checkbox"
+              defaultChecked={entry.featured}
+            />
+            Conteúdo em destaque
+          </label>
+        )}
+        <div className="admin-row-actions">
+          <button className="button primary">Validar e salvar</button>
+          <button type="button" onClick={onClose}>
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
   );
+}
+
+function templateFor(type: ContentType) {
+  if (type === "timeline") {
+    return {
+      dateLabel: "",
+      datePrecision: "exact",
+      title: "",
+      description: "",
+      imageUrl: null,
+      number: null,
+      relatedProject: null,
+      youtubeUrl: null,
+      position: 1,
+    };
+  }
+  if (type === "setting") return { key: "", value: "" };
+  if (type === "category") return { name: "", description: "", icon: "01" };
+  if (type === "review") {
+    return {
+      manufacturer: "",
+      category: "Reviews",
+      summary: "",
+      testedAt: "",
+      pricePaid: null,
+      marketPrice: null,
+      repairCost: null,
+      totalCost: null,
+      verdict: null,
+      positives: [],
+      negatives: [],
+      status: "",
+      learning: "",
+      facts: [],
+      updatedAt: "",
+      videoId: "",
+      imageUrl: null,
+    };
+  }
+  return {
+    product: "",
+    announcedPrice: null,
+    negotiatedPrice: 0,
+    announcedProblem: "",
+    repairCost: null,
+    totalCost: null,
+    salePrice: null,
+    reimbursement: null,
+    result: "",
+    currentStatus: "",
+    learning: "",
+    videoId: "",
+    imageUrl: null,
+    tags: ["Garimpos"],
+    updatedAt: "",
+    timeline: [],
+  };
 }
 
 async function getJson(url: string) {
@@ -894,12 +468,10 @@ function parseJson(value: FormDataEntryValue | null) {
   try {
     return { ok: true as const, value: JSON.parse(String(value || "{}")) };
   } catch {
-    return {
-      ok: false as const,
-      error: "Os dados estruturados não formam JSON válido.",
-    };
+    return { ok: false as const, error: "Os dados não formam JSON válido." };
   }
 }
+
 function formatJson(value: string) {
   try {
     return JSON.stringify(JSON.parse(value), null, 2);
@@ -907,32 +479,44 @@ function formatJson(value: string) {
     return value;
   }
 }
+
 function messageFrom(value: unknown) {
   return value instanceof Error ? value.message : "Falha inesperada.";
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function statusLabel(status: ContentStatus) {
+  return statusOptions.find((item) => item.value === status)?.label || status;
+}
+
+function contentTypeLabel(type: ContentType) {
+  return {
+    review: "Projeto · review",
+    find: "Projeto · garimpo/reparo",
+    category: "Categoria",
+    setting: "Configuração",
+    timeline: "Marco da história",
+  }[type];
 }
 
 function healthLabel(key: string) {
   const labels: Record<string, string> = {
     apiConfigured: "API do YouTube configurada",
     channelFound: "Canal encontrado",
-    metricsAvailable: "Métricas obtidas",
+    metricsAvailable: "Métricas disponíveis",
     snapshotStale: "Snapshot antigo",
     telegramConfigured: "Telegram configurado",
-    introAvailable: "Arquivos da intro encontrados",
-    d1Connected: "D1 conectado",
-    muralEnabled: "Mural ativo",
+    mediaKitConfigured: "Media Kit configurado",
+    commercialEmailConfigured: "Contato comercial configurado",
+    introAvailable: "Arquivos da intro disponíveis",
+    d1Connected: "Banco editorial conectado",
     introEnabled: "Intro ativa",
   };
   return labels[key] || key;
-}
-
-function contentTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    review: "Projeto · review",
-    find: "Projeto · garimpo/reparo",
-    category: "Categoria de projeto",
-    setting: "Configuração do site",
-    timeline: "Marco da história",
-  };
-  return labels[type] || type;
 }

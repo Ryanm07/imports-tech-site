@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { consumeRateLimit, RATE_LIMITS } from "../lib/rate-limit";
-import { sameOriginRequest, validateReportInput } from "../lib/security";
+import { sameOriginRequest } from "../lib/security";
 import type { D1DatabaseLike, D1PreparedLike } from "../lib/rate-limit";
 
 test("proteção de origem aceita somente uma origem completa confiável", () => {
@@ -42,26 +42,11 @@ test("proteção de origem aceita somente uma origem completa confiável", () =>
   );
 });
 
-test("denúncia exige alvo, tipo e motivo válidos", () => {
-  assert.equal(
-    validateReportInput({
-      targetType: "topic",
-      targetId: "t1",
-      reason: "Motivo detalhado",
-    }).errors.length,
-    0,
-  );
-  assert.ok(
-    validateReportInput({ targetType: "other", targetId: "", reason: "curto" })
-      .errors.length >= 3,
-  );
-});
-
 test("rate limit atômico não ultrapassa a política sob concorrência", async () => {
   const db = new AtomicRateLimitDb();
   const attempts = await Promise.all(
-    Array.from({ length: 12 }, () =>
-      consumeRateLimit("private@example.com", "topic", {
+    Array.from({ length: RATE_LIMITS.admin.max + 5 }, () =>
+      consumeRateLimit("private@example.com", "admin", {
         db,
         salt: "test-only-long-salt",
         now: new Date("2026-07-14T12:00:00.000Z"),
@@ -70,11 +55,11 @@ test("rate limit atômico não ultrapassa a política sob concorrência", async 
   );
   assert.equal(
     attempts.filter((item) => item.allowed).length,
-    RATE_LIMITS.topic.max,
+    RATE_LIMITS.admin.max,
   );
   assert.equal(
     attempts.filter((item) => !item.allowed).length,
-    attempts.length - RATE_LIMITS.topic.max,
+    attempts.length - RATE_LIMITS.admin.max,
   );
   assert.equal([...db.keys][0].includes("private@example.com"), false);
 });
@@ -86,7 +71,10 @@ test("rate limit falha fechado quando o banco está indisponível", async () => 
     },
   };
   assert.deepEqual(
-    await consumeRateLimit("id", "report", { db: unavailable, salt: "salt" }),
+    await consumeRateLimit("id", "youtubeSync", {
+      db: unavailable,
+      salt: "salt",
+    }),
     { allowed: false, reason: "unavailable" },
   );
 });

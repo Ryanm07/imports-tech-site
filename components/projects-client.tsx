@@ -1,27 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { PublicProject } from "@/lib/projects";
 import { money } from "@/lib/site-data";
 
 export function ProjectsClient({ projects }: { projects: PublicProject[] }) {
-  const filters = useMemo(
-    () => [
-      "Todos",
-      ...new Set(
-        projects.flatMap((project) => [project.kind, project.category]),
-      ),
-    ],
-    [projects],
-  );
+  const filters = ["Todos", "Garimpos", "Reparos", "Reviews", "Periféricos"];
   const [filter, setFilter] = useState("Todos");
   const visible = projects.filter(
-    (project) =>
-      filter === "Todos" ||
-      project.kind === filter ||
-      project.category === filter ||
-      project.tags.includes(filter),
+    (project) => filter === "Todos" || project.collection === filter,
   );
 
   return (
@@ -52,7 +40,7 @@ export function ProjectsClient({ projects }: { projects: PublicProject[] }) {
                 fill
                 sizes="(max-width: 760px) 100vw, (max-width: 1120px) 50vw, 33vw"
               />
-              <span>{project.kind}</span>
+              <span>{project.collection}</span>
             </div>
             <div className="project-content">
               <small>{project.category}</small>
@@ -78,6 +66,12 @@ export function ProjectsClient({ projects }: { projects: PublicProject[] }) {
                   <dd>{project.result}</dd>
                 </div>
               </dl>
+              {project.learning && (
+                <div className="project-learning">
+                  <strong>O que eu aprendi</strong>
+                  <p>{project.learning}</p>
+                </div>
+              )}
               <div className="project-card-footer">
                 <span>{project.currentStatus}</span>
                 <a href={project.youtubeUrl} target="_blank" rel="noreferrer">

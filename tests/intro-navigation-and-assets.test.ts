@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import test from "node:test";
 import {
   INTRO_FINAL_FRAME_SECONDS,
@@ -60,9 +60,9 @@ test("navegação pública é curta e rotas antigas têm redirect seguro", async
       source("app/videos/[id]/page.tsx"),
       source("app/reviews/page.tsx"),
       source("app/garimpos/page.tsx"),
-      source("components/community-client.tsx"),
+      source("app/comunidade/page.tsx"),
     ]);
-  for (const label of ["Início", "Minha história", "Projetos", "Mural"]) {
+  for (const label of ["Início", "Minha história", "Projetos", "Comunidade"]) {
     assert.equal(header.includes(label), true, label);
   }
   assert.equal(header.includes("Ctrl"), false);
@@ -72,14 +72,9 @@ test("navegação pública é curta e rotas antigas têm redirect seguro", async
   assert.match(finds, /permanentRedirect\("\/projetos"\)/);
   assert.match(videoDetail, /BRAND_LINKS\.youtubeWatch/);
   assert.match(videoDetail, /\^\[A-Za-z0-9_-\]\{11\}\$/);
-  for (const action of [
-    "Sugerir um vídeo",
-    "Mostrar um achado",
-    "Pedir ajuda",
-    "Conversar sobre tecnologia",
-  ]) {
-    assert.equal(community.includes(action), true, action);
-  }
+  assert.equal(community.includes("TelegramSection"), true);
+  assert.equal(community.includes("CommunityClient"), false);
+  assert.equal(community.includes("fórum próprio"), true);
 });
 
 test("serviço do YouTube não contém implementação de catálogo", async () => {
@@ -142,26 +137,23 @@ test("sincronização manual é privada e a chave não possui caminho cliente", 
   );
 });
 
-test("Mural público não oferece conta, e-mail, edição ou exclusão", async () => {
-  const files = await Promise.all([
-    source("app/api/community/topics/route.ts"),
-    source("app/api/community/topics/[id]/route.ts"),
-    source("app/api/community/topics/[id]/replies/route.ts"),
-    source("app/api/community/reports/route.ts"),
-    source("components/community-client.tsx"),
-  ]);
-  const publicApi = files.slice(0, 4).join("\n");
-  assert.equal(publicApi.includes("export async function PATCH"), false);
-  assert.equal(publicApi.includes("export async function DELETE"), false);
-  assert.equal(files[4].includes('type="email"'), false);
-  assert.equal(files[4].includes("Entrar com"), false);
-  assert.equal(files[4].includes("Criar conta"), false);
+test("Mural e APIs públicas foram removidos da experiência ativa", async () => {
+  for (const path of [
+    "app/api/community/topics/route.ts",
+    "app/api/community/reports/route.ts",
+    "components/community-client.tsx",
+    "lib/wall-request.ts",
+  ]) {
+    await assert.rejects(access(new URL(path, root)));
+  }
+  const redirect = await source("app/comunidade/[id]/page.tsx");
+  assert.match(redirect, /permanentRedirect\("\/comunidade"\)/);
 });
 
 test("Telegram contém as duas entradas editoriais e fallback sem link", async () => {
   const telegram = await source("components/telegram-section.tsx");
   assert.equal(telegram.includes("Canal de promoções"), true);
-  assert.equal(telegram.includes("Promoções, cupons e oportunidades"), true);
+  assert.equal(telegram.includes("promoções, cupons e oportunidades"), true);
   assert.equal(telegram.includes("Grupo da comunidade"), true);
   assert.equal(telegram.includes("Em breve"), true);
 });

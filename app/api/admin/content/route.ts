@@ -20,7 +20,14 @@ const CONTENT_TYPES: ContentType[] = [
   "setting",
   "timeline",
 ];
-const CONTENT_STATUSES = ["draft", "published", "archived", "removed"] as const;
+const CONTENT_STATUSES = [
+  "draft",
+  "review",
+  "reviewed",
+  "published",
+  "archived",
+  "removed",
+] as const;
 
 function disabled() {
   return process.env.ADMIN_ENABLED !== "true";

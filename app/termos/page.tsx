@@ -1,48 +1,38 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Termos do Mural da Comunidade",
-  description: "Regras de convivência e moderação do Mural Imports Tech.",
+  title: "Termos do site",
+  description: "Condições de uso do site oficial Imports Tech.",
   alternates: { canonical: "/termos" },
 };
 
 export default function TermsPage() {
   return (
     <main id="conteudo" className="page-main legal-page">
-      <span className="eyebrow-v2">REGRAS DE CONVIVÊNCIA</span>
-      <h1>Termos do Mural da Comunidade</h1>
+      <span className="eyebrow-v2">TERMOS DO SITE</span>
+      <h1>Informação com contexto e responsabilidade.</h1>
       <p>
-        Participe com respeito, contexto e boa-fé. Não publique dados pessoais,
-        golpes, spam, assédio, discurso de ódio, conteúdo ilegal ou links
-        maliciosos.
+        Eu publico relatos editoriais sobre compras, testes e reparos que vivi.
+        Preços, condições e resultados pertencem ao contexto informado e podem
+        não se repetir em outra compra.
       </p>
-      <h2>Nomes e autoria</h2>
+      <h2>Conteúdo e reparos</h2>
       <p>
-        Não há cadastro público. O nome é informado pelo visitante e não é
-        verificado. Nomes que imitem o canal, o proprietário, administração,
-        moderação ou suporte são reservados. Apenas “Ryan — Imports Tech” com o
-        selo oficial representa uma publicação do canal.
+        O conteúdo não substitui diagnóstico técnico profissional. Qualquer
+        compra, abertura de aparelho ou reparo envolve riscos e deve respeitar a
+        experiência, as ferramentas e a segurança de cada pessoa.
       </p>
-      <h2>Publicação e moderação</h2>
+      <h2>Comunidade externa</h2>
       <p>
-        Conteúdo normal pode ser publicado automaticamente. Conteúdo suspeito
-        pode ficar pendente, ser ocultado, removido ou marcado como spam.
-        Conversas podem ser fixadas, movidas, encerradas ou reabertas. Origens
-        associadas a abuso podem ser bloqueadas por hash durante período
-        definido.
+        O site não mantém fórum, contas públicas ou publicações de visitantes.
+        Telegram e YouTube são serviços externos, com termos e políticas
+        próprios.
       </p>
-      <h2>Denúncias e exclusão</h2>
+      <h2>Correções</h2>
       <p>
-        Qualquer visitante pode denunciar conteúdo, sujeito à verificação
-        anti-spam e aos limites. A remoção comum é lógica para preservar o
-        histórico; a exclusão definitiva fica restrita ao proprietário e exige
-        confirmação reforçada.
-      </p>
-      <h2>Disponibilidade</h2>
-      <p>
-        O Mural pode ser pausado para segurança, manutenção ou homologação. Não
-        há garantia de publicação imediata ou permanência de conteúdo que viole
-        estas regras.
+        Quando eu confirmar que uma informação está errada ou desatualizada,
+        posso corrigi-la mantendo o compromisso de não inventar fatos, datas ou
+        números.
       </p>
     </main>
   );

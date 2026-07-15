@@ -361,7 +361,7 @@ export const contentEntries = sqliteTable(
     title: text("title").notNull(),
     payload: text("payload").notNull(),
     status: text("status", {
-      enum: ["draft", "published", "archived", "removed"],
+      enum: ["draft", "review", "reviewed", "published", "archived", "removed"],
     })
       .notNull()
       .default("draft"),

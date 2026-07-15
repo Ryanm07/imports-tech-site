@@ -5,6 +5,7 @@ export type PublicProject = {
   slug: string;
   title: string;
   kind: "Review" | "Garimpo";
+  collection: "Garimpos" | "Reparos" | "Reviews" | "Periféricos";
   category: string;
   image: string;
   pricePaid: number | null;
@@ -13,6 +14,7 @@ export type PublicProject = {
   result: string;
   currentStatus: string;
   summary: string;
+  learning: string | null;
   youtubeUrl: string;
   tags: string[];
   updatedAt: string;
@@ -46,6 +48,7 @@ function reviewProject(review: Review): PublicProject {
     slug: review.slug,
     title: review.name,
     kind: "Review",
+    collection: review.category === "Periféricos" ? "Periféricos" : "Reviews",
     category: review.category,
     image: review.imageUrl || youtubeThumbnail(review.videoId),
     pricePaid: review.pricePaid,
@@ -57,6 +60,7 @@ function reviewProject(review: Review): PublicProject {
     result: review.verdict || review.status,
     currentStatus: review.status,
     summary: review.summary,
+    learning: review.learning || null,
     youtubeUrl: youtubeVideo(review.videoId),
     tags: [review.category, "Reviews"],
     updatedAt: review.updatedAt,
@@ -68,6 +72,7 @@ function findProject(find: Find): PublicProject {
     slug: find.slug,
     title: find.product,
     kind: "Garimpo",
+    collection: find.tags.includes("Reparos") ? "Reparos" : "Garimpos",
     category: find.tags[0] || "Garimpos",
     image: find.imageUrl || youtubeThumbnail(find.videoId),
     pricePaid: find.negotiatedPrice,
@@ -79,6 +84,7 @@ function findProject(find: Find): PublicProject {
     result: find.result,
     currentStatus: find.currentStatus,
     summary: find.timeline[0]?.detail || find.result,
+    learning: find.learning || null,
     youtubeUrl: youtubeVideo(find.videoId),
     tags: [...new Set(["Garimpos", ...find.tags])],
     updatedAt: find.updatedAt,

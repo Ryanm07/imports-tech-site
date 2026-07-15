@@ -1,66 +1,45 @@
 import type { Metadata } from "next";
-import { CommunityClient } from "@/components/community-client";
 import { TelegramSection } from "@/components/telegram-section";
 import { BRAND_LINKS } from "@/lib/brand";
 import { getSiteSettings } from "@/lib/content-repository";
-import { communityCategories } from "@/lib/site-data";
 import { getTelegramLinks } from "@/lib/telegram";
 
-export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Mural da Comunidade",
+  title: "Comunidade",
   description:
-    "Dúvidas, garimpos, reparos e conversas sobre tecnologia com a comunidade Imports Tech.",
+    "Os espaços oficiais onde eu compartilho promoções e converso com a comunidade Imports Tech.",
   alternates: { canonical: "/comunidade" },
 };
 
 export default async function CommunityPage() {
-  const enabled = process.env.COMMUNITY_ENABLED === "true";
   const telegram = getTelegramLinks(await getSiteSettings());
-  if (!enabled) {
-    return (
-      <main id="conteudo" className="page-main">
-        <div className="feature-soon">
-          <span>MURAL DA COMUNIDADE</span>
-          <h1>Comunidade em breve.</h1>
-          <p>
-            Estamos preparando um espaço simples para dúvidas, achados e
-            experiências sobre tecnologia, com moderação e proteção contra spam.
-          </p>
-          <div className="category-pills">
-            {communityCategories.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-          <a
-            className="button primary"
-            href={BRAND_LINKS.youtubeCommunity}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Acompanhar no YouTube ↗
-          </a>
-          <TelegramSection links={telegram} compact />
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main id="conteudo" className="page-main">
+    <main id="conteudo" className="page-main community-hub">
       <header className="page-hero">
-        <span className="eyebrow-v2">MURAL DA COMUNIDADE</span>
-        <h1>Pergunte. Responda. Compartilhe o garimpo.</h1>
+        <span className="eyebrow-v2">COMUNIDADE IMPORTS TECH</span>
+        <h1>A conversa continua fora do site.</h1>
         <p>
-          Não é preciso criar conta. O nome é informado por cada visitante e não
-          representa uma identidade verificada, exceto quando houver o selo
-          oficial.
+          Eu uso os espaços oficiais para ficar perto de quem acompanha o canal.
+          O site não exige conta e não mantém um fórum próprio.
         </p>
       </header>
-      <CommunityClient
-        turnstileSiteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""}
-      />
       <TelegramSection links={telegram} compact />
+      <section className="community-youtube">
+        <span>NO YOUTUBE</span>
+        <h2>Eu também leio comentários e publico atualizações no canal.</h2>
+        <p>
+          Para acompanhar vídeos, bastidores e publicações, use sempre o perfil
+          oficial @Imports_Tech.
+        </p>
+        <a
+          className="button secondary"
+          href={BRAND_LINKS.youtubeCommunity}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Abrir a comunidade do YouTube ↗
+        </a>
+      </section>
     </main>
   );
 }

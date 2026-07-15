@@ -44,10 +44,10 @@ export default async function AdminPage() {
     <main id="conteudo" className="page-main">
       <header className="page-hero">
         <span className="eyebrow-v2">PAINEL DO PROPRIETÁRIO</span>
-        <h1>Conteúdo, mural e sincronização.</h1>
+        <h1>Conteúdo, história e métricas.</h1>
         <p>
-          Sessão privada ativa. Todas as gravações passam por autorização e
-          histórico de auditoria.
+          Eu reviso textos, projetos, links e marcos antes de publicar. O painel
+          também mostra somente o estado sanitizado da sincronização do YouTube.
         </p>
       </header>
       <AdminPanel />

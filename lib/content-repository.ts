@@ -13,14 +13,10 @@ import {
   type Find,
   type Review,
 } from "@/lib/site-data";
+import { storyMilestones, type StoryMilestone } from "@/lib/story";
 
 type StoredEntry = typeof contentEntries.$inferSelect;
-export type TimelineItem = {
-  year: string;
-  title: string;
-  description: string;
-  position: number;
-};
+export type TimelineItem = StoryMilestone;
 
 async function getStoredEntries(type: ContentType) {
   if (process.env.EDITORIAL_DB_ENABLED !== "true") return [];
@@ -122,15 +118,12 @@ export async function getSiteSettings() {
 
 export async function getTimeline(): Promise<TimelineItem[]> {
   const entries = await getStoredEntries("timeline");
-  return entries
-    .flatMap((entry) => {
-      if (entry.status !== "published") return [];
-      const payload = parseEntry(entry);
-      return payload && entry.type === "timeline"
-        ? [payload as TimelineItem]
-        : [];
-    })
-    .sort((a, b) => a.position - b.position);
+  return mergeWithTombstones(storyMilestones, entries, (entry) => {
+    const payload = parseEntry(entry);
+    return payload && entry.type === "timeline"
+      ? { slug: entry.slug, ...(payload as Omit<TimelineItem, "slug">) }
+      : null;
+  }).sort((a, b) => a.position - b.position);
 }
 
 export async function getPublicEditorialData() {

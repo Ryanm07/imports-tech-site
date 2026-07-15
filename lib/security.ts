@@ -10,45 +10,6 @@ export function sanitizePlainText(value: unknown, maxLength: number) {
     .slice(0, maxLength);
 }
 
-export function countLinks(value: string) {
-  return (value.match(/https?:\/\//gi) || []).length;
-}
-
-export function validateCommunityPost(titleValue: unknown, bodyValue: unknown) {
-  const title = sanitizePlainText(titleValue, 120);
-  const body = sanitizePlainText(bodyValue, 4000);
-  const errors: string[] = [];
-  if (title.length < 8)
-    errors.push("O título precisa ter pelo menos 8 caracteres.");
-  if (body.length < 20) {
-    errors.push("Conte um pouco mais para a comunidade conseguir ajudar.");
-  }
-  if (countLinks(body) > 2) {
-    errors.push("Use no máximo dois links por publicação.");
-  }
-  return { title, body, errors };
-}
-
-export function validateReportInput(input: Record<string, unknown>): {
-  targetType: "topic" | "reply" | null;
-  targetId: string;
-  reason: string;
-  errors: string[];
-} {
-  const targetType: "topic" | "reply" | null =
-    input.targetType === "topic" || input.targetType === "reply"
-      ? input.targetType
-      : null;
-  const targetId = sanitizePlainText(input.targetId, 80);
-  const reason = sanitizePlainText(input.reason, 500);
-  const errors: string[] = [];
-  if (!targetType) errors.push("Tipo de alvo inválido.");
-  if (!targetId) errors.push("Alvo obrigatório.");
-  if (reason.length < 10)
-    errors.push("O motivo precisa ter pelo menos 10 caracteres.");
-  return { targetType, targetId, reason, errors };
-}
-
 type OriginOptions = {
   siteUrl?: string;
   allowedOrigins?: string;

@@ -52,21 +52,37 @@ export function validateContentPayload(type: ContentType, value: unknown) {
 }
 
 function validateTimeline(value: Record<string, unknown>) {
-  const year = text(value.year, 20);
+  const dateLabel = text(value.dateLabel ?? value.year, 40);
+  const datePrecision =
+    value.datePrecision === "approximate" ? "approximate" : "exact";
   const title = text(value.title, 120);
-  const description = text(value.description, 600);
+  const description = text(value.description, 1200);
   const position = Number(value.position);
   if (
-    !year ||
+    !dateLabel ||
     !title ||
     description.length < 10 ||
     !Number.isInteger(position)
   ) {
     return invalid(
-      "Marco da trajetória exige ano, título, descrição e posição.",
+      "Marco da trajetória exige data, precisão, título, texto e posição.",
     );
   }
-  return valid({ year, title, description, position });
+  const imageUrl = editorialImage(value.imageUrl);
+  const number = text(value.number, 80) || null;
+  const relatedProject = sanitizeSlug(value.relatedProject) || null;
+  const youtubeUrl = editorialYouTubeUrl(value.youtubeUrl);
+  return valid({
+    dateLabel,
+    datePrecision,
+    title,
+    description,
+    imageUrl,
+    number,
+    relatedProject,
+    youtubeUrl,
+    position,
+  });
 }
 
 function validateReview(value: Record<string, unknown>) {
@@ -105,6 +121,7 @@ function validateReview(value: Record<string, unknown>) {
     negatives: textList(value.negatives, 8, 160),
     scores: null,
     status: text(value.status, 300),
+    learning: text(value.learning, 600) || undefined,
     facts: textList(value.facts, 12, 200),
     updatedAt: date(value.updatedAt) || new Date().toISOString().slice(0, 10),
     videoId,
@@ -158,6 +175,7 @@ function validateFind(value: Record<string, unknown>) {
     reimbursement: nullableMoney(value.reimbursement),
     result,
     currentStatus,
+    learning: text(value.learning, 600) || undefined,
     videoId,
     imageUrl: editorialImage(value.imageUrl),
     tags: textList(value.tags, 12, 60),
@@ -244,6 +262,21 @@ function editorialImage(value: unknown) {
     return null;
   }
   return null;
+}
+
+function editorialYouTubeUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:") return null;
+    const host = url.hostname.toLowerCase();
+    if (!["youtube.com", "www.youtube.com", "youtu.be"].includes(host)) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

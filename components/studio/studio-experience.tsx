@@ -20,6 +20,7 @@ import {
 } from "@/lib/studio-navigation";
 import { STUDIO_ITEMS, type StudioItem } from "@/lib/studio-content";
 import { StudioIcon } from "./studio-icons";
+import { StudioPageScrollbar } from "./studio-page-scrollbar";
 import type { MovementInput } from "./studio-canvas";
 
 const StudioCanvas = lazy(() => import("./studio-canvas"));
@@ -587,6 +588,7 @@ export function StudioExperience() {
           onClose={closeDetail}
         />
       )}
+      <StudioPageScrollbar />
     </main>
   );
 }

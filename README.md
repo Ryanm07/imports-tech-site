@@ -10,6 +10,8 @@ próxima etapa.
 - Visão geral com órbita e zoom; enquadramento adaptado ao tamanho da tela.
 - Caminhada opcional por câmera, com WASD/setas, arrasto para olhar e botões de
   toque. Colisões com paredes e móveis limitam o percurso.
+- Em telas baixas, uma barra lateral permite rolar a página pelo toque ou teclado
+  sem girar a câmera. Os painéis permanecem dentro da área visível.
 - Iluminação clara/escura. A caminhada acende as luzes; voltar restaura a escolha
   da apresentação, salva no dispositivo.
 - Objetos clicáveis e lista acessível, detalhes com foco contido, Escape,

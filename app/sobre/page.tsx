@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { aboutStory } from "@/lib/about-story";
+import { JourneyRoad, JourneyEmblem } from "@/components/journey-road";
 
 export const metadata: Metadata = {
   title: "Minha história",
@@ -22,41 +23,52 @@ export default function AboutPage() {
           O Imports Tech começou com vontade de aprender. Estes são alguns dos
           momentos que me trouxeram até aqui.
         </p>
+        <span className="journey-invitation">
+          Siga o caminho.{" "}
+          <span>Passe o cursor pela estrada para movimentá-la.</span>
+        </span>
       </header>
-      <article aria-label="Minha trajetória" className="about-story">
-        {aboutStory.map((moment) => (
-          <section
-            key={moment.id}
-            id={moment.id}
-            className="about-moment"
-            aria-labelledby={`${moment.id}-title`}
-          >
-            {moment.aliases.map((alias) => (
-              <span
-                key={alias}
-                id={alias}
-                className="about-anchor"
-                aria-hidden="true"
-              />
-            ))}
-            <p className="about-when">{moment.when}</p>
-            <div className="about-copy">
-              <h2 id={`${moment.id}-title`}>{moment.title}</h2>
-              <p>{moment.text}</p>
-              {"video" in moment && (
-                <a
-                  className="about-video"
-                  href={`https://www.youtube.com/watch?v=${moment.video.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {moment.video.label} <span aria-hidden="true">↗</span>
-                </a>
-              )}
-            </div>
-          </section>
-        ))}
-      </article>
+      <JourneyRoad>
+        <article aria-label="Minha trajetória" className="about-story">
+          {aboutStory.map((moment, index) => (
+            <section
+              key={moment.id}
+              id={moment.id}
+              className="about-moment"
+              data-journey-stop
+              aria-labelledby={`${moment.id}-title`}
+            >
+              {moment.aliases.map((alias) => (
+                <span
+                  key={alias}
+                  id={alias}
+                  className="about-anchor"
+                  aria-hidden="true"
+                />
+              ))}
+              <span className="journey-checkpoint" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="about-copy">
+                <JourneyEmblem index={index} />
+                <p className="about-when">{moment.when}</p>
+                <h2 id={`${moment.id}-title`}>{moment.title}</h2>
+                <p>{moment.text}</p>
+                {"video" in moment && (
+                  <a
+                    className="about-video"
+                    href={`https://www.youtube.com/watch?v=${moment.video.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {moment.video.label} <span aria-hidden="true">↗</span>
+                  </a>
+                )}
+              </div>
+            </section>
+          ))}
+        </article>
+      </JourneyRoad>
       <section
         id="meta-2027"
         className="about-outlook"

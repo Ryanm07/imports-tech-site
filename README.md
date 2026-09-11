@@ -17,7 +17,9 @@ A versão pública está na [Vercel](https://imports-tech-site.vercel.app/).
 [DEPLOYMENT.md](DEPLOYMENT.md) descreve os dois ambientes suportados e seus limites.
 
 - `/`: estúdio 3D; objetos definidos em `lib/studio-content.ts`.
-- `/sobre`: história curta, com rolagem nativa e links para marcos antigos.
+- `/sobre`: história em um percurso ilustrado, com estrada elástica que responde
+  ao cursor, rolagem nativa e links para marcos antigos. No celular, a estrada
+  acompanha o texto pela lateral; movimento reduzido mantém o desenho estático.
   O texto atual está em `lib/about-story.ts`. Não carrega `StoryExperience` nem
   o CSS da antiga navegação por capítulos.
 - `/metricas`: números com fonte, data e validade, ou link para consultá-los no canal.

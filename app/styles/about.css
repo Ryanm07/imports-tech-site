@@ -1,5 +1,5 @@
 .about-page {
-  max-width: 1040px;
+  max-width: 1200px;
   padding-block: 38px 88px;
 }
 .about-intro {
@@ -29,14 +29,108 @@
   font-size: clamp(16px, 2vw, 19px);
   line-height: 1.7;
 }
+.journey-invitation {
+  display: block;
+  margin-top: 32px;
+  font-size: 13px;
+  color: var(--brand-primary);
+}
+.journey-invitation > span {
+  color: var(--text-muted);
+}
+.journey-map {
+  position: relative;
+  isolation: isolate;
+  padding-block: 48px 64px;
+}
+.journey-road {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: -1;
+}
+.journey-road path {
+  fill: none;
+  stroke-linejoin: round;
+}
+.journey-road-shadow {
+  stroke: #0005;
+  stroke-width: 58;
+}
+.journey-road-edge {
+  stroke: #b48b3a;
+  stroke-width: 43;
+}
+.journey-road-surface {
+  stroke: #182739;
+  stroke-width: 39;
+}
+.journey-road-center {
+  stroke: #ffde9380;
+  stroke-width: 1.6;
+  stroke-dasharray: 9 14;
+}
 .about-moment {
   position: relative;
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 40px;
-  padding-block: 36px;
-  border-top: 1px solid var(--border);
+  min-height: 340px;
+  display: flex;
+  align-items: flex-start;
+  padding-block: 26px 60px;
   scroll-margin-top: 20px;
+}
+.about-copy {
+  position: relative;
+  width: 37%;
+  padding-top: 0;
+}
+.about-moment:nth-child(even) {
+  justify-content: flex-end;
+}
+.about-moment:nth-child(odd) .about-copy {
+  margin-right: auto;
+}
+.about-copy::after {
+  content: "";
+  position: absolute;
+  top: 38px;
+  left: calc(100% + 20px);
+  width: calc(35% - 45px);
+  height: 1px;
+  background: linear-gradient(90deg, #ffbe2460, #ffbe2410);
+}
+.about-moment:nth-child(even) .about-copy::after {
+  left: auto;
+  right: calc(100% + 20px);
+  transform: rotate(180deg);
+}
+.journey-emblem {
+  width: 72px;
+  height: 72px;
+  color: #dfb55d;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 6px 16px #ffbe241a);
+}
+.journey-checkpoint {
+  position: absolute;
+  left: 50%;
+  top: 40px;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d6aa51;
+  border-radius: 50%;
+  color: #ffe1a1;
+  background: #152338;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  box-shadow:
+    0 0 0 7px #07111f,
+    0 0 34px #ffbe2415;
 }
 .about-anchor {
   position: absolute;
@@ -44,23 +138,24 @@
   scroll-margin-top: 20px;
 }
 .about-when {
-  padding-top: 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #dfb55d;
 }
 .about-copy h2,
 .about-outlook h2 {
-  font-size: clamp(24px, 2.6vw, 32px);
+  font-size: clamp(24px, 2.6vw, 33px);
   line-height: 1.2;
   letter-spacing: -0.035em;
   text-wrap: pretty;
 }
-.about-copy > p,
+.about-copy > p:not(.about-when),
 .about-outlook > p {
   max-width: 65ch;
   margin-top: 16px;
   line-height: 1.85;
   color: var(--text-secondary);
+  font-size: 15px;
 }
 .about-video {
   display: inline-flex;
@@ -79,28 +174,93 @@
   color: var(--text);
 }
 .about-outlook {
-  border-top: 1px solid var(--border);
-  padding-top: 40px;
-  margin-top: 16px;
-  padding-left: 220px;
+  position: relative;
+  max-width: 570px;
+  margin: 0 auto;
+  padding: 40px 28px 0;
+  text-align: center;
   scroll-margin-top: 20px;
+}
+.about-outlook::before {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 1px solid #dfb55d;
+  border-radius: 50%;
+  top: 0;
+  left: calc(50% - 5px);
+  box-shadow: 0 0 0 8px #dfb55d12;
 }
 .about-outlook .eyebrow-v2 {
   margin-bottom: 18px;
 }
+@media (max-width: 850px) and (min-width: 701px) {
+  .about-copy {
+    width: 36%;
+  }
+  .about-moment {
+    min-height: 420px;
+  }
+}
 @media (max-width: 700px) {
   .about-intro {
-    padding-bottom: 36px;
+    padding-bottom: 30px;
   }
   .about-back {
     margin-bottom: 26px;
   }
+  .journey-invitation > span {
+    display: none;
+  }
+  .journey-map {
+    padding-block: 24px 26px;
+  }
+  .journey-road-shadow {
+    stroke-width: 34;
+  }
+  .journey-road-edge {
+    stroke-width: 25;
+  }
+  .journey-road-surface {
+    stroke-width: 22;
+  }
+  .journey-road-center {
+    stroke-width: 1;
+    stroke-dasharray: 6 10;
+  }
   .about-moment {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding-block: 28px;
+    min-height: 0;
+    padding: 20px 0 50px 80px;
+  }
+  .about-copy {
+    width: 100%;
+  }
+  .about-copy::after {
+    display: none;
+  }
+  .journey-checkpoint {
+    left: 29px;
+    width: 34px;
+    height: 34px;
+    top: 47px;
+    font-size: 10px;
+    box-shadow: 0 0 0 5px #07111f;
+  }
+  .journey-emblem {
+    width: 58px;
+    height: 58px;
   }
   .about-outlook {
-    padding-left: 0;
+    padding: 40px 0 0 80px;
+    text-align: left;
+  }
+  .about-outlook::before {
+    left: 25px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .journey-invitation > span {
+    display: none;
   }
 }

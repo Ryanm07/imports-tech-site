@@ -72,7 +72,7 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
     "components/motion/interactive-background.tsx",
     "utf8",
   );
-  const styles = readFileSync("app/globals.css", "utf8");
+  const styles = readFileSync("public/styles/story.css", "utf8");
   assert.match(story, /aria-label="Navegar pelos capítulos"/);
   assert.match(story, /tabIndex=\{index === activeIndex \? 0 : -1\}/);
   assert.match(projects, /project-card-mobile-image/);
@@ -83,7 +83,8 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
   assert.match(story, /chapterPhases/);
   assert.match(scenes, /case "mechanical-switch"/);
   assert.match(scenes, /case "heavy-processing"/);
-  assert.match(background, /if \(!context\) return/);
+  assert.match(background, /aria-hidden="true"/);
+  assert.doesNotMatch(background, /<canvas|requestAnimationFrame/);
   assert.doesNotMatch(background, /getComputedStyle/);
   assert.match(styles, /html:not\(\.motion-ready\) \.story-documentary/);
 });

@@ -13,78 +13,94 @@ export function TelegramSection({
       className={compact ? "telegram-section compact" : "telegram-section"}
       data-motion-section="comunidade"
     >
-      <div>
-        <span className="eyebrow-v2">IMPORTS TECH NO TELEGRAM</span>
-        <h2>Eu quero que a conversa continue perto.</h2>
+      <div className="telegram-heading">
+        <span className="eyebrow-v2">Comunidade Imports Tech</span>
+        <h2>A conversa continua.</h2>
         <p>
-          No Telegram, eu deixo as promoções em um lugar e a conversa em outro.
-          Assim, você entra só no espaço que fizer sentido para você.
+          Dos comentários do canal aos garimpos do dia. Escolha o seu jeito de
+          acompanhar.
         </p>
       </div>
-      <div className="telegram-actions">
-        <article>
-          <strong>Canal de promoções</strong>
+      <div className="community-feature">
+        <div className="community-feature-mark" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect
+              x="3"
+              y="12"
+              width="58"
+              height="40"
+              rx="12"
+              fill="currentColor"
+            />
+            <path d="m27 23 16 9-16 9V23Z" fill="var(--bg, #07111f)" />
+          </svg>
+        </div>
+        <div className="community-feature-copy">
+          <span>YouTube / @Imports_Tech</span>
+          <h3>Tem sempre uma descoberta nova.</h3>
           <p>
-            Eu mando as promoções, cupons e oportunidades de tecnologia que
-            realmente chamam minha atenção.
-          </p>
-          {links.channel ? (
-            <a
-              className="button primary"
-              href={links.channel}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ver promoções ↗
-            </a>
-          ) : (
-            <span>Canal · Em breve</span>
-          )}
-        </article>
-        <article>
-          <strong>Grupo da comunidade</strong>
-          <p>
-            É o espaço para conversar comigo e com outras pessoas sobre
-            celulares, notebooks, garimpos, reparos e tecnologia.
-          </p>
-          {links.group ? (
-            <a
-              className="button secondary"
-              href={links.group}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Entrar no grupo ↗
-            </a>
-          ) : (
-            <span>Grupo · Em breve</span>
-          )}
-        </article>
-        <article>
-          <strong>YouTube</strong>
-          <p>
-            Eu publico os vídeos completos e continuo a conversa nas
-            atualizações e nos comentários do canal.
+            Vídeos completos, bastidores e experiências reais. Eu também estou
+            nas atualizações e nos comentários do canal.
           </p>
           <a
-            className="button secondary"
+            className="button primary"
             href={BRAND_LINKS.youtube}
             target="_blank"
             rel="noreferrer"
           >
-            Acompanhar no YouTube ↗
+            Acompanhar no YouTube
           </a>
+        </div>
+      </div>
+      <div className="telegram-options">
+        <article className="telegram-option">
+          <div>
+            <span className="eyebrow-v2">Telegram</span>
+            <h3>Canal de promoções</h3>
+            <p>
+              Eu compartilho promoções, cupons e oportunidades de tecnologia que
+              realmente chamam minha atenção.
+            </p>
+          </div>
+          {links.channel ? (
+            <a
+              className="inline-link"
+              href={links.channel}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Ver promoções
+            </a>
+          ) : (
+            <span className="unavailable-note">Em breve no Telegram</span>
+          )}
+        </article>
+        <article className="telegram-option">
+          <div>
+            <span className="eyebrow-v2">Telegram</span>
+            <h3>Grupo da comunidade</h3>
+            <p>
+              Um espaço para conversar comigo e com outras pessoas sobre
+              celulares, notebooks, garimpos, reparos e tecnologia.
+            </p>
+          </div>
+          {links.group ? (
+            <a
+              className="inline-link"
+              href={links.group}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Entrar no grupo
+            </a>
+          ) : (
+            <span className="unavailable-note">Em breve no Telegram</span>
+          )}
         </article>
       </div>
-      <div className="community-message-preview" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <i />
-      </div>
       <small className="telegram-notice">
-        O Telegram é um serviço externo e possui seus próprios termos e práticas
-        de privacidade.
+        O Telegram é um serviço externo, com seus próprios termos e práticas de
+        privacidade.
       </small>
     </section>
   );

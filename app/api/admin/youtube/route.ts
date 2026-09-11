@@ -7,6 +7,7 @@ import { ownerRateLimitIdentity } from "@/lib/owner-domain";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { sameOriginRequest } from "@/lib/security";
 import { requireOwnerApi } from "@/lib/server-auth";
+import { privateBackendEnabled } from "@/lib/server-capabilities";
 import { getTelegramLinks } from "@/lib/telegram";
 import { getPublicLinks } from "@/lib/public-links";
 import {
@@ -15,7 +16,7 @@ import {
 } from "@/lib/youtube-service";
 
 export async function GET() {
-  if (process.env.ADMIN_ENABLED !== "true") {
+  if (!privateBackendEnabled()) {
     return privateJson({ error: "Painel desativado." }, { status: 503 });
   }
   const auth = await requireOwnerApi();
@@ -77,7 +78,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (process.env.ADMIN_ENABLED !== "true") {
+  if (!privateBackendEnabled()) {
     return privateJson({ error: "Painel desativado." }, { status: 503 });
   }
   if (!sameOriginRequest(request)) {

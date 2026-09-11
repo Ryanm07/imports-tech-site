@@ -1,404 +1,357 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import { TelegramSection } from "@/components/telegram-section";
 import { ScrollSection } from "@/components/motion/scroll-section";
-import { HomeScrollDirector } from "@/components/home-scroll-director";
+import { VideoCard } from "@/components/video-card";
+import { ArrowIcon, PlayIcon } from "@/components/ui-icons";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
+import type { FeaturedContent } from "@/lib/featured-content";
 import type { PublicLinks } from "@/lib/public-links";
 import type { TimelineItem } from "@/lib/content-repository";
 import type { TelegramLinks } from "@/lib/telegram";
 import type { YouTubeMetricsSnapshot } from "@/lib/youtube-service";
 
 const fallbackIntroduction =
-  "Eu sou o Ryan. Criei o Imports Tech em setembro de 2025 porque queria perder a timidez e aprender a me comunicar melhor falando sobre uma coisa que sempre gostei: tecnologia. Comecei com reviews simples de periféricos. Aos poucos, vieram os achados da OLX, os reparos, os testes no dia a dia e projetos que eu nem imaginava conseguir produzir.";
+  "Eu sou o Ryan. Criei o Imports Tech em setembro de 2025 para perder a timidez e aprender a me comunicar falando sobre o que sempre gostei: tecnologia. Dos primeiros periféricos aos achados da OLX, cada vídeo acabou virando uma parte da minha própria evolução.";
+
+type HomePageProps = {
+  telegram: TelegramLinks;
+  publicLinks: PublicLinks;
+  youtube: YouTubeMetricsSnapshot;
+  timeline: TimelineItem[];
+  featured: FeaturedContent[];
+  homeIntroduction?: string;
+  commercialIntroduction?: string;
+};
 
 export function HomePage({
   telegram,
   publicLinks,
   youtube,
   timeline,
+  featured,
   homeIntroduction,
   commercialIntroduction,
-}: {
-  telegram: TelegramLinks;
-  publicLinks: PublicLinks;
-  youtube: YouTubeMetricsSnapshot;
-  timeline: TimelineItem[];
-  homeIntroduction?: string;
-  commercialIntroduction?: string;
-}) {
-  const orbitMetrics = [
-    {
-      value: metricValue(youtube.subscribers),
-      label: "inscritos",
-      kind: "current",
-    },
-    {
-      value: metricValue(youtube.videoCount),
-      label: "vídeos publicados",
-      kind: "current",
-    },
-    {
-      value: metricValue(youtube.totalViews),
-      label: "visualizações",
-      kind: "current",
-    },
-    { value: "2025", label: "canal criado em", kind: "origin" },
-    { value: "100 MIL", label: "meta · até o fim de 2027", kind: "goal" },
-  ];
-  const featuredMilestones = pickMilestones(timeline);
-
+}: HomePageProps) {
+  const selectedMilestones = timeline.filter((item) =>
+    [
+      "comeco-setembro-2025",
+      "iphone-xr",
+      "mil-inscritos",
+      "acer-nitro-5",
+    ].includes(item.slug),
+  );
+  const milestones = selectedMilestones.length
+    ? selectedMilestones
+    : timeline.slice(0, 4);
   return (
-    <main id="conteudo">
-      <HomeScrollDirector />
-      <ScrollSection name="hero" className="hero-v2">
-        <div className="hero-grid" aria-hidden="true" />
-        <div className="hero-message">
-          <span className="eyebrow-v2">
-            <i /> HISTÓRIA · COMUNIDADE · TECNOLOGIA
+    <main id="conteudo" className="home-page">
+      <section className="editorial-hero" data-motion-section="hero">
+        <div className="hero-topline">
+          <span>
+            <i className="status-dot" /> A curiosidade trouxe você até aqui.
           </span>
+          <span>Imports Tech, por Ryan</span>
+        </div>
+        <div className="hero-headline">
           <h1>
-            Tecnologia testada
+            Tecnologia
             <br />
-            <em>no uso real.</em>
+            fora do comum
           </h1>
-          <p>
-            Eu compro, testo, conserto e conto o que realmente aconteceu com
-            cada aparelho que passa pela minha bancada.
-          </p>
-          <div className="hero-buttons">
-            <Link className="button primary" href="/sobre">
-              Minha história
-            </Link>
-            <Link className="button secondary" href="/comunidade">
-              Comunidade
-            </Link>
+          <a
+            className="hero-seal"
+            href={featured.length ? "#na-bancada" : "/sobre"}
+            aria-label="Explorar as experiências do canal"
+            data-intro-orbit-target
+          >
+            <span>Testar. Descobrir.</span>
+            <Image
+              src={BRAND_ASSETS.logo}
+              alt=""
+              width={80}
+              height={80}
+              sizes="70px"
+              unoptimized
+            />
+            <span>Contar a história.</span>
+          </a>
+        </div>
+        <div className="hero-workbench">
+          {featured[0] ? (
             <a
-              className="inline-link"
+              className="hero-feature"
+              href={featured[0].url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Assistir no YouTube: ${featured[0].title}`}
+            >
+              <Image
+                src={featured[0].thumbnail}
+                alt={featured[0].title}
+                width={480}
+                height={360}
+                sizes="(max-width: 760px) 100vw, 60vw"
+                priority
+                unoptimized
+              />
+              <div className="hero-feature-shade" />
+              <span className="hero-feature-label">
+                Da minha bancada para o canal
+              </span>
+              <span className="hero-feature-title">{featured[0].title}</span>
+              <span className="video-play">
+                <PlayIcon />
+              </span>
+              <span className="hero-feature-action">
+                Assistir à história <ArrowIcon />
+              </span>
+            </a>
+          ) : (
+            <div className="hero-brand-image">
+              <Image
+                src={BRAND_ASSETS.banner}
+                alt="Imports Tech — reviews, garimpos e tecnologia"
+                width={2048}
+                height={339}
+                priority
+                unoptimized
+              />
+            </div>
+          )}
+          <div className="hero-introduction">
+            <p>
+              Eu compro, testo, conserto.
+              <br />
+              <strong>E conto o que realmente aconteceu.</strong>
+            </p>
+            <p>
+              Smartphones, notebooks e achados que merecem uma segunda chance. A
+              experiência inteira, além da ficha técnica.
+            </p>
+            <a
+              className="button primary"
               href={BRAND_LINKS.youtube}
               target="_blank"
               rel="noreferrer"
             >
-              YouTube ↗
+              <PlayIcon /> Conhecer o canal <ArrowIcon />
             </a>
+            <Link className="text-link" href="/sobre">
+              Quem está por trás disso <ArrowIcon />
+            </Link>
           </div>
         </div>
-
-        <div
-          className="orbit-system"
-          data-intro-orbit-target
-          aria-label="Retrato público do Imports Tech"
-          role="list"
+        <div className="hero-bottomline">
+          <span>
+            <strong>5 mil+</strong> pessoas nessa descoberta{" "}
+            <small>Marco do canal</small>
+          </span>
+          <a href={featured.length ? "#na-bancada" : "/sobre"}>
+            Tem muita história pela frente <span aria-hidden="true">↓</span>
+          </a>
+        </div>
+      </section>
+      {featured.length > 0 && (
+        <ScrollSection
+          id="na-bancada"
+          name="conteudos"
+          className="content-section section-shell"
         >
-          <div className="orbit-line orbit-a" aria-hidden="true" />
-          <div className="orbit-line orbit-b" aria-hidden="true" />
-          <div className="orbit-line orbit-c" aria-hidden="true" />
-          <div className="orbit-logo">
-            <Image
-              src={BRAND_ASSETS.logo}
-              alt="Logo oficial Imports Tech"
-              fill
-              sizes="255px"
-              priority
-              unoptimized
-            />
-            <span>IMPORTS TECH</span>
-          </div>
-          {orbitMetrics.map((metric, index) => (
-            <div
-              className={`orbit-node node-${index + 1} is-${metric.kind}`}
-              key={metric.label}
-              role="listitem"
-            >
-              <strong>{metric.value}</strong>
-              <span>{metric.label}</span>
+          <div className="section-heading" data-reveal>
+            <div>
+              <span className="eyebrow-v2">Na bancada</span>
+              <h2>
+                Cada achado,
+                <br />
+                uma história de verdade.
+              </h2>
             </div>
-          ))}
-        </div>
-        <div className="hero-proof" role="status">
-          <span
-            className={youtube.stale ? "status-dot" : "status-dot online"}
-          />
-          <span>{freshnessLabel(youtube)}</span>
-        </div>
-        <div className="hero-scroll-invitation" aria-hidden="true">
-          <span>ROLE PARA CONTINUAR</span>
-          <i />
-        </div>
-      </ScrollSection>
-
-      <ScrollSection name="metricas" className="home-metrics-story">
-        <div className="home-metrics-sticky" data-scroll-sequence>
-          <div className="home-metrics-heading">
-            <span className="eyebrow-v2">O CANAL EM NÚMEROS</span>
-            <h2>Cada número marca uma parte do caminho.</h2>
-            <p>{freshnessLabel(youtube)}</p>
+            <div>
+              <p>
+                O que chegou, o que deu errado e o que eu aprendi. Uma seleção
+                para começar a explorar.
+              </p>
+              <a
+                className="text-link"
+                href={BRAND_LINKS.youtube}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Todos os vídeos no YouTube <ArrowIcon />
+              </a>
+            </div>
           </div>
-          <div className="home-metrics-track" aria-hidden="true">
-            <i />
+          <div className="video-grid">
+            {featured.map((video) => (
+              <VideoCard key={video.videoId} video={video} />
+            ))}
           </div>
-          <ol aria-label="Métricas públicas do canal">
-            <MetricStory
-              value={youtube.subscribers}
-              label="Inscritos"
-              context="A comunidade que decidiu continuar comigo."
-            />
-            <MetricStory
-              value={youtube.totalViews}
-              label="Visualizações"
-              context="Histórias assistidas no canal oficial."
-            />
-            <MetricStory
-              value={youtube.videoCount}
-              label="Vídeos publicados"
-              context="Cada publicação resume horas de trabalho."
-            />
-            <MetricStory
-              value="SET 2025"
-              label="O começo"
-              context="Foi quando eu publiquei os primeiros passos dessa história."
-            />
-            <MetricStory
-              value="100 mil"
-              label="Meta até o fim de 2027"
-              context="É um objetivo à frente, não uma conquista atual."
-            />
-          </ol>
-          <Link href="/metricas">Como estes dados são atualizados ↗</Link>
-        </div>
-      </ScrollSection>
-
-      <ScrollSection
-        name="apresentacao"
-        className="home-personal-intro section-shell"
-      >
-        <div className="home-personal-copy">
-          <span className="eyebrow-v2">EU SOU O RYAN</span>
-          <h2>O canal acabou virando o registro da minha própria evolução.</h2>
-          <p>{homeIntroduction || fallbackIntroduction}</p>
-          <Link className="button secondary" href="/sobre">
-            Continuar minha história
-          </Link>
-        </div>
-        <div className="home-personal-visual">
-          <span className="personal-mask-line" aria-hidden="true" />
+          <div className="content-footnote">
+            <span>Garimpos, reviews e reparos</span>
+            <span>Sem pular a parte difícil.</span>
+          </div>
+        </ScrollSection>
+      )}
+      <ScrollSection name="apresentacao" className="about-home section-shell">
+        <div className="about-brand-panel" data-reveal>
+          <div className="about-brand-top">
+            <span>De onde tudo começou</span>
+            <span>Set. 2025</span>
+          </div>
           <Image
-            src={BRAND_ASSETS.banner}
-            alt="Banner oficial do canal Imports Tech"
-            width={2048}
-            height={339}
-            sizes="(max-width: 760px) 100vw, 52vw"
+            src={BRAND_ASSETS.logo}
+            alt="Logo oficial do Imports Tech"
+            width={220}
+            height={220}
+            sizes="(max-width: 760px) 120px, 170px"
             unoptimized
           />
           <p>
-            Eu gosto de tecnologia, jogos, fotografia e audiovisual. Quase tudo
-            que aprendo começa do mesmo jeito: uma curiosidade, muita pesquisa e
-            vontade de colocar a mão na massa.
+            Uma câmera.
+            <br />
+            Muita curiosidade.
+            <br />
+            <strong>Vontade de começar.</strong>
           </p>
+          <Link
+            href="/sobre"
+            className="about-brand-link"
+            aria-label="Conhecer a história do Imports Tech"
+          >
+            <ArrowIcon />
+          </Link>
+        </div>
+        <div className="about-home-copy" data-reveal>
+          <span className="eyebrow-v2">Prazer, Ryan.</span>
+          <h2>
+            Antes de um canal,
+            <br />
+            uma boa dose
+            <br />
+            de curiosidade.
+          </h2>
+          <p>{homeIntroduction || fallbackIntroduction}</p>
+          <p>
+            Eu gosto de tecnologia, jogos, fotografia e audiovisual. Quase tudo
+            começa com vontade de entender como as coisas funcionam.
+          </p>
+          <Link className="text-link" href="/sobre">
+            Conhecer minha história <ArrowIcon />
+          </Link>
         </div>
       </ScrollSection>
-
-      <ScrollSection name="trajetoria" className="home-milestones">
-        <div className="home-milestones-sticky" data-scroll-sequence>
-          <div className="section-title">
+      {milestones.length > 0 && (
+        <ScrollSection
+          name="trajetoria"
+          className="milestones-home section-shell"
+        >
+          <div className="section-heading" data-reveal>
             <div>
-              <span className="eyebrow-v2">O CAMINHO ATÉ AQUI</span>
-              <h2>Alguns momentos que mudaram o rumo dessa história.</h2>
+              <span className="eyebrow-v2">O caminho até aqui</span>
+              <h2>
+                Pequenos começos.
+                <br />
+                Grandes viradas.
+              </h2>
             </div>
-            <Link href="/sobre">Ver a história completa ↗</Link>
+            <Link href="/sobre" className="text-link">
+              Explorar a trajetória <ArrowIcon />
+            </Link>
           </div>
-          <div className="home-milestone-line" aria-hidden="true">
-            <i />
-          </div>
-          <ol aria-label="Quatro viradas da minha trajetória">
-            {featuredMilestones.map((milestone, index) => (
-              <li
-                key={milestone.slug}
-                data-sequence-item
-                style={{ "--milestone-index": index } as CSSProperties}
-              >
-                <span>
-                  {String(index + 1).padStart(2, "0")} · {milestone.dateLabel}
-                </span>
-                {milestone.number && <strong>{milestone.number}</strong>}
-                <h3>{milestone.title}</h3>
-                <p>{milestone.description}</p>
+          <ol className="milestone-list">
+            {milestones.map((item, index) => (
+              <li key={item.slug} data-reveal>
+                <Link href={`/sobre#${item.slug}`}>
+                  <span className="milestone-order" aria-hidden="true">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <span className="milestone-date">{item.dateLabel}</span>
+                    <h3>{item.title}</h3>
+                  </div>
+                  <span className="milestone-value">
+                    {item.number || "O primeiro passo"}
+                  </span>
+                  <ArrowIcon />
+                </Link>
               </li>
             ))}
           </ol>
-        </div>
-      </ScrollSection>
-
+        </ScrollSection>
+      )}
       <TelegramSection links={telegram} />
-
-      <ScrollSection name="empresas" className="brand-home section-shell">
-        <div>
-          <div
-            className="brand-public-numbers"
-            aria-label="Números públicos do canal"
-          >
-            <span>
-              <strong>{metricValue(youtube.subscribers)}</strong> inscritos
-            </span>
-            <span>
-              <strong>{metricValue(youtube.totalViews)}</strong> visualizações
-            </span>
-            <span>
-              <strong>{metricValue(youtube.videoCount)}</strong> vídeos
-            </span>
+      <ScrollSection name="metricas" className="channel-snapshot section-shell">
+        <div className="snapshot-heading">
+          <span className="eyebrow-v2">O canal em números</span>
+          <h2>Um retrato do caminho.</h2>
+          <p>{freshnessLabel(youtube)}</p>
+          <Link href="/metricas" className="text-link">
+            Origem e atualização dos dados <ArrowIcon />
+          </Link>
+        </div>
+        <dl className="snapshot-values">
+          <div>
+            <dt>Inscritos no retrato</dt>
+            <dd>{metricValue(youtube.subscribers)}</dd>
           </div>
-          <span className="eyebrow-v2">PARA MARCAS E EMPRESAS</span>
+          <div>
+            <dt>Visualizações</dt>
+            <dd>{metricValue(youtube.totalViews)}</dd>
+          </div>
+          <div>
+            <dt>Vídeos publicados</dt>
+            <dd>{metricValue(youtube.videoCount)}</dd>
+          </div>
+        </dl>
+      </ScrollSection>
+      <ScrollSection name="empresas" className="partnership-home section-shell">
+        <div data-reveal>
+          <span className="eyebrow-v2">Marcas e parcerias</span>
           <h2>
-            Eu transformo experiências reais em conteúdo que ajuda a decidir.
+            Seu produto.
+            <br />
+            Uma experiência real.
           </h2>
         </div>
-        <div>
+        <div data-reveal>
           <p>
             {commercialIntroduction ||
-              "Eu produzo reviews, garimpos e reparos mostrando o contexto inteiro: como o produto chegou, o que eu encontrei e qual foi o resultado. Meu compromisso é criar uma história útil para quem está pensando em comprar ou já usa aquele produto."}
+              "Eu produzo conteúdo mostrando o contexto inteiro: como o produto chegou, o que eu encontrei e qual foi o resultado. Vamos conversar sobre uma história que faça sentido para quem acompanha o canal."}
           </p>
           <div className="hero-buttons">
-            {publicLinks.mediaKit ? (
+            <Link className="button primary" href="/contato">
+              Vamos conversar <ArrowIcon />
+            </Link>
+            {publicLinks.mediaKit && (
               <a
-                className="button primary"
+                className="text-link"
                 href={publicLinks.mediaKit}
                 target="_blank"
                 rel="noreferrer"
               >
-                Ver Media Kit ↗
+                Ver Media Kit <ArrowIcon />
               </a>
-            ) : (
-              <span className="button primary is-disabled">
-                Media Kit · Em breve
-              </span>
-            )}
-            {publicLinks.commercialEmail ? (
-              <a
-                className="button secondary"
-                href={`mailto:${publicLinks.commercialEmail}`}
-              >
-                Contato comercial
-              </a>
-            ) : (
-              <span className="button secondary is-disabled">
-                Contato · Em breve
-              </span>
             )}
           </div>
-        </div>
-      </ScrollSection>
-
-      <ScrollSection name="continuar" className="home-final-cta">
-        <div className="final-brand-return" aria-hidden="true">
-          <i />
-          <Image
-            src={BRAND_ASSETS.logo}
-            alt=""
-            width={76}
-            height={76}
-            unoptimized
-          />
-        </div>
-        <span className="eyebrow-v2">CONTINUE COMIGO</span>
-        <h2>A história continua daqui.</h2>
-        <p>
-          No YouTube, eu mostro a história completa. Aqui, eu deixo organizado o
-          que aprendi pelo caminho.
-        </p>
-        <div className="hero-buttons">
-          <a
-            className="button primary"
-            href={BRAND_LINKS.youtube}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Acompanhar no YouTube ↗
-          </a>
-          {telegram.group || telegram.channel ? (
-            <a
-              className="button secondary"
-              href={telegram.group || telegram.channel || undefined}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Telegram ↗
-            </a>
-          ) : (
-            <span className="button secondary is-disabled">
-              Telegram · Em breve
-            </span>
-          )}
-          {publicLinks.mediaKit && (
-            <a
-              className="button secondary"
-              href={publicLinks.mediaKit}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Media Kit ↗
-            </a>
-          )}
-          <a className="inline-link" href="#conteudo">
-            Voltar ao topo ↑
-          </a>
         </div>
       </ScrollSection>
     </main>
   );
 }
-
-function MetricStory({
-  value,
-  label,
-  context,
-}: {
-  value: number | string | null;
-  label: string;
-  context: string;
-}) {
-  return (
-    <li data-sequence-item>
-      <strong>{typeof value === "string" ? value : metricValue(value)}</strong>
-      <span>{label}</span>
-      <p>{context}</p>
-    </li>
-  );
-}
-
-function pickMilestones(timeline: TimelineItem[]) {
-  const wanted = [
-    "comeco-setembro-2025",
-    "iphone-xr",
-    "mil-inscritos",
-    "acer-nitro-5",
-  ];
-  const matches = wanted.flatMap((slug) =>
-    timeline.filter((item) => item.slug === slug),
-  );
-  return matches.length >= 3 ? matches : timeline.slice(0, 4);
-}
-
 function metricValue(value: number | null) {
   return value === null
     ? "Indisponível"
     : new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(value);
 }
-
 function freshnessLabel(data: YouTubeMetricsSnapshot) {
-  if (data.source === "unavailable" || !data.updatedAt) {
-    return "Métricas do YouTube indisponíveis temporariamente";
-  }
-  const date = formatDateTime(data.updatedAt);
-  return data.stale
-    ? `Último retrato disponível · ${date}`
-    : `Atualizado pela API oficial · ${date}`;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
+  if (data.source === "unavailable" || !data.updatedAt)
+    return "As métricas estão temporariamente indisponíveis.";
+  const date = new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short",
     timeZone: "America/Sao_Paulo",
-  }).format(new Date(value));
+  }).format(new Date(data.updatedAt));
+  return data.stale
+    ? `Último retrato disponível: ${date}. Os números atuais podem ser maiores.`
+    : `Atualizado pela API oficial em ${date}.`;
 }

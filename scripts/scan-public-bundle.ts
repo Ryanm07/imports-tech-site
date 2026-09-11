@@ -12,12 +12,31 @@ const textExtensions = new Set([
   ".mjs",
   ".txt",
 ]);
-const clientRoot = new URL("../dist/client/", import.meta.url);
+const isNext = process.argv[2] === "next";
+const clientRoot = new URL(
+  isNext ? "../.next/static/" : "../dist/client/",
+  import.meta.url,
+);
 const files = await walk(fileURLToPath(clientRoot));
+if (isNext) {
+  const prerendered = await walk(
+    fileURLToPath(new URL("../.next/server/app/", import.meta.url)),
+  );
+  files.push(
+    ...prerendered.filter((file) =>
+      [".html", ".rsc", ".txt", ".body"].includes(extname(file)),
+    ),
+  );
+}
 const configuredSecret = process.env.YOUTUBE_API_KEY || "";
 
 for (const file of files) {
-  if (!textExtensions.has(extname(file).toLowerCase())) continue;
+  if (
+    !textExtensions.has(extname(file).toLowerCase()) &&
+    !file.endsWith(".rsc") &&
+    !file.endsWith(".body")
+  )
+    continue;
   const source = await readFile(file, "utf8");
   if (containsPublicYouTubeSecret(source, configuredSecret)) {
     throw new Error("O bundle público contém um padrão de Secret do YouTube.");

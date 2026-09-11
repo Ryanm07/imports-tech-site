@@ -1,7 +1,7 @@
-import type { ElementType, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type ScrollSectionProps = {
-  as?: ElementType;
+  as?: "section" | "article" | "div" | "aside";
   id?: string;
   name: string;
   className?: string;

@@ -150,7 +150,7 @@ const storyMilestoneBase: StoryMilestone[] = [
     datePrecision: "exact",
     title: "Eu vi o canal chegar a mil inscritos",
     description:
-      "Eu passei o dia correndo entre roteiros, edição, academia e faculdade. Quando cheguei em casa, o canal estava com 999 inscritos. Fiquei olhando até o número virar mil, tirei uma foto e recebi os parabéns do meu irmão. Depois de tantos meses, a monetização foi o primeiro retorno concreto de todo aquele esforço.",
+      "Eu passei o dia correndo entre roteiros, edição, academia e faculdade. Quando cheguei em casa, o canal estava com 999 inscritos. Fiquei olhando até o número virar mil e tirei uma foto. Depois de tantos meses, a monetização foi o primeiro retorno concreto de todo aquele esforço.",
     imageUrl: null,
     number: "1.000 inscritos",
     relatedProject: null,

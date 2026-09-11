@@ -1,14 +1,40 @@
-# Imports Tech — site oficial
+# Imports Tech — estúdio interativo
 
-Site pessoal de Ryan e do canal Imports Tech. A experiência pública apresenta
-a história do canal, métricas públicas do YouTube, espaços externos da
-comunidade e contato comercial.
+Um estúdio 3D para explorar os equipamentos, os bastidores e a história de Ryan
+no Imports Tech. A página inicial abre diretamente no ambiente, sem vídeo de
+introdução. Esta entrega é a base funcional; a modelagem fiel dos produtos é a
+próxima etapa.
+
+## Base do estúdio
+
+- Visão geral com órbita e zoom; enquadramento adaptado ao tamanho da tela.
+- Caminhada opcional por câmera, com WASD/setas, arrasto para olhar e botões de
+  toque. Colisões com paredes e móveis limitam o percurso.
+- Iluminação clara/escura. A caminhada acende as luzes; voltar restaura a escolha
+  da apresentação, salva no dispositivo.
+- Objetos clicáveis e lista acessível, detalhes com foco contido, Escape,
+  restauração da câmera, ajuda e navegação para as páginas existentes.
+- Cena carregada separadamente, renderização sob demanda, movimento reduzido e
+  alternativa por lista em caso de indisponibilidade do WebGL.
+
+`components/studio/studio-room.tsx` contém as formas provisórias. Os objetos usam
+IDs de `lib/studio-content.ts`; modelos futuros podem substituir a geometria sem
+reescrever conteúdo, controles ou navegação. `lib/studio-navigation.ts` concentra
+as regras de modo, iluminação e colisão, cobertas por testes de comportamento.
+
+Os modelos detalhados, materiais definitivos, animações de hover e inspeção,
+clipes e a fotografia dos mil inscritos ainda não fazem parte desta entrega.
+Não foi contratado nenhum material ou serviço pago.
+
+A configuração para publicar a versão pública na Vercel e os limites do backend
+estão em [DEPLOYMENT.md](DEPLOYMENT.md). O registro da reformulação anterior das
+páginas está em [DESIGN_REFORMULATION.md](DESIGN_REFORMULATION.md).
 
 ## Arquitetura pública
 
 Rotas principais:
 
-- `/` — apresentação, métricas, história curta, marcos, comunidade e empresas;
+- `/` — estúdio 3D, caminhada e exploração dos objetos;
 - `/sobre` — narrativa visual completa em primeira pessoa;
 - `/comunidade` — links oficiais para Telegram e YouTube;
 - `/metricas` — metodologia e retrato público do canal;
@@ -21,6 +47,10 @@ para o YouTube. URLs antigas de tópicos da comunidade redirecionam para
 
 Com `PROJECTS_ENABLED=false`, `/projetos` também redireciona para a história;
 os dados editoriais permanecem preservados para uma possível reativação.
+
+Os objetos do estúdio vinculam episódios conhecidos do canal, sem importar
+uploads pela API. A seleção editorial da home anterior foi preservada no código,
+mas não compõe a página inicial atual.
 
 Não existe catálogo público de vídeos, busca de uploads, fórum, mural,
 publicação anônima, contas públicas, denúncias ou moderação na experiência
@@ -74,7 +104,7 @@ Flags de recursos:
 - `EDITORIAL_DB_ENABLED=false`;
 - `INTRO_ENABLED=true` mantém a abertura cinematográfica ativa; use `false`
   somente para desativação explícita;
-- `PROJECTS_ENABLED=false` mantém reviews e garimpos preservados no painel, mas fora da experiência pública.
+- `PROJECTS_ENABLED=false` desativa a rota `/projetos` e sua navegação. A seleção de conteúdos já publicados na home é independente dessa flag.
 
 `MEDIA_KIT_URL` aceita somente HTTPS. Telegram aceita somente HTTPS nos hosts
 `t.me` e `telegram.me`. Ausência ou valor inválido resulta em “Em breve”.

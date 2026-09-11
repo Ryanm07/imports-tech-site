@@ -1,25 +1,13 @@
-import { HomePage } from "./home-page";
 import type { Metadata } from "next";
-import { getPublicEditorialData } from "@/lib/content-repository";
-import { getTelegramLinks } from "@/lib/telegram";
-import { getPublicLinks } from "@/lib/public-links";
-import { getYouTubeMetrics } from "@/lib/youtube-service";
+import { StudioExperience } from "@/components/studio/studio-experience";
 
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+export const metadata: Metadata = {
+  title: "Estúdio Imports Tech — Entre e explore",
+  description:
+    "Entre no estúdio interativo do Imports Tech. Explore os equipamentos, descubra histórias e caminhe pelo espaço em 3D.",
+  alternates: { canonical: "/" },
+};
 
-export default async function Home() {
-  const [data, youtube] = await Promise.all([
-    getPublicEditorialData(),
-    getYouTubeMetrics(),
-  ]);
-  return (
-    <HomePage
-      telegram={getTelegramLinks(data.settings)}
-      publicLinks={getPublicLinks(data.settings)}
-      youtube={youtube}
-      timeline={data.timeline}
-      homeIntroduction={data.settings.home_introduction}
-      commercialIntroduction={data.settings.commercial_introduction}
-    />
-  );
+export default function Home() {
+  return <StudioExperience />;
 }

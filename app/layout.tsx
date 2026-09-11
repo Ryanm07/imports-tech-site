@@ -1,40 +1,27 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
-import { SiteIntro } from "@/components/site-intro";
-import { InteractiveBackground } from "@/components/motion/interactive-background";
-import { PageTransition } from "@/components/motion/page-transition";
-import { MotionProvider } from "@/components/motion/motion-provider";
+import type { Metadata, Viewport } from "next";
+import { SiteFrame } from "@/components/site-frame";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import { getSiteSettings } from "@/lib/content-repository";
 import { safeJsonLd } from "@/lib/json-ld";
 import { getSiteUrl } from "@/lib/site-url";
 import { getTelegramLinks } from "@/lib/telegram";
 import { getPublicLinks } from "@/lib/public-links";
-import { introEnabled, projectsEnabled } from "@/lib/features";
+import { projectsEnabled } from "@/lib/features";
 import "./globals.css";
 
-const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
-const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
 const site = getSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: site,
   title: {
-    default: "Imports Tech — Tecnologia testada no uso real",
+    default: "Imports Tech — Tecnologia fora do comum",
     template: "%s | Imports Tech",
   },
   description:
-    "Eu conto minha evolução criando conteúdo sobre celulares, notebooks e tecnologia no uso real.",
-  icons: {
-    icon: BRAND_ASSETS.icon,
-    shortcut: BRAND_ASSETS.favicon,
-    apple: BRAND_ASSETS.appleTouchIcon,
-  },
+    "Eu compro, testo, conserto e conto a história. Reviews, garimpos e experiências reais com smartphones, notebooks e tecnologia no Imports Tech.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Imports Tech — Tecnologia testada no uso real",
+    title: "Imports Tech — Tecnologia fora do comum",
     description: "A história, a evolução e a comunidade do Imports Tech.",
     type: "website",
     url: "/",
@@ -50,6 +37,11 @@ export const metadata: Metadata = {
     ],
   },
   twitter: { card: "summary_large_image", images: [BRAND_ASSETS.socialCard] },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#07111f",
+  colorScheme: "dark",
 };
 
 export default async function RootLayout({
@@ -70,21 +62,25 @@ export default async function RootLayout({
   const publicLinks = getPublicLinks(settings);
   return (
     <html lang="pt-BR">
-      <body className={`${geist.variable} ${mono.variable}`}>
-        <MotionProvider>
-          <InteractiveBackground />
-          <SiteIntro enabled={introEnabled()} />
-          <SiteHeader
-            publicLinks={publicLinks}
-            projectsEnabled={projectsEnabled()}
-          />
-          <PageTransition>{children}</PageTransition>
-          <SiteFooter
-            telegram={telegram}
-            publicLinks={publicLinks}
-            projectsEnabled={projectsEnabled()}
-          />
-        </MotionProvider>
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/geist-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link rel="icon" href={BRAND_ASSETS.icon} />
+        <link rel="apple-touch-icon" href={BRAND_ASSETS.appleTouchIcon} />
+      </head>
+      <body>
+        <SiteFrame
+          telegram={telegram}
+          publicLinks={publicLinks}
+          projectsEnabled={projectsEnabled()}
+        >
+          {children}
+        </SiteFrame>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}

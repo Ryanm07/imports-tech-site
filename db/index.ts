@@ -1,15 +1,16 @@
-import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
+import { getDatabaseBinding } from "@/db/runtime";
 import * as schema from "./schema";
 
 export function getDb() {
-  if (!env.DB) {
+  const binding = getDatabaseBinding();
+  if (!binding) {
     throw new Error(
-      "Cloudflare D1 binding `DB` is unavailable. Set the `d1` field in .openai/hosting.json to `DB` or let your control plane inject the real binding values before using the database.",
+      "Database unavailable. Cloudflare deployments require the D1 binding `DB`; native Next.js/Vercel currently serves versioned public content without a database.",
     );
   }
 
-  return drizzle(env.DB, { schema });
+  return drizzle(binding, { schema });
 }
 
 export type D1PreparedLike = {
@@ -23,6 +24,7 @@ export type D1DatabaseLike = {
 };
 
 export function getD1(): D1DatabaseLike {
-  if (!env.DB) throw new Error("Cloudflare D1 binding `DB` is unavailable.");
-  return env.DB as D1DatabaseLike;
+  const binding = getDatabaseBinding();
+  if (!binding) throw new Error("Cloudflare D1 binding `DB` is unavailable.");
+  return binding as D1DatabaseLike;
 }

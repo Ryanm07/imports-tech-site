@@ -11,7 +11,9 @@ export function getPublicLinks(
       settings.media_kit_url || process.env.MEDIA_KIT_URL,
     ),
     commercialEmail: validEmail(
-      settings.commercial_contact_email || process.env.COMMERCIAL_CONTACT_EMAIL,
+      settings.commercial_contact_email ||
+        process.env.COMMERCIAL_CONTACT_EMAIL ||
+        "imports.tech.contact@gmail.com",
     ),
   };
 }

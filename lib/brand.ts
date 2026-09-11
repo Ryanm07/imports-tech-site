@@ -12,7 +12,7 @@ export const BRAND_ASSETS = {
   icon: "/brand/imports-tech-logo.jpg",
   appleTouchIcon: "/brand/imports-tech-logo.jpg",
   banner: "/brand/imports-tech-banner.jpg",
-  socialCard: "/og.png",
+  socialCard: "/og.jpg",
   introWebm: "/intro/imports-tech-intro.webm",
   introMp4: "/intro/imports-tech-intro.mp4",
   introPoster: "/intro/imports-tech-intro-poster.webp",

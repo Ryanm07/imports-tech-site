@@ -84,14 +84,20 @@ test("assets locais usam caminhos públicos e ignoram o otimizador do Vinext", a
   ]) {
     assert.equal(brand.includes(invalid), false, invalid);
   }
-  for (const [file, contents, expected] of [
-    ["header", header, 1],
-    ["footer", footer, 1],
-    ["home", home, 3],
-    ["sobre", about, 1],
-    ["intro", intro, 2],
+  for (const [file, contents] of [
+    ["header", header],
+    ["footer", footer],
+    ["home", home],
+    ["sobre", about],
+    ["intro", intro],
   ] as const) {
-    assert.equal(countOccurrences(contents, "unoptimized"), expected, file);
+    // The layout can add images; every image still bypasses the unsupported
+    // Vinext optimizer, rather than freezing a historical image count.
+    assert.equal(
+      countOccurrences(contents, "unoptimized"),
+      countOccurrences(contents, "<Image"),
+      file,
+    );
   }
   assert.equal(intro.includes('preload="auto"'), true);
   assert.equal(intro.includes("BRAND_ASSETS.introPoster"), true);

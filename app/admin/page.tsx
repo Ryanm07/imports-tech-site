@@ -3,6 +3,7 @@ import { requireChatGPTUser } from "@/app/chatgpt-auth";
 import { AdminPanel } from "@/components/admin-panel";
 import { authorizeOwnerUser } from "@/lib/server-auth";
 import { projectsEnabled } from "@/lib/features";
+import { privateBackendEnabled } from "@/lib/server-capabilities";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  if (process.env.ADMIN_ENABLED !== "true") {
+  if (!privateBackendEnabled()) {
     return (
       <main id="conteudo" className="page-main">
         <div className="feature-soon">

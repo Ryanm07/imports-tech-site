@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { PlayIcon } from "@/components/ui-icons";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
 import type { PublicLinks } from "@/lib/public-links";
 
@@ -11,6 +12,7 @@ const baseNav = [
   ["Início", "/"],
   ["Minha história", "/sobre"],
   ["Comunidade", "/comunidade"],
+  ["Contato", "/contato"],
 ] as const;
 
 export function SiteHeader({
@@ -23,57 +25,65 @@ export function SiteHeader({
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const header = useRef<HTMLElement>(null);
+  const navigation = useRef<HTMLElement>(null);
   const menuTrigger = useRef<HTMLButtonElement>(null);
-  const sceneLabel = useRef<HTMLSpanElement>(null);
   const nav = projectsEnabled
-    ? ([...baseNav.slice(0, 2), ["Projetos", "/projetos"], baseNav[2]] as const)
+    ? [...baseNav.slice(0, 2), ["Projetos", "/projetos"], ...baseNav.slice(2)]
     : baseNav;
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;
+    const focusFrame = window.requestAnimationFrame(() => {
+      navigation.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    });
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setMenuOpen(false);
       menuTrigger.current?.focus();
     };
+    const closeOutside = (event: PointerEvent | FocusEvent) => {
+      if (
+        event.target instanceof Node &&
+        !header.current?.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    const closeOnDesktop = () => {
+      if (menuTrigger.current?.offsetParent === null) setMenuOpen(false);
+    };
     document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("focusin", closeOutside);
+    window.addEventListener("resize", closeOnDesktop);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("focusin", closeOutside);
+      window.removeEventListener("resize", closeOnDesktop);
+    };
   }, [menuOpen]);
 
   useEffect(() => {
-    let raf = 0;
+    let frame = 0;
     const update = () => {
-      if (!header.current) return;
-      const distance = Math.max(
-        1,
-        document.documentElement.scrollHeight - window.innerHeight,
-      );
-      header.current.dataset.scrolled = window.scrollY > 24 ? "true" : "false";
-      header.current.style.setProperty(
-        "--header-progress",
-        Math.min(1, window.scrollY / distance).toFixed(4),
-      );
+      if (header.current) {
+        header.current.dataset.scrolled =
+          window.scrollY > 24 ? "true" : "false";
+      }
+      frame = 0;
     };
     const onScroll = () => {
-      window.cancelAnimationFrame(raf);
-      raf = window.requestAnimationFrame(update);
-    };
-    const onMotionFrame = (event: Event) => {
-      const detail = (event as CustomEvent<{ section?: string }>).detail;
-      if (!header.current || !sceneLabel.current) return;
-      const section = detail?.section || "top";
-      header.current.dataset.scene = section;
-      sceneLabel.current.textContent = sceneName(section);
+      if (!frame) frame = window.requestAnimationFrame(update);
     };
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("imports-tech:motion-frame", onMotionFrame);
     return () => {
-      window.cancelAnimationFrame(raf);
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("imports-tech:motion-frame", onMotionFrame);
     };
   }, []);
 
@@ -83,18 +93,19 @@ export function SiteHeader({
         Pular para o conteúdo
       </a>
       <header className="header-shell" ref={header}>
-        <span className="header-progress" aria-hidden="true" />
         <Link
           className="official-brand"
           href="/"
           aria-label="Imports Tech — início"
+          onClick={() => setMenuOpen(false)}
         >
           <Image
             data-intro-logo-target
             src={BRAND_ASSETS.logo}
             alt=""
-            width="44"
-            height="44"
+            width={44}
+            height={44}
+            sizes="38px"
             priority
             unoptimized
           />
@@ -102,14 +113,8 @@ export function SiteHeader({
             IMPORTS <strong>TECH</strong>
           </span>
         </Link>
-        <span
-          className="header-scene-label"
-          ref={sceneLabel}
-          aria-hidden="true"
-        >
-          Início
-        </span>
         <nav
+          ref={navigation}
           id="main-navigation"
           className={menuOpen ? "main-nav is-open" : "main-nav"}
           aria-label="Navegação principal"
@@ -124,26 +129,35 @@ export function SiteHeader({
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
+                onClick={() => setMenuOpen(false)}
               >
                 {label}
               </Link>
             );
           })}
           <div className="mobile-external-links">
-            {publicLinks.mediaKit ? (
-              <a href={publicLinks.mediaKit} target="_blank" rel="noreferrer">
-                Media Kit ↗
+            {publicLinks.mediaKit && (
+              <a
+                href={publicLinks.mediaKit}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setMenuOpen(false)}
+              >
+                Media Kit
               </a>
-            ) : (
-              <span>Media Kit · Em breve</span>
             )}
-            <a href={BRAND_LINKS.youtube} target="_blank" rel="noreferrer">
-              YouTube ↗
+            <a
+              href={BRAND_LINKS.youtube}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
+              Acompanhar no YouTube
             </a>
           </div>
         </nav>
         <div className="header-actions header-external">
-          {publicLinks.mediaKit ? (
+          {publicLinks.mediaKit && (
             <a
               className="telegram-cta"
               href={publicLinks.mediaKit}
@@ -152,8 +166,6 @@ export function SiteHeader({
             >
               Media Kit
             </a>
-          ) : (
-            <span className="telegram-cta is-disabled">Media Kit</span>
           )}
           <a
             className="youtube-cta"
@@ -161,7 +173,8 @@ export function SiteHeader({
             target="_blank"
             rel="noreferrer"
           >
-            <span aria-hidden="true">▶</span> YouTube
+            <PlayIcon width={16} height={16} />
+            YouTube
           </a>
           <button
             ref={menuTrigger}
@@ -172,27 +185,12 @@ export function SiteHeader({
             aria-controls="main-navigation"
             aria-label={menuOpen ? "Fechar menu" : "Abrir menu"}
           >
-            <i />
-            <i />
-            <i />
+            <i aria-hidden="true" />
+            <i aria-hidden="true" />
+            <i aria-hidden="true" />
           </button>
         </div>
       </header>
     </>
   );
-}
-
-function sceneName(section: string) {
-  const labels: Record<string, string> = {
-    hero: "Início",
-    metricas: "Canal em números",
-    apresentacao: "Eu sou o Ryan",
-    trajetoria: "Minha trajetória",
-    historia: "Documentário",
-    comunidade: "Comunidade",
-    empresas: "Para empresas",
-    continuar: "Continue comigo",
-    meta: "Próximo capítulo",
-  };
-  return labels[section] || "Imports Tech";
 }

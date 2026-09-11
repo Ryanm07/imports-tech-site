@@ -12,6 +12,7 @@ import { ownerRateLimitIdentity } from "@/lib/owner-domain";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { sameOriginRequest, sanitizePlainText } from "@/lib/security";
 import { requireOwnerApi, type OwnerAccount } from "@/lib/server-auth";
+import { privateBackendEnabled } from "@/lib/server-capabilities";
 
 const CONTENT_TYPES: ContentType[] = [
   "review",
@@ -30,7 +31,7 @@ const CONTENT_STATUSES = [
 ] as const;
 
 function disabled() {
-  return process.env.ADMIN_ENABLED !== "true";
+  return !privateBackendEnabled();
 }
 
 export async function GET(request: Request) {

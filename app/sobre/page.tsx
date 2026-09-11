@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { IntroReplayButtons } from "@/components/intro-replay-buttons";
 import { ScrollSection } from "@/components/motion/scroll-section";
 import { StoryExperience } from "@/components/story-experience";
 import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
@@ -19,12 +18,12 @@ export default async function AboutPage() {
   const timeline = await getTimeline();
   return (
     <main id="conteudo" className="page-main story-page">
+      {/* Vinext merges imported route CSS globally; React's precedence loads these scenes only here. */}
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link rel="stylesheet" href="/styles/story.css" precedence="story" />
       <header className="page-hero story-hero" data-motion-section="abertura">
-        <span className="eyebrow-v2">MINHA HISTÓRIA</span>
-        <h1>
-          Eu comecei para aprender a falar. Continuei porque encontrei minha
-          voz.
-        </h1>
+        <span className="eyebrow-v2">Minha história</span>
+        <h1>Comecei para perder a timidez. Encontrei minha voz.</h1>
         <p>
           Quando eu comecei, em setembro de 2025, eu não fazia ideia de onde o
           Imports Tech poderia chegar. Eu só queria perder a timidez, aprender a
@@ -46,7 +45,7 @@ export default async function AboutPage() {
           />
         </div>
         <div>
-          <span className="eyebrow-v2">DE ONDE EU PARTI</span>
+          <span className="eyebrow-v2">Desde setembro de 2025</span>
           <h2>Eu deixei minha evolução à vista.</h2>
           <p>
             Nos primeiros vídeos, eu falava baixo, me enrolava e quase não tinha
@@ -66,10 +65,9 @@ export default async function AboutPage() {
               target="_blank"
               rel="noreferrer"
             >
-              Conhecer o canal ↗
+              Conhecer o canal
             </a>
           </div>
-          <IntroReplayButtons />
         </div>
       </ScrollSection>
 
@@ -80,16 +78,16 @@ export default async function AboutPage() {
 
       <ScrollSection name="processo" className="story-process">
         <div>
-          <span className="eyebrow-v2">COMO EU PRODUZO HOJE</span>
+          <span className="eyebrow-v2">Nos bastidores</span>
           <h2>O vídeo final esconde muitas horas de trabalho.</h2>
         </div>
         <div className="story-process-copy">
           <p>
             Hoje eu gravo com tripé, iluminação, barra de luz, luz de
             preenchimento, um bom celular e microfone Fifine M8 com braço. O
-            áudio passa pelo Audacity e a edição pelo DaVinci Resolve. O modelo
-            exato do celular fica editável no painel, porque eu não quero deixar
-            no ar uma informação que pode mudar.
+            áudio passa pelo Audacity e a edição pelo DaVinci Resolve. O
+            equipamento vai mudando, mas cada etapa continua passando pelas
+            minhas mãos.
           </p>
           <p>
             Normalmente, eu tenho dois ou três vídeos gravados esperando para
@@ -115,7 +113,7 @@ export default async function AboutPage() {
       </ScrollSection>
 
       <ScrollSection name="meta" className="home-final-cta story-final">
-        <span className="eyebrow-v2">O PRÓXIMO CAPÍTULO</span>
+        <span className="eyebrow-v2">O próximo capítulo</span>
         <h2>Minha meta é chegar a 100 mil inscritos até o fim de 2027.</h2>
         <p>
           Eu quero construir uma das maiores comunidades de tecnologia do
@@ -123,20 +121,20 @@ export default async function AboutPage() {
           isso começar.
         </p>
         <div className="hero-buttons">
-          <Link className="button secondary" href="/comunidade">
-            Entrar na comunidade
-          </Link>
-          <Link className="inline-link" href="/">
-            Voltar ao início
-          </Link>
           <a
             className="button primary"
             href={BRAND_LINKS.youtube}
             target="_blank"
             rel="noreferrer"
           >
-            Acompanhar no YouTube ↗
+            Acompanhar no YouTube
           </a>
+          <Link className="button secondary" href="/comunidade">
+            Conhecer a comunidade
+          </Link>
+          <Link className="inline-link" href="/">
+            Voltar ao início
+          </Link>
         </div>
       </ScrollSection>
     </main>

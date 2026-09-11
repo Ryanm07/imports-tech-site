@@ -239,7 +239,13 @@ export function StoryExperience({
     observer.observe(documentary);
 
     const goToCurrentHash = () => {
-      const hash = decodeURIComponent(window.location.hash.slice(1));
+      let hash: string;
+      try {
+        hash = decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        // A malformed public fragment must not unmount the entire story.
+        return;
+      }
       const hashIndex = timeline.findIndex((item) => item.slug === hash);
       if (hashIndex >= 0) {
         const applyHash = () => goTo(hashIndex, false, true);

@@ -11,6 +11,7 @@ export type YouTubeMetricsSnapshot = {
   handle: string;
   description: string;
   subscribers: number | null;
+  subscribersApproximate?: boolean;
   totalViews: number | null;
   videoCount: number | null;
   source: "youtube-api" | "snapshot" | "unavailable";
@@ -40,7 +41,9 @@ type ChannelApiItem = {
   };
 };
 
-const SNAPSHOT_AT = "2026-07-10T00:00:00.000Z";
+// Conferido na página pública /@Imports_Tech/about em 11/09/2026.
+// O YouTube exibia 5.16K inscritos (arredondados), 92 vídeos e 1,093,813 views.
+const SNAPSHOT_AT = "2026-09-11T15:01:18.000Z";
 const STALE_AFTER_MS = 12 * 60 * 60_000;
 
 const versionedSnapshot: YouTubeMetricsSnapshot = {
@@ -49,15 +52,16 @@ const versionedSnapshot: YouTubeMetricsSnapshot = {
   handle: "@Imports_Tech",
   description:
     "Tecnologia de verdade, sem enrolação: reviews, testes no uso real, usados, garimpos e custo-benefício.",
-  subscribers: 3340,
-  totalViews: 610472,
-  videoCount: 80,
+  subscribers: 5160,
+  subscribersApproximate: true,
+  totalViews: 1093813,
+  videoCount: 92,
   source: "snapshot",
   updatedAt: SNAPSHOT_AT,
-  stale: true,
+  stale: false,
   syncStatus: "idle",
-  lastAttemptAt: SNAPSHOT_AT,
-  lastSuccessfulSyncAt: SNAPSHOT_AT,
+  lastAttemptAt: null,
+  lastSuccessfulSyncAt: null,
   lastError: null,
   channelUrl: BRAND_LINKS.youtube,
 };
@@ -71,13 +75,14 @@ export async function getYouTubeMetrics(): Promise<YouTubeMetricsSnapshot> {
       .where(eq(youtubeChannelState.channelId, YOUTUBE_CHANNEL_ID))
       .limit(1);
     const state = rows[0];
-    if (!state || !state.metricsUpdatedAt) return versionedSnapshot;
+    if (!state || !state.metricsUpdatedAt)
+      return currentYouTubeMetrics(versionedSnapshot);
     const source = state.metricsSource;
     const stale =
       source !== "youtube-api" ||
       state.metricsStale ||
       isOlderThan(state.metricsUpdatedAt, Date.now(), STALE_AFTER_MS);
-    return {
+    return currentYouTubeMetrics({
       channelId: state.channelId,
       channelName: state.channelName || versionedSnapshot.channelName,
       handle: state.handle || versionedSnapshot.handle,
@@ -93,10 +98,37 @@ export async function getYouTubeMetrics(): Promise<YouTubeMetricsSnapshot> {
       lastSuccessfulSyncAt: state.lastSuccessAt,
       lastError: state.lastError,
       channelUrl: BRAND_LINKS.youtube,
-    };
+    });
   } catch {
-    return versionedSnapshot;
+    return currentYouTubeMetrics(versionedSnapshot);
   }
+}
+
+// Keep historical values available to editorial code, but never serve expired
+// counters to public pages. Apply on every request, not at module/build time.
+export function currentYouTubeMetrics(
+  snapshot: YouTubeMetricsSnapshot,
+  now = new Date(),
+): YouTubeMetricsSnapshot {
+  const timestamp = snapshot.updatedAt ? Date.parse(snapshot.updatedAt) : NaN;
+  const age = now.getTime() - timestamp;
+  if (
+    !snapshot.stale &&
+    snapshot.source !== "unavailable" &&
+    Number.isFinite(age) &&
+    age >= 0 &&
+    age <= STALE_AFTER_MS
+  )
+    return snapshot;
+  return {
+    ...snapshot,
+    subscribers: null,
+    totalViews: null,
+    videoCount: null,
+    source: "unavailable",
+    updatedAt: null,
+    stale: true,
+  };
 }
 
 export async function fetchYouTubeChannelMetrics({

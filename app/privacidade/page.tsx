@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { trustedSitesAuthentication } from "@/db/runtime";
 
 export const metadata: Metadata = {
   title: "Política de Privacidade",
@@ -28,20 +29,33 @@ export default function PrivacyPage() {
 
       <h2>Infraestrutura</h2>
       <p>
-        O site usa infraestrutura Cloudflare para hospedagem e banco editorial,
-        além da API oficial do YouTube para sincronizar métricas públicas. Eu
-        não instalo analytics ou cookies próprios de publicidade nesta versão.
+        Esta versão é hospedada na{" "}
+        {trustedSitesAuthentication ? "Cloudflare" : "Vercel"}. A hospedagem
+        processa dados técnicos das requisições para entregar e proteger o site.
+        Não instalo analytics ou cookies próprios de publicidade nesta versão.
       </p>
 
-      <h2>Painel privado e conteúdo editorial</h2>
+      <h2>Preferências no dispositivo</h2>
       <p>
-        O painel é exclusivo do proprietário configurado no servidor. A
-        autenticação da hospedagem fornece a identidade necessária para
-        autorizar esse acesso; ela não cria contas públicas no site. Conteúdo
-        editorial, estado de sincronização do YouTube e ações administrativas
-        são armazenados no Cloudflare D1 quando os recursos correspondentes
-        estão ativos.
+        A escolha de iluminação do estúdio fica salva no armazenamento local do
+        navegador. Ela pode ser removida ao limpar os dados deste site. Os
+        números exibidos do YouTube são públicos; a página de métricas informa
+        como e quando foram consultados.
       </p>
+
+      {trustedSitesAuthentication && (
+        <>
+          <h2>Painel privado e conteúdo editorial</h2>
+          <p>
+            O painel é exclusivo do proprietário configurado no servidor. A
+            autenticação da hospedagem fornece a identidade necessária para
+            autorizar esse acesso; ela não cria contas públicas no site.
+            Conteúdo editorial, estado de sincronização do YouTube e ações
+            administrativas são armazenados no Cloudflare D1 quando os recursos
+            correspondentes estão ativos.
+          </p>
+        </>
+      )}
 
       <h2>Infraestrutura e compartilhamento</h2>
       <p>
@@ -57,7 +71,7 @@ export default function PrivacyPage() {
         solicitação.
       </p>
 
-      <p className="legal-date">Última atualização: 14 de julho de 2026.</p>
+      <p className="legal-date">Última atualização: 11 de setembro de 2026.</p>
     </main>
   );
 }

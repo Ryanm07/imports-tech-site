@@ -1,142 +1,78 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { ScrollSection } from "@/components/motion/scroll-section";
-import { StoryExperience } from "@/components/story-experience";
-import { BRAND_ASSETS, BRAND_LINKS } from "@/lib/brand";
-import { getTimeline } from "@/lib/content-repository";
-import { projectsEnabled } from "@/lib/features";
+import { aboutStory } from "@/lib/about-story";
 
 export const metadata: Metadata = {
   title: "Minha história",
   description:
-    "Eu conto como comecei o Imports Tech, como minha comunicação evoluiu e o que aprendi em cada fase do canal.",
+    "Do primeiro vídeo aos cinco mil inscritos: os momentos que marcaram minha trajetória no Imports Tech.",
   alternates: { canonical: "/sobre" },
 };
 
-export default async function AboutPage() {
-  const timeline = await getTimeline();
+export default function AboutPage() {
   return (
-    <main id="conteudo" className="page-main story-page">
-      {/* Vinext merges imported route CSS globally; React's precedence loads these scenes only here. */}
-      {/* eslint-disable-next-line @next/next/no-css-tags */}
-      <link rel="stylesheet" href="/styles/story.css" precedence="story" />
-      <header className="page-hero story-hero" data-motion-section="abertura">
-        <span className="eyebrow-v2">Minha história</span>
-        <h1>Comecei para perder a timidez. Encontrei minha voz.</h1>
+    <main id="conteudo" className="page-main about-page">
+      <header className="about-intro">
+        <Link className="about-back" href="/">
+          ← Voltar ao estúdio
+        </Link>
+        <span className="eyebrow-v2">Minha história / Ryan</span>
+        <h1>Por trás da bancada.</h1>
         <p>
-          Quando eu comecei, em setembro de 2025, eu não fazia ideia de onde o
-          Imports Tech poderia chegar. Eu só queria perder a timidez, aprender a
-          me comunicar melhor e dividir uma coisa que sempre mexeu comigo:
-          tecnologia.
+          O Imports Tech começou com vontade de aprender. Estes são alguns dos
+          momentos que me trouxeram até aqui.
         </p>
       </header>
-
-      <ScrollSection name="origem" className="story-opening">
-        <div className="story-banner">
-          <Image
-            src={BRAND_ASSETS.banner}
-            alt="Banner oficial do canal Imports Tech"
-            width={2048}
-            height={339}
-            sizes="(max-width: 760px) 100vw, 55vw"
-            priority
-            unoptimized
-          />
-        </div>
-        <div>
-          <span className="eyebrow-v2">Desde setembro de 2025</span>
-          <h2>Eu deixei minha evolução à vista.</h2>
-          <p>
-            Nos primeiros vídeos, eu falava baixo, me enrolava e quase não tinha
-            confiança. Eu deixei tudo publicado porque gosto de olhar para trás
-            e ver, de verdade, o quanto eu caminhei desde o começo.
-          </p>
-          <p>
-            Eu sempre gostei de tecnologia, jogos, fotografia e audiovisual. Fiz
-            o ensino médio com curso técnico e comecei Engenharia da Computação,
-            mas muita coisa que eu sei veio da curiosidade, de ir atrás e de
-            aprender fazendo.
-          </p>
-          <div className="hero-buttons">
-            <a
-              className="button primary"
-              href={BRAND_LINKS.youtube}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Conhecer o canal
-            </a>
-          </div>
-        </div>
-      </ScrollSection>
-
-      <StoryExperience
-        timeline={timeline}
-        projectsEnabled={projectsEnabled()}
-      />
-
-      <ScrollSection name="processo" className="story-process">
-        <div>
-          <span className="eyebrow-v2">Nos bastidores</span>
-          <h2>O vídeo final esconde muitas horas de trabalho.</h2>
-        </div>
-        <div className="story-process-copy">
-          <p>
-            Hoje eu gravo com tripé, iluminação, barra de luz, luz de
-            preenchimento, um bom celular e microfone Fifine M8 com braço. O
-            áudio passa pelo Audacity e a edição pelo DaVinci Resolve. O
-            equipamento vai mudando, mas cada etapa continua passando pelas
-            minhas mãos.
-          </p>
-          <p>
-            Normalmente, eu tenho dois ou três vídeos gravados esperando para
-            editar. Esse ainda é meu maior gargalo. Uma hora de gravação costuma
-            virar só 10 a 15 minutos de vídeo, e cada produção leva cerca de 12
-            horas do começo ao fim.
-          </p>
-        </div>
-        <div className="story-numbers" aria-label="Números do processo">
-          <div>
-            <strong>≈ 12h</strong>
-            <span>por vídeo completo</span>
-          </div>
-          <div>
-            <strong>≈ 8h</strong>
-            <span>só de edição</span>
-          </div>
-          <div>
-            <strong>10–15 min</strong>
-            <span>a partir de 1h gravada</span>
-          </div>
-        </div>
-      </ScrollSection>
-
-      <ScrollSection name="meta" className="home-final-cta story-final">
-        <span className="eyebrow-v2">O próximo capítulo</span>
-        <h2>Minha meta é chegar a 100 mil inscritos até o fim de 2027.</h2>
-        <p>
-          Eu quero construir uma das maiores comunidades de tecnologia do
-          Brasil, mas sem perder a honestidade e a proximidade que fizeram tudo
-          isso começar.
-        </p>
-        <div className="hero-buttons">
-          <a
-            className="button primary"
-            href={BRAND_LINKS.youtube}
-            target="_blank"
-            rel="noreferrer"
+      <article aria-label="Minha trajetória" className="about-story">
+        {aboutStory.map((moment) => (
+          <section
+            key={moment.id}
+            id={moment.id}
+            className="about-moment"
+            aria-labelledby={`${moment.id}-title`}
           >
-            Acompanhar no YouTube
-          </a>
-          <Link className="button secondary" href="/comunidade">
-            Conhecer a comunidade
-          </Link>
-          <Link className="inline-link" href="/">
-            Voltar ao início
-          </Link>
-        </div>
-      </ScrollSection>
+            {moment.aliases.map((alias) => (
+              <span
+                key={alias}
+                id={alias}
+                className="about-anchor"
+                aria-hidden="true"
+              />
+            ))}
+            <p className="about-when">{moment.when}</p>
+            <div className="about-copy">
+              <h2 id={`${moment.id}-title`}>{moment.title}</h2>
+              <p>{moment.text}</p>
+              {"video" in moment && (
+                <a
+                  className="about-video"
+                  href={`https://www.youtube.com/watch?v=${moment.video.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {moment.video.label} <span aria-hidden="true">↗</span>
+                </a>
+              )}
+            </div>
+          </section>
+        ))}
+      </article>
+      <section
+        id="meta-2027"
+        className="about-outlook"
+        aria-labelledby="about-outlook-title"
+      >
+        <span className="eyebrow-v2">Uma meta pessoal</span>
+        <h2 id="about-outlook-title">Continuar construindo.</h2>
+        <p>
+          Quero chegar a 100 mil inscritos até o fim de 2027. É um objetivo para
+          o futuro, mantendo espaço para experimentar e contar o que acontece
+          pelo caminho.
+        </p>
+        <Link className="about-video" href="/">
+          Explorar o estúdio <span aria-hidden="true">→</span>
+        </Link>
+      </section>
     </main>
   );
 }

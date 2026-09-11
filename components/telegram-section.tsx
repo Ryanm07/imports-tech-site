@@ -8,19 +8,25 @@ export function TelegramSection({
   links: TelegramLinks;
   compact?: boolean;
 }) {
+  const options = [
+    {
+      href: links.channel,
+      title: "Canal de promoções",
+      text: "Promoções, cupons e oportunidades de tecnologia que chamam minha atenção.",
+      action: "Ver promoções",
+    },
+    {
+      href: links.group,
+      title: "Grupo da comunidade",
+      text: "Um espaço para trocar experiências sobre equipamentos, compras e reparos.",
+      action: "Entrar no grupo",
+    },
+  ].filter((option) => option.href);
   return (
     <section
       className={compact ? "telegram-section compact" : "telegram-section"}
-      data-motion-section="comunidade"
+      aria-label="Canais oficiais"
     >
-      <div className="telegram-heading">
-        <span className="eyebrow-v2">Comunidade Imports Tech</span>
-        <h2>A conversa continua.</h2>
-        <p>
-          Dos comentários do canal aos garimpos do dia. Escolha o seu jeito de
-          acompanhar.
-        </p>
-      </div>
       <div className="community-feature">
         <div className="community-feature-mark" aria-hidden="true">
           <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
@@ -37,71 +43,48 @@ export function TelegramSection({
         </div>
         <div className="community-feature-copy">
           <span>YouTube / @Imports_Tech</span>
-          <h3>Tem sempre uma descoberta nova.</h3>
+          <h2>Me encontre nos comentários.</h2>
           <p>
-            Vídeos completos, bastidores e experiências reais. Eu também estou
-            nas atualizações e nos comentários do canal.
+            Os vídeos, bastidores e atualizações ficam no canal. A conversa
+            acontece por lá, sem cadastro neste site.
           </p>
           <a
             className="button primary"
-            href={BRAND_LINKS.youtube}
+            href={BRAND_LINKS.youtubeCommunity}
             target="_blank"
             rel="noreferrer"
           >
-            Acompanhar no YouTube
+            Abrir a comunidade no YouTube
           </a>
         </div>
       </div>
-      <div className="telegram-options">
-        <article className="telegram-option">
-          <div>
-            <span className="eyebrow-v2">Telegram</span>
-            <h3>Canal de promoções</h3>
-            <p>
-              Eu compartilho promoções, cupons e oportunidades de tecnologia que
-              realmente chamam minha atenção.
-            </p>
+      {options.length > 0 && (
+        <>
+          <div className="telegram-options">
+            {options.map((option) => (
+              <article key={option.title} className="telegram-option">
+                <div>
+                  <span className="eyebrow-v2">Telegram</span>
+                  <h3>{option.title}</h3>
+                  <p>{option.text}</p>
+                </div>
+                <a
+                  className="inline-link"
+                  href={option.href!}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {option.action}
+                </a>
+              </article>
+            ))}
           </div>
-          {links.channel ? (
-            <a
-              className="inline-link"
-              href={links.channel}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ver promoções
-            </a>
-          ) : (
-            <span className="unavailable-note">Em breve no Telegram</span>
-          )}
-        </article>
-        <article className="telegram-option">
-          <div>
-            <span className="eyebrow-v2">Telegram</span>
-            <h3>Grupo da comunidade</h3>
-            <p>
-              Um espaço para conversar comigo e com outras pessoas sobre
-              celulares, notebooks, garimpos, reparos e tecnologia.
-            </p>
-          </div>
-          {links.group ? (
-            <a
-              className="inline-link"
-              href={links.group}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Entrar no grupo
-            </a>
-          ) : (
-            <span className="unavailable-note">Em breve no Telegram</span>
-          )}
-        </article>
-      </div>
-      <small className="telegram-notice">
-        O Telegram é um serviço externo, com seus próprios termos e práticas de
-        privacidade.
-      </small>
+          <small className="telegram-notice">
+            O Telegram é um serviço externo, com seus próprios termos e práticas
+            de privacidade.
+          </small>
+        </>
+      )}
     </section>
   );
 }

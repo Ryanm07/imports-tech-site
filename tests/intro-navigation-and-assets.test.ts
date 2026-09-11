@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { access, readFile, stat } from "node:fs/promises";
 import test from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { TelegramSection } from "../components/telegram-section";
 import {
   INTRO_FINAL_FRAME_SECONDS,
   INTRO_SESSION_KEY,
@@ -165,7 +168,6 @@ test("navegação pública é curta e rotas antigas têm redirect seguro", async
   assert.match(videoDetail, /\^\[A-Za-z0-9_-\]\{11\}\$/);
   assert.equal(community.includes("TelegramSection"), true);
   assert.equal(community.includes("CommunityClient"), false);
-  assert.equal(community.includes("fórum próprio"), true);
 });
 
 test("serviço do YouTube não contém implementação de catálogo", async () => {
@@ -242,12 +244,30 @@ test("Mural e APIs públicas foram removidos da experiência ativa", async () =>
   assert.match(redirect, /permanentRedirect\("\/comunidade"\)/);
 });
 
-test("Telegram contém as duas entradas editoriais e fallback sem link", async () => {
-  const telegram = await source("components/telegram-section.tsx");
-  assert.equal(telegram.includes("Canal de promoções"), true);
-  assert.equal(telegram.includes("promoções, cupons e oportunidades"), true);
-  assert.equal(telegram.includes("Grupo da comunidade"), true);
-  assert.equal(telegram.includes("Em breve"), true);
+test("comunidade não anuncia Telegram ausente e exibe somente os destinos configurados", () => {
+  const absent = renderToStaticMarkup(
+    createElement(TelegramSection, { links: { channel: null, group: null } }),
+  );
+  assert(!absent.includes("Em breve"));
+  assert(!absent.includes("Canal de promoções"));
+  assert(!absent.includes("Grupo da comunidade"));
+  assert(absent.includes("youtube.com/@Imports_Tech/community"));
+  for (const links of [
+    { channel: "https://t.me/imports_channel", group: null },
+    { channel: null, group: "https://t.me/imports_group" },
+    {
+      channel: "https://t.me/imports_channel",
+      group: "https://t.me/imports_group",
+    },
+  ]) {
+    const html = renderToStaticMarkup(
+      createElement(TelegramSection, { links }),
+    );
+    assert.equal(html.includes("Canal de promoções"), Boolean(links.channel));
+    assert.equal(html.includes("Grupo da comunidade"), Boolean(links.group));
+    if (links.channel) assert(html.includes(`href="${links.channel}"`));
+    if (links.group) assert(html.includes(`href="${links.group}"`));
+  }
 });
 
 async function source(path: string) {

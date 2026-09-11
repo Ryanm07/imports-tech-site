@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   fetchYouTubeChannelMetrics,
+  currentYouTubeMetrics,
   getVersionedYouTubeMetricsSnapshot,
 } from "../lib/youtube-service";
 
@@ -98,11 +99,47 @@ test("configuração ausente e canal não encontrado falham de forma explícita"
   );
 });
 
-test("snapshot versionado permanece antigo e não finge sincronização atual", () => {
+test("conferência manual identifica sua origem sem fingir uma sincronização da API", () => {
   const snapshot = getVersionedYouTubeMetricsSnapshot();
   assert.equal(snapshot.source, "snapshot");
-  assert.equal(snapshot.stale, true);
-  assert.equal(snapshot.updatedAt, "2026-07-10T00:00:00.000Z");
+  assert.equal(snapshot.lastSuccessfulSyncAt, null);
+  assert.equal(snapshot.subscribersApproximate, true);
+});
+
+test("números vencidos, com data inválida ou futura não são apresentados como atuais", () => {
+  const snapshot = getVersionedYouTubeMetricsSnapshot();
+  const now = new Date("2026-09-12T12:00:00Z");
+  for (const updatedAt of [
+    null,
+    "inválida",
+    "2026-09-11T23:59:59Z",
+    "2026-09-13T12:00:00Z",
+  ]) {
+    const result = currentYouTubeMetrics(
+      { ...snapshot, updatedAt, stale: false },
+      now,
+    );
+    assert.equal(result.source, "unavailable");
+    assert.equal(result.updatedAt, null);
+    assert.equal(result.subscribers, null);
+    assert.equal(result.totalViews, null);
+    assert.equal(result.videoCount, null);
+    assert.equal(result.stale, true);
+  }
+});
+
+test("consulta recente preserva números oficiais e uma falha invalida o retrato", () => {
+  const snapshot = {
+    ...getVersionedYouTubeMetricsSnapshot(),
+    updatedAt: "2026-09-12T11:00:00Z",
+    stale: false,
+  };
+  const now = new Date("2026-09-12T12:00:00Z");
+  assert.deepEqual(currentYouTubeMetrics(snapshot, now), snapshot);
+  assert.equal(
+    currentYouTubeMetrics({ ...snapshot, stale: true }, now).totalViews,
+    null,
+  );
 });
 
 function json(value: unknown) {

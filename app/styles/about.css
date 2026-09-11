@@ -1,0 +1,106 @@
+.about-page {
+  max-width: 1040px;
+  padding-block: 38px 88px;
+}
+.about-intro {
+  padding-bottom: 56px;
+  max-width: 820px;
+}
+.about-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 38px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.about-intro .eyebrow-v2 {
+  display: block;
+  margin-bottom: 20px;
+}
+.about-intro h1 {
+  font-size: clamp(42px, 6vw, 76px);
+  line-height: 1.06;
+}
+.about-intro > p {
+  max-width: 53ch;
+  margin-top: 24px;
+  color: var(--text-secondary);
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.7;
+}
+.about-moment {
+  position: relative;
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 40px;
+  padding-block: 36px;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 20px;
+}
+.about-anchor {
+  position: absolute;
+  top: 0;
+  scroll-margin-top: 20px;
+}
+.about-when {
+  padding-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.about-copy h2,
+.about-outlook h2 {
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  text-wrap: pretty;
+}
+.about-copy > p,
+.about-outlook > p {
+  max-width: 65ch;
+  margin-top: 16px;
+  line-height: 1.85;
+  color: var(--text-secondary);
+}
+.about-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 12px;
+  color: var(--brand-primary);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-color: #ffbe2460;
+}
+.about-video:hover,
+.about-back:hover {
+  color: var(--text);
+}
+.about-outlook {
+  border-top: 1px solid var(--border);
+  padding-top: 40px;
+  margin-top: 16px;
+  padding-left: 220px;
+  scroll-margin-top: 20px;
+}
+.about-outlook .eyebrow-v2 {
+  margin-bottom: 18px;
+}
+@media (max-width: 700px) {
+  .about-intro {
+    padding-bottom: 36px;
+  }
+  .about-back {
+    margin-bottom: 26px;
+  }
+  .about-moment {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-block: 28px;
+  }
+  .about-outlook {
+    padding-left: 0;
+  }
+}

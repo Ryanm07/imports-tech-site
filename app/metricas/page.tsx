@@ -16,19 +16,24 @@ export default async function MetricsPage() {
   return (
     <main id="conteudo" className="page-main metrics-page">
       <header className="page-hero" data-motion-section="abertura">
-        <span className="eyebrow-v2">O canal em números</span>
-        <h1>Cada número tem uma história.</h1>
+        <span className="eyebrow-v2">YouTube / @Imports_Tech</span>
+        <h1>O canal em números.</h1>
         <p>
-          Gente que chegou, vídeos que saíram da bancada e descobertas
-          compartilhadas. Um retrato público do Imports Tech, com números do
-          YouTube e a data de cada atualização.
+          Consulte a origem e a data dos números. Eles mudam no YouTube e não
+          representam um contador em tempo real aqui no site.
         </p>
       </header>
-      <section className="metric-cards" aria-label="Métricas do YouTube">
-        <Metric label="Inscritos" value={youtube.subscribers} />
-        <Metric label="Visualizações" value={youtube.totalViews} />
-        <Metric label="Vídeos publicados" value={youtube.videoCount} />
-      </section>
+      {youtube.source !== "unavailable" && (
+        <section className="metric-cards" aria-label="Métricas do YouTube">
+          <Metric
+            label="Inscritos"
+            value={youtube.subscribers}
+            approximate={youtube.subscribersApproximate}
+          />
+          <Metric label="Visualizações" value={youtube.totalViews} />
+          <Metric label="Vídeos publicados" value={youtube.videoCount} />
+        </section>
+      )}
       <section
         className="sync-panel"
         aria-label="Origem e atualização dos números"
@@ -38,64 +43,81 @@ export default async function MetricsPage() {
           aria-hidden="true"
         />
         <div>
-          <strong>{sourceLabel(youtube.source, youtube.stale)}</strong>
+          <strong>{sourceLabel(youtube.source)}</strong>
           <p>
             {youtube.updatedAt ? (
               <>
-                Última sincronização:{" "}
+                Consulta em{" "}
                 <time dateTime={youtube.updatedAt}>
                   {formatDateTime(youtube.updatedAt)}
                 </time>{" "}
                 (horário de Brasília).
               </>
             ) : (
-              "Nenhuma sincronização válida disponível."
+              "Não há uma consulta recente disponível. Veja os números atuais diretamente no canal."
             )}
           </p>
-          <p>Fonte: YouTube Data API. Sem estimativas de desempenho.</p>
+          {youtube.source !== "unavailable" && (
+            <p>
+              {youtube.source === "snapshot"
+                ? "Fonte: página oficial do canal, conferida manualmente. Inscritos arredondados pelo YouTube."
+                : "Fonte: YouTube Data API."}{" "}
+              Consultas com mais de 12 horas deixam de exibir números.
+            </p>
+          )}
+          <a
+            className="inline-link"
+            href={youtube.channelUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Consultar no YouTube ↗
+          </a>
         </div>
       </section>
       <section className="metrics-context">
         <div className="metric-context-copy">
-          <span className="eyebrow-v2">O que vem pela frente</span>
-          <h2>O canal começou em setembro de 2025. A história continua.</h2>
+          <span className="eyebrow-v2">Além dos números</span>
+          <h2>Os marcos ficam na história.</h2>
           <p>
-            Meu objetivo é construir uma comunidade de tecnologia cada vez
-            maior, sem perder a honestidade e a proximidade do começo.
+            O primeiro vídeo, a foto dos mil inscritos e a chegada aos cinco mil
+            fazem parte da trajetória do canal.
           </p>
           <Link className="inline-link" href="/sobre">
             Conhecer minha história
           </Link>
-        </div>
-        <div className="metric-goal">
-          <span>Minha meta pessoal</span>
-          <strong>100 mil</strong>
-          <p>inscritos até o fim de 2027</p>
-          <small>
-            Uma meta para o futuro, separada dos números atuais do canal.
-          </small>
         </div>
       </section>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number | null }) {
+function Metric({
+  label,
+  value,
+  approximate = false,
+}: {
+  label: string;
+  value: number | null;
+  approximate?: boolean;
+}) {
   return (
     <article>
       <span>{label}</span>
       <strong>
         {value === null
           ? "Indisponível"
-          : new Intl.NumberFormat("pt-BR").format(value)}
+          : `${approximate ? "≈ " : ""}${new Intl.NumberFormat("pt-BR").format(value)}`}
       </strong>
     </article>
   );
 }
 
-function sourceLabel(source: string, stale: boolean) {
-  if (source === "unavailable") return "Indisponível temporariamente";
-  return stale ? "Último retrato disponível" : "Métricas atualizadas";
+function sourceLabel(source: string) {
+  if (source === "unavailable") return "Consulte os números no canal";
+  return source === "snapshot"
+    ? "Conferência manual no YouTube"
+    : "Consulta pela API do YouTube";
 }
 
 function formatDateTime(value: string) {

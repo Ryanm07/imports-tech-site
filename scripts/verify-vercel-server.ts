@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import {
+  currentYouTubeMetrics,
+  getVersionedYouTubeMetricsSnapshot,
+} from "../lib/youtube-service";
 
 const cwd = fileURLToPath(new URL("../", import.meta.url));
 const port = 4301;
@@ -72,6 +76,13 @@ try {
     if (path === "/") assert(html.includes("Entre. Fique"));
     if (path === "/contato")
       assert(html.includes("mailto:imports.tech.contact@gmail.com"));
+    if (path === "/sobre") {
+      assert(html.includes("Por trás da bancada."));
+      assert(html.includes('id="mil-inscritos"'));
+      assert(html.includes('id="cinco-mil-inscritos"'));
+      assert(!html.includes("/styles/story.css"));
+    }
+    if (path === "/metricas") assert(!html.includes("610.472"));
   }
 
   for (const path of ["/api/admin/content", "/api/admin/youtube"]) {
@@ -93,16 +104,23 @@ try {
       assert(response.headers.get("cache-control")?.includes("no-store"));
     }
   }
-  const metrics = (await (await fetch(`${origin}/api/youtube`)).json()) as {
+  const metricsResponse = await fetch(`${origin}/api/youtube`);
+  assert(metricsResponse.headers.get("cache-control")?.includes("no-store"));
+  const metrics = (await metricsResponse.json()) as {
     source: string;
     stale: boolean;
     updatedAt: string | null;
   };
-  assert.equal(metrics.source, "snapshot");
-  assert.equal(metrics.stale, true);
-  assert(metrics.updatedAt, "Historical metrics must disclose their date");
+  const expected = currentYouTubeMetrics(getVersionedYouTubeMetricsSnapshot());
+  assert.equal(metrics.source, expected.source);
+  assert.equal(metrics.stale, expected.stale);
+  assert.equal(metrics.updatedAt, expected.updatedAt);
+  assert.equal(
+    (metrics as { subscribers?: number | null }).subscribers,
+    expected.subscribers,
+  );
   console.log(
-    "Next/Vercel verificado: 5 páginas, headers, contato, métricas históricas e 4 tentativas de acesso privado recusadas.",
+    "Next/Vercel verificado: 5 páginas, história simplificada, contato, validade das métricas, headers e 4 tentativas de acesso privado recusadas.",
   );
 } finally {
   const stopped = new Promise<void>((resolve) =>

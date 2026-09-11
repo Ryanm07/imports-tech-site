@@ -1,3 +1,5 @@
+> **Documento histórico — julho de 2026.** Esta auditoria descreve a versão anterior à home 3D e à simplificação da história. Para o estado vigente, consulte [README.md](README.md) e [DEPLOYMENT.md](DEPLOYMENT.md). Resultados e pendências abaixo pertencem àquela versão.
+
 # Auditoria corretiva final — Imports Tech
 
 Data da conclusão: 15 de julho de 2026

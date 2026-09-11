@@ -60,7 +60,7 @@ test("fases narrativas são contínuas, limitadas e reversíveis", () => {
   assert.equal(chapterPhases(7, 7).signed, 0);
 });
 
-test("experiência mantém os componentes narrativos e fallback acessível", () => {
+test("componentes narrativos legados preservam compatibilidade e fallback", () => {
   const story = readFileSync("components/story-experience.tsx", "utf8");
   const scenes = readFileSync("components/story-micro-scene.tsx", "utf8");
   const projects = readFileSync("components/project-experience.tsx", "utf8");
@@ -89,7 +89,7 @@ test("experiência mantém os componentes narrativos e fallback acessível", () 
   assert.match(styles, /html:not\(\.motion-ready\) \.story-documentary/);
 });
 
-test("trajetória publicada mantém treze capítulos únicos em primeira pessoa", () => {
+test("cadastro visual legado preserva treze capítulos e seus presets", () => {
   assert.equal(storyMilestones.length, 13);
   for (const milestone of storyMilestones) {
     assert.match(

@@ -1,41 +1,35 @@
-/* Start at /sobre#% and run through agent-browser eval --stdin.
- * Public URL fragments must never crash the story. Valid chapter links must
- * still navigate after malformed percent escapes or malformed UTF-8.
+/* Execute em /sobre após navegar para os hashes pelo navegador.
+ * A página usa âncoras nativas; não há decodificador ou capítulo ativo em JS.
+ * Verifique também /sobre#%, /sobre#%FF, /sobre#iphone-xr e /sobre#mil-inscritos.
  */
-(async () => {
-  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+(() => {
   const check = (condition, message) => {
     if (!condition) throw new Error(message);
   };
-  await wait(500);
+  const main = document.querySelector("main");
   check(
-    document.querySelectorAll(".story-chapter").length === 13,
-    "Malformed initial hash crashed the story",
+    main?.innerText.includes("Por trás da bancada."),
+    "História não renderizou",
   );
-  for (const hash of ["#%E0%A4%A", "#%FF", "#%2"]) {
-    location.hash = hash;
-    await wait(150);
-    check(
-      document.querySelectorAll(".story-chapter").length === 13,
-      `Malformed hash ${hash} crashed the story`,
-    );
-  }
-  location.hash = "#iphone-xr";
-  await wait(600);
   check(
-    document.querySelector(".story-chapter.is-active")?.id === "iphone-xr",
-    "Valid chapter hash stopped navigating after an invalid fragment",
+    document.querySelector("#mil-inscritos"),
+    "Link dos mil inscritos perdeu o destino",
   );
-  location.hash = "#%69phone-xr";
-  await wait(600);
   check(
-    document.querySelector(".story-chapter.is-active")?.id === "iphone-xr",
-    "Percent-encoded valid chapter stopped navigating",
+    document.querySelector("#iphone-xr"),
+    "Link antigo do iPhone XR perdeu o destino",
+  );
+  check(
+    !document.querySelector(".story-timeline"),
+    "Navegação antiga continua montada",
+  );
+  check(
+    document.documentElement.scrollWidth <= window.innerWidth,
+    "Overflow horizontal",
   );
   return {
-    malformedInitial: true,
-    malformedChanges: 3,
-    validChapter: true,
-    encodedChapter: true,
+    nativeAnchors: true,
+    legacyChapters: false,
+    horizontalOverflow: false,
   };
 })();

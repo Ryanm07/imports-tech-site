@@ -23,6 +23,21 @@ export function SiteFrame({
 }) {
   const pathname = usePathname();
   if (pathname === "/") return children;
+  if (pathname === "/sobre")
+    return (
+      <>
+        <SiteHeader
+          publicLinks={publicLinks}
+          projectsEnabled={projectsEnabled}
+        />
+        {children}
+        <SiteFooter
+          telegram={telegram}
+          publicLinks={publicLinks}
+          projectsEnabled={projectsEnabled}
+        />
+      </>
+    );
   return (
     <MotionProvider>
       <InteractiveBackground />

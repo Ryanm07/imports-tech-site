@@ -13,7 +13,7 @@ O projeto mantém dois destinos de build. O estúdio, as páginas públicas, os 
 
 No Cloudflare, `db/runtime.ts` continua recebendo o binding D1 `DB` e a autenticação verificada pelo proxy Sites. O Worker conserva sua sincronização agendada do YouTube. As migrações e o código editorial existentes permanecem no projeto.
 
-Na Vercel, o alias de build substitui esse módulo por `db/runtime-node.ts`. Não existe acesso ao D1 da hospedagem anterior. O site usa o conteúdo versionado e as métricas históricas já armazenadas no código; a API informa `source: "snapshot"`, `stale: true` e a data do retrato. Isso não representa uma sincronização atual nem uma estimativa dos números de hoje.
+Na Vercel, o alias de build substitui esse módulo por `db/runtime-node.ts`. Não existe acesso ao D1 da hospedagem anterior. O conteúdo usa os dados versionados. As métricas conferidas manualmente no canal oficial declaram `source: "snapshot"` e a data real da consulta. Depois de 12 horas, a página e a API omitem os números e indicam `source: "unavailable"`. A Vercel ainda não faz sincronização automática do YouTube.
 
 O painel e as APIs privadas permanecem fechados sem um backend confiável: as APIs respondem `503`, inclusive se `ADMIN_ENABLED=true` for configurado por engano. Headers `oai-authenticated-user-*` enviados diretamente à Vercel nunca autenticam o proprietário. A autenticação Sites depende do proxy da hospedagem original e não deve ser simulada na Vercel.
 
@@ -39,6 +39,6 @@ npm run build:vercel
 npm run verify:vercel
 ```
 
-`verify:vercel` inicia temporariamente um servidor Next de produção em `127.0.0.1:4301`. Verifica cinco páginas públicas, contato, headers, a sinalização das métricas históricas e quatro tentativas de acesso às APIs privadas com headers de identidade falsificados. O processo de teste é encerrado ao terminar.
+`verify:vercel` inicia temporariamente um servidor Next de produção em `127.0.0.1:4301`. Verifica cinco páginas públicas, contato, headers, a origem e a validade das métricas e quatro tentativas de acesso às APIs privadas com headers de identidade falsificados. O processo de teste é encerrado ao terminar.
 
 Os builds Vinext e Next geram diretórios diferentes (`dist/` e `.next/`). Configurações e credenciais locais de deploy em `.vercel/`, `.env*` e `.wrangler/` continuam ignoradas pelo Git.

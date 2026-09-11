@@ -14,15 +14,16 @@ const site = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: site,
   title: {
-    default: "Imports Tech — Tecnologia fora do comum",
+    default: "Imports Tech — Entre no estúdio",
     template: "%s | Imports Tech",
   },
   description:
-    "Eu compro, testo, conserto e conto a história. Reviews, garimpos e experiências reais com smartphones, notebooks e tecnologia no Imports Tech.",
+    "Explore o estúdio 3D do Imports Tech e descubra os equipamentos, os bastidores e as histórias por trás dos vídeos.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Imports Tech — Tecnologia fora do comum",
-    description: "A história, a evolução e a comunidade do Imports Tech.",
+    title: "Imports Tech — Entre no estúdio",
+    description:
+      "Um espaço em 3D para explorar equipamentos e conhecer as histórias por trás dos vídeos.",
     type: "website",
     url: "/",
     siteName: "Imports Tech",
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
         url: BRAND_ASSETS.socialCard,
         width: 1200,
         height: 630,
-        alt: "Imports Tech — Tecnologia testada no uso real",
+        alt: "Imports Tech — Entre no estúdio. Equipamentos, bastidores e histórias em um espaço 3D.",
       },
     ],
   },

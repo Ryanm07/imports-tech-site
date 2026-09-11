@@ -65,6 +65,7 @@
   font-size: 11px;
   color: var(--text-muted);
 }
+.community-feature-copy h2,
 .community-feature-copy h3 {
   font-size: 25px;
   margin-top: 12px;
@@ -76,6 +77,16 @@
 }
 .community-feature-copy .button {
   margin-top: 24px;
+}
+.telegram-section:not(:has(.telegram-options)) {
+  grid-template-columns: 1fr;
+}
+.telegram-section:not(:has(.telegram-options)) .community-feature {
+  border: 0;
+  padding: 0;
+}
+.telegram-section:not(:has(.telegram-options)) .community-feature-copy p {
+  max-width: 65ch;
 }
 .telegram-options {
   display: grid;
@@ -247,7 +258,7 @@
 }
 .metrics-context {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  grid-template-columns: 1fr;
   gap: 70px;
   padding-top: 35px;
   border-top: 1px solid var(--border);
@@ -256,6 +267,7 @@
   font-size: clamp(28px, 3vw, 39px);
 }
 .metric-context-copy p {
+  max-width: 65ch;
   margin-top: 24px;
   font-size: 14px;
 }
@@ -423,6 +435,7 @@
     width: 42px;
     height: 42px;
   }
+  .community-feature-copy h2,
   .community-feature-copy h3 {
     font-size: 22px;
   }

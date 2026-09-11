@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { StudioExperience } from "@/components/studio/studio-experience";
+import { getSiteSettings } from "@/lib/content-repository";
+import { getPublicLinks } from "@/lib/public-links";
 
 export const metadata: Metadata = {
   title: "Estúdio Imports Tech — Entre e explore",
@@ -8,6 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default function Home() {
-  return <StudioExperience />;
+export default async function Home() {
+  const { commercialEmail } = getPublicLinks(await getSiteSettings());
+  return <StudioExperience commercialEmail={commercialEmail} />;
 }

@@ -7,7 +7,7 @@ import { getPublicLinks } from "@/lib/public-links";
 
 export const metadata: Metadata = {
   title: "Contato comercial",
-  description: "Meus canais oficiais de contato e o Media Kit do Imports Tech.",
+  description: "E-mail oficial para falar com Ryan, do Imports Tech.",
   alternates: { canonical: "/contato" },
 };
 
@@ -17,7 +17,7 @@ export default async function ContactPage() {
     <main id="conteudo" className="page-main contact-page">
       <header className="page-hero" data-motion-section="abertura">
         <span className="eyebrow-v2">Contato</span>
-        <h1>Vamos criar algo fora do comum.</h1>
+        <h1>Fale comigo.</h1>
         <p>
           Parcerias, ideias de conteúdo ou uma boa conversa sobre tecnologia.
           Aqui estão os caminhos oficiais para falar comigo.
@@ -28,7 +28,7 @@ export default async function ContactPage() {
           {links.commercialEmail ? (
             <>
               <span className="eyebrow-v2">Contato comercial</span>
-              <h2>A próxima ideia começa com uma conversa.</h2>
+              <h2>Meu e-mail oficial.</h2>
               <p>
                 Envie sua proposta, contato editorial ou solicitação diretamente
                 para mim.
@@ -81,11 +81,11 @@ export default async function ContactPage() {
               <span className="eyebrow-v2">Para marcas</span>
               <h2>Conteúdo com experiência real.</h2>
               <p>
-                Conheça a trajetória do canal e os números públicos enquanto o
-                Media Kit não está disponível.
+                Minha trajetória e os bastidores dos projetos estão na página de
+                história.
               </p>
-              <Link className="inline-link" href="/metricas">
-                Ver métricas do canal
+              <Link className="inline-link" href="/sobre">
+                Conhecer minha história
               </Link>
             </section>
           )}

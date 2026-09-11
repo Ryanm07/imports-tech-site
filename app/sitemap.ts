@@ -7,6 +7,9 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getYouTubeMetrics } from "@/lib/youtube-service";
 import { projectsEnabled } from "@/lib/features";
 
+export const dynamic = "force-dynamic";
+const CONTENT_REVIEWED_AT = "2026-09-11";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const enabled = projectsEnabled();
   const [reviews, finds, youtube] = await Promise.all([
@@ -37,7 +40,7 @@ export function buildSitemap({
   projectsEnabled?: boolean;
 }): MetadataRoute.Sitemap {
   const fixedRoutes = [
-    ["", "2026-07-14"],
+    ["", CONTENT_REVIEWED_AT],
     ...(projectsEnabled
       ? ([
           [
@@ -49,13 +52,16 @@ export function buildSitemap({
           ],
         ] as const)
       : []),
-    ["/metricas", youtube.updatedAt || "2026-07-14"],
-    ["/sobre", "2026-07-14"],
-    ["/comunidade", "2026-07-14"],
-    ["/privacidade", "2026-07-14"],
+    [
+      "/metricas",
+      latest([CONTENT_REVIEWED_AT, youtube.updatedAt || CONTENT_REVIEWED_AT]),
+    ],
+    ["/sobre", CONTENT_REVIEWED_AT],
+    ["/comunidade", CONTENT_REVIEWED_AT],
+    ["/privacidade", CONTENT_REVIEWED_AT],
     ["/termos", "2026-07-14"],
     ["/afiliados", "2026-07-14"],
-    ["/contato", "2026-07-14"],
+    ["/contato", CONTENT_REVIEWED_AT],
   ];
   return [
     ...fixedRoutes.map(([route, modified]) => ({

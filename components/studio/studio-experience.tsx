@@ -120,7 +120,11 @@ function ObjectDetail({
   );
 }
 
-export function StudioExperience() {
+export function StudioExperience({
+  commercialEmail,
+}: {
+  commercialEmail: string | null;
+}) {
   const [state, dispatch] = useReducer(studioReducer, initialStudioState);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
@@ -398,9 +402,9 @@ export function StudioExperience() {
                 Contato <StudioIcon name="arrow" />
               </Link>
               <div className="studio-menu-footer">
-                <a href="mailto:imports.tech.contact@gmail.com">
-                  imports.tech.contact@gmail.com
-                </a>
+                {commercialEmail && (
+                  <a href={`mailto:${commercialEmail}`}>{commercialEmail}</a>
+                )}
                 <Link href="/privacidade">Privacidade</Link>
               </div>
             </nav>

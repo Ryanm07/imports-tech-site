@@ -1,0 +1,16 @@
+.git/
+.next/
+.vercel/
+.vinext/
+.wrangler/
+node_modules/
+dist/
+out/
+outputs/
+work/
+coverage/
+.env*
+!.env.example
+*.log
+tsconfig.tsbuildinfo
+.eslint-report.json

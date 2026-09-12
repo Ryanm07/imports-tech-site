@@ -22,9 +22,16 @@ import { STUDIO_ITEMS, type StudioItem } from "@/lib/studio-content";
 import { StudioIcon } from "./studio-icons";
 import { StudioPageScrollbar } from "./studio-page-scrollbar";
 import type { MovementInput } from "./studio-canvas";
+import { selectStudioQuality, type StudioQuality } from "@/lib/studio-quality";
 
 const StudioCanvas = lazy(() => import("./studio-canvas"));
 const THEME_KEY = "imports-tech:studio-theme:v1";
+const QUALITY_LABELS = {
+  high: "Alta",
+  medium: "Equilibrada",
+  low: "Leve",
+  basic: "Padrão",
+};
 
 class SceneBoundary extends Component<
   { children: ReactNode; onFailure: () => void },
@@ -133,6 +140,19 @@ export function StudioExperience({
   const [resetKey, setResetKey] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [earbudsOpen, setEarbudsOpen] = useState(false);
+  const [quality, setQuality] = useState<StudioQuality>("medium");
+  const [qualityPreference, setQualityPreference] = useState<
+    StudioQuality | "auto"
+  >("auto");
+  const qualityCeiling = useRef<StudioQuality>("high");
+  const onDegrade = useCallback((next: StudioQuality) => {
+    const order: StudioQuality[] = ["high", "medium", "low", "basic"];
+    if (order.indexOf(next) > order.indexOf(qualityCeiling.current))
+      qualityCeiling.current = next;
+    setQuality((current) =>
+      order.indexOf(next) > order.indexOf(current) ? next : current,
+    );
+  }, []);
   const [panel, setPanel] = useState<"objects" | "help" | "menu" | null>(null);
   const movement = useRef<MovementInput>({ forward: 0, right: 0 });
   const viewport = useRef<HTMLDivElement>(null);
@@ -174,6 +194,34 @@ export function StudioExperience({
       /* Theme still works without persistence. */
     }
   }, [state.presentationTheme, mounted]);
+
+  useEffect(() => {
+    const device = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: EventTarget & { saveData?: boolean; effectiveType?: string };
+    };
+    qualityCeiling.current = "high";
+    const sync = () => {
+      const requested =
+        qualityPreference === "auto"
+          ? selectStudioQuality({
+              cores: device.hardwareConcurrency,
+              memoryGB: device.deviceMemory,
+              saveData: device.connection?.saveData,
+              effectiveType: device.connection?.effectiveType,
+            })
+          : qualityPreference;
+      const order: StudioQuality[] = ["high", "medium", "low", "basic"];
+      setQuality(
+        order.indexOf(requested) > order.indexOf(qualityCeiling.current)
+          ? requested
+          : qualityCeiling.current,
+      );
+    };
+    sync();
+    device.connection?.addEventListener("change", sync);
+    return () => device.connection?.removeEventListener("change", sync);
+  }, [qualityPreference]);
 
   useEffect(() => {
     if (!mounted || ready || failed) return;
@@ -244,6 +292,7 @@ export function StudioExperience({
       data-studio-theme={state.theme}
       data-studio-mode={state.mode}
       data-scene-ready={ready && !failed}
+      data-studio-quality={quality}
     >
       <a className="studio-skip" href="#studio-tools">
         Pular para os controles
@@ -263,6 +312,8 @@ export function StudioExperience({
                 onReady={onReady}
                 onFailure={onFailure}
                 onSelect={select}
+                quality={quality}
+                onDegrade={onDegrade}
               />
             </Suspense>
           </SceneBoundary>
@@ -482,6 +533,28 @@ export function StudioExperience({
           )}
           {panel === "help" && (
             <div className="studio-help">
+              <section className="studio-quality-control">
+                <label htmlFor="studio-quality">Qualidade visual</label>
+                <select
+                  id="studio-quality"
+                  value={qualityPreference}
+                  onChange={(event) =>
+                    setQualityPreference(
+                      event.target.value as StudioQuality | "auto",
+                    )
+                  }
+                >
+                  <option value="auto">Automática</option>
+                  <option value="high">Alta</option>
+                  <option value="medium">Equilibrada</option>
+                  <option value="low">Leve · cenário sem movimento</option>
+                  <option value="basic">Padrão · somente estúdio</option>
+                </select>
+                <p>
+                  Em uso: {QUALITY_LABELS[quality]}. O site reduz os efeitos se
+                  precisar manter a navegação fluida.
+                </p>
+              </section>
               <section>
                 <StudioIcon name="orbit" />
                 <h3>Olhe ao redor</h3>

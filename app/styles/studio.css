@@ -42,6 +42,26 @@
 .studio-viewport canvas[data-item-hover="true"] {
   cursor: pointer;
 }
+.studio-quality-control label {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.studio-quality-control select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  color: var(--studio-text);
+  background: var(--studio-bg);
+  border: 1px solid var(--studio-line);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+}
+.studio-quality-control select:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 3px;
+}
 .studio-vignette {
   position: absolute;
   inset: 0;

@@ -14,6 +14,8 @@ import {
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { StudioRoom } from "./studio-room";
 import { StudioInteractionContext } from "./interactive-object";
+import { CosmicBackground } from "./cosmic-background";
+import { QUALITY_SETTINGS, type StudioQuality } from "@/lib/studio-quality";
 import {
   walkStep,
   type StudioMode,
@@ -28,6 +30,8 @@ type Props = {
   resetKey: number;
   reducedMotion: boolean;
   earbudsOpen: boolean;
+  quality: StudioQuality;
+  onDegrade: (quality: StudioQuality) => void;
   movement: MutableRefObject<MovementInput>;
   onSelect: (id: string) => void;
   onReady: () => void;
@@ -116,7 +120,13 @@ function CameraRig({
   reducedMotion,
 }: Omit<
   Props,
-  "theme" | "onSelect" | "onReady" | "onFailure" | "earbudsOpen"
+  | "theme"
+  | "onSelect"
+  | "onReady"
+  | "onFailure"
+  | "earbudsOpen"
+  | "quality"
+  | "onDegrade"
 >) {
   const { camera, gl, invalidate, size } = useThree();
   const framingScale = Math.max(1, 1.2 / (size.width / size.height));
@@ -346,11 +356,12 @@ function Ready({
 }
 
 export default function StudioCanvas(props: Props) {
+  const settings = QUALITY_SETTINGS[props.quality];
   return (
     <Canvas
       frameloop="demand"
-      dpr={[1, 1.6]}
-      shadows={{ type: PCFShadowMap }}
+      dpr={[1, settings.dpr]}
+      shadows={settings.shadows ? { type: PCFShadowMap } : false}
       camera={{ position: [6.3, 4.2, 7.6], fov: 43, near: 0.1, far: 60 }}
       gl={{
         antialias: true,
@@ -365,6 +376,14 @@ export default function StudioCanvas(props: Props) {
       }
     >
       <Lighting theme={props.theme} reducedMotion={props.reducedMotion} />
+      <CosmicBackground
+        theme={props.theme}
+        mode={props.mode}
+        quality={props.quality}
+        reducedMotion={props.reducedMotion}
+        paused={props.paused}
+        onDegrade={props.onDegrade}
+      />
       <StudioInteractionContext.Provider
         value={{ enabled: !props.paused, reducedMotion: props.reducedMotion }}
       >

@@ -1,15 +1,33 @@
 # Imports Tech — estúdio interativo
 
-Estado revisado em 11 de setembro de 2026.
+Estado revisado em 12 de setembro de 2026.
 
 O site abre diretamente em um estúdio 3D, sem vídeo de introdução. A experiência
 inclui visão geral, caminhada opcional por câmera, iluminação clara/escura,
 objetos clicáveis, lista acessível e barra lateral para alcançar os controles em
 telas baixas. A escolha de iluminação é salva no dispositivo.
 
-Os modelos são provisórios. Modelagem fiel, materiais definitivos, efeitos de
-inspeção, clipes e a fotografia dos mil inscritos continuam para uma etapa futura.
-Esta revisão de conteúdo não altera geometria, câmera, controles ou barra lateral.
+O espaço ao redor tem um buraco negro no tema escuro e um buraco branco no claro,
+com plasma dourado e movimento suave em direções opostas. O fundo é procedural:
+um único passe no WebGL existente, sem texturas, vídeos ou modelos adicionais.
+
+A qualidade automática considera os sinais de memória, processador e conexão
+disponíveis no navegador e reduz os efeitos se os frames ficarem lentos:
+
+- **Alta:** três camadas de estrelas, movimento até 30 FPS, DPR até 1,6.
+- **Equilibrada:** duas camadas, movimento até 24 FPS, DPR até 1,25.
+- **Leve:** cenário estático, uma camada de estrelas, sem sombras, DPR 1.
+- **Padrão:** somente o estúdio, sem fundo cósmico ou sombras, DPR 1.
+
+Economia de dados, conexão 2G ou até 2 GB/dois núcleos começam no padrão;
+3G ou até 4 GB/quatro núcleos começam no leve. Quando faltam sinais, o ponto de
+partida é equilibrado. Não há aumento automático após uma queda de desempenho.
+O painel de ajuda permite escolher outro nível. A animação pausa com a aba oculta
+ou os painéis abertos e respeita a preferência de movimento reduzido do sistema.
+Esses limites regulam o cenário; não são promessa de FPS em qualquer aparelho.
+
+O Buds usa o GLB próprio; os demais modelos continuam provisórios. Modelagem fiel,
+materiais definitivos, clipes e a fotografia dos mil inscritos ficam para outra etapa.
 
 ## Publicação e rotas
 

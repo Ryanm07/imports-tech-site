@@ -141,6 +141,8 @@ export function StudioExperience({
   const activeItem = STUDIO_ITEMS.find(
     (item) => item.id === state.selectedItem,
   );
+  const budsItem = STUDIO_ITEMS.find((item) => item.id === "earbuds")!;
+  const showBudsStory = earbudsOpen && !panel && !activeItem;
   const onReady = useCallback(() => setReady(true), []);
   const onFailure = useCallback(() => {
     setFailed(true);
@@ -185,11 +187,12 @@ export function StudioExperience({
       if (panel) {
         setPanel(null);
         panelTrigger.current?.focus();
-      } else dispatch({ type: "escape" });
+      } else if (earbudsOpen) setEarbudsOpen(false);
+      else dispatch({ type: "escape" });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panel, activeItem]);
+  }, [panel, activeItem, earbudsOpen]);
 
   useEffect(() => {
     if (panel)
@@ -321,7 +324,7 @@ export function StudioExperience({
 
       <div
         className="studio-introduction"
-        aria-hidden={state.mode === "walk" || Boolean(panel)}
+        aria-hidden={state.mode === "walk" || Boolean(panel) || showBudsStory}
       >
         <span className="studio-location">
           Imports Tech / Espaço de descobertas
@@ -343,6 +346,56 @@ export function StudioExperience({
         </div>
       )}
 
+      {showBudsStory && (
+        <aside
+          className="studio-panel studio-buds-story"
+          aria-labelledby="buds-story-title"
+        >
+          <div className="studio-panel-heading">
+            <span className="studio-buds-category">Na bancada · Áudio</span>
+            <button
+              className="studio-icon-button"
+              aria-label="Fechar informações do Buds e tampa"
+              onClick={() => {
+                setEarbudsOpen(false);
+                viewport.current
+                  ?.querySelector("canvas")
+                  ?.focus({ preventScroll: true });
+              }}
+            >
+              <StudioIcon name="close" />
+            </button>
+          </div>
+          <h2 id="buds-story-title">Buds 4 Pro</h2>
+          <p className="studio-buds-lead">Um pedaço do meu dia a dia.</p>
+          <section>
+            <h3>No meu dia a dia</h3>
+            <p>
+              O Buds 4 Pro é o fone que uso no dia a dia. Aqui no estúdio, ele
+              também tem seu lugar na bancada.
+            </p>
+          </section>
+          <section>
+            <h3>No Imports Tech</h3>
+            <p>
+              Além de fazer parte da minha rotina, ele tem um episódio no canal.
+              É lá que você pode acompanhar o conteúdo sobre esse fone.
+            </p>
+            <a
+              className="studio-action"
+              href={`https://www.youtube.com/watch?v=${budsItem.videoId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <StudioIcon name="play" /> Assistir ao episódio{" "}
+              <StudioIcon name="arrow" />
+            </a>
+          </section>
+          <p className="studio-buds-hint">
+            Clique novamente no estojo para fechar a tampa e voltar à bancada.
+          </p>
+        </aside>
+      )}
       {panel && (
         <aside
           ref={panelRef}

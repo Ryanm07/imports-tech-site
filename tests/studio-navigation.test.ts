@@ -8,13 +8,13 @@ import {
   readStudioTheme,
 } from "../lib/studio-navigation";
 
-test("walking turns lights on and returning restores the presentation lighting", () => {
+test("entering human perspective preserves dark lighting and returning restores it", () => {
   const walking = studioReducer(initialStudioState, {
     type: "mode",
     mode: "walk",
   });
   assert.equal(walking.mode, "walk");
-  assert.equal(walking.theme, "light");
+  assert.equal(walking.theme, "dark");
   const inspecting = studioReducer(walking, { type: "select", id: "keyboard" });
   assert.equal(inspecting.selectedItem, "keyboard");
   const closed = studioReducer(inspecting, { type: "escape" });
@@ -31,6 +31,7 @@ test("a light presentation survives a walk with a manual lighting change", () =>
     theme: "light",
   });
   state = studioReducer(state, { type: "mode", mode: "walk" });
+  assert.equal(state.theme, "light");
   state = studioReducer(state, { type: "theme", theme: "dark" });
   state = studioReducer(state, { type: "mode", mode: "overview" });
   assert.equal(state.theme, "light");

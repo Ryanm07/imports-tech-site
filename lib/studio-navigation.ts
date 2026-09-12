@@ -37,7 +37,6 @@ export function studioReducer(
         ? {
             ...state,
             mode: "walk",
-            theme: "light",
             presentationTheme: state.theme,
             selectedItem: null,
           }

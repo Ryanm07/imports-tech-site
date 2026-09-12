@@ -17,6 +17,9 @@ A versão pública está na [Vercel](https://imports-tech-site.vercel.app/).
 [DEPLOYMENT.md](DEPLOYMENT.md) descreve os dois ambientes suportados e seus limites.
 
 - `/`: estúdio 3D; objetos definidos em `lib/studio-content.ts`.
+  O Buds 4 Pro preto usa o GLB em `public/models/`. Clique no estojo (ou use
+  a lista de objetos) para abrir e fechar somente a tampa; os fones continuam
+  encaixados. Movimento reduzido troca a posição da tampa sem animação.
 - `/sobre`: história em um percurso ilustrado, com estrada elástica que responde
   ao cursor, rolagem nativa e links para marcos antigos. No celular, a estrada
   acompanha o texto pela lateral; movimento reduzido mantém o desenho estático.

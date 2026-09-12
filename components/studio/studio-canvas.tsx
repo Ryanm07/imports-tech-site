@@ -26,6 +26,7 @@ type Props = {
   paused: boolean;
   resetKey: number;
   reducedMotion: boolean;
+  earbudsOpen: boolean;
   movement: MutableRefObject<MovementInput>;
   onSelect: (id: string) => void;
   onReady: () => void;
@@ -112,7 +113,10 @@ function CameraRig({
   resetKey,
   movement,
   reducedMotion,
-}: Omit<Props, "theme" | "onSelect" | "onReady" | "onFailure">) {
+}: Omit<
+  Props,
+  "theme" | "onSelect" | "onReady" | "onFailure" | "earbudsOpen"
+>) {
   const { camera, gl, invalidate, size } = useThree();
   const framingScale = Math.max(1, 1.2 / (size.width / size.height));
   const orbit = useRef<OrbitControls | null>(null);
@@ -360,7 +364,12 @@ export default function StudioCanvas(props: Props) {
       }
     >
       <Lighting theme={props.theme} reducedMotion={props.reducedMotion} />
-      <StudioRoom theme={props.theme} onSelect={props.onSelect} />
+      <StudioRoom
+        theme={props.theme}
+        onSelect={props.onSelect}
+        earbudsOpen={props.earbudsOpen}
+        reducedMotion={props.reducedMotion}
+      />
       <CameraRig {...props} />
       <Ready
         onReady={props.onReady}

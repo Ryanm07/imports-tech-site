@@ -7,7 +7,7 @@ O projeto mantém dois destinos de build. O estúdio, as páginas públicas, os 
 | Cloudflare / Sites (Vinext) | `npm run build`        | `npm start`                |
 | Vercel (Next.js)            | `npm run build:vercel` | `npm run start:vercel`     |
 
-`vercel.json` seleciona Next.js, instala com `npm ci` e usa o build separado. Nenhum serviço pago ou banco novo é necessário para publicar a experiência pública. A publicação não inclui modelos 3D definitivos: a geometria atual serve para validar navegação, iluminação e interação.
+`vercel.json` seleciona Next.js, instala com `npm ci` e usa o build separado. Nenhum serviço pago ou banco novo é necessário para publicar a experiência pública. O Buds 4 Pro preto já usa o modelo GLB próprio, com abertura da tampa por clique e fones encaixados; os demais equipamentos ainda usam a geometria inicial.
 
 ## Diferenças entre os ambientes
 

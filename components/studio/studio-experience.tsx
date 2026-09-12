@@ -132,6 +132,7 @@ export function StudioExperience({
   const [sceneKey, setSceneKey] = useState(0);
   const [resetKey, setResetKey] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [earbudsOpen, setEarbudsOpen] = useState(false);
   const [panel, setPanel] = useState<"objects" | "help" | "menu" | null>(null);
   const movement = useRef<MovementInput>({ forward: 0, right: 0 });
   const viewport = useRef<HTMLDivElement>(null);
@@ -196,6 +197,11 @@ export function StudioExperience({
   }, [panel]);
 
   const select = useCallback((id: string) => {
+    if (id === "earbuds") {
+      setEarbudsOpen((open) => !open);
+      setPanel(null);
+      return;
+    }
     if (STUDIO_ITEMS.some((item) => item.id === id))
       dispatch({ type: "select", id });
   }, []);
@@ -249,6 +255,7 @@ export function StudioExperience({
                 paused={Boolean(activeItem || panel)}
                 resetKey={resetKey}
                 reducedMotion={reducedMotion}
+                earbudsOpen={earbudsOpen}
                 movement={movement}
                 onReady={onReady}
                 onFailure={onFailure}
@@ -371,12 +378,23 @@ export function StudioExperience({
           {panel === "objects" && (
             <>
               <p className="studio-panel-intro">
-                Os lugares já estão definidos. Os modelos detalhados chegam na
-                próxima etapa.
+                Escolha um equipamento para conhecer sua história. No Buds 4
+                Pro, clique para abrir ou fechar a tampa.
               </p>
               <div className="studio-object-list">
                 {STUDIO_ITEMS.map((item) => (
-                  <button key={item.id} onClick={() => select(item.id)}>
+                  <button
+                    key={item.id}
+                    onClick={() => select(item.id)}
+                    aria-label={
+                      item.id === "earbuds"
+                        ? `${earbudsOpen ? "Fechar" : "Abrir"} tampa do Buds 4 Pro`
+                        : undefined
+                    }
+                    aria-pressed={
+                      item.id === "earbuds" ? earbudsOpen : undefined
+                    }
+                  >
                     <span>
                       <small>{item.category}</small>
                       {item.title}
@@ -584,6 +602,7 @@ export function StudioExperience({
           ? "Modo livre. Use W A S D para andar e arraste para olhar."
           : "Modo apresentação."}{" "}
         Iluminação {state.theme === "light" ? "clara" : "escura"}.
+        {earbudsOpen && " Tampa do Buds 4 Pro aberta."}
       </div>
       {activeItem && (
         <ObjectDetail

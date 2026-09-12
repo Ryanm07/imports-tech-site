@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
+import { BudsModel } from "./buds-model";
 
 type Vector3 = [number, number, number];
 type Theme = "dark" | "light";
@@ -364,9 +365,13 @@ function Milestone({
 export function StudioRoom({
   theme,
   onSelect,
+  earbudsOpen,
+  reducedMotion,
 }: {
   theme: Theme;
   onSelect: (id: string) => void;
+  earbudsOpen: boolean;
+  reducedMotion: boolean;
 }) {
   const light = theme === "light";
   const wall = light ? "#c6ccc3" : "#57635b";
@@ -598,22 +603,11 @@ export function StudioRoom({
 
       <InteractiveObject
         id="earbuds"
-        at={[-1, 0.83, -1.22]}
+        at={[-1, 0.813, -1.22]}
         rotation={[0, 0.22, 0]}
         onSelect={onSelect}
       >
-        <Box
-          at={[0, 0.034, 0]}
-          size={[0.15, 0.064, 0.095]}
-          color="#c7cecb"
-          roughness={0.3}
-        />
-        <Box
-          at={[0, 0.059, 0.002]}
-          size={[0.142, 0.012, 0.088]}
-          color="#e0e2d6"
-          roughness={0.3}
-        />
+        <BudsModel open={earbudsOpen} reducedMotion={reducedMotion} />
       </InteractiveObject>
 
       <InteractiveObject

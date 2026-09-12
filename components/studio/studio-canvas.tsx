@@ -13,6 +13,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { StudioRoom } from "./studio-room";
+import { StudioInteractionContext } from "./interactive-object";
 import {
   walkStep,
   type StudioMode,
@@ -364,12 +365,16 @@ export default function StudioCanvas(props: Props) {
       }
     >
       <Lighting theme={props.theme} reducedMotion={props.reducedMotion} />
-      <StudioRoom
-        theme={props.theme}
-        onSelect={props.onSelect}
-        earbudsOpen={props.earbudsOpen}
-        reducedMotion={props.reducedMotion}
-      />
+      <StudioInteractionContext.Provider
+        value={{ enabled: !props.paused, reducedMotion: props.reducedMotion }}
+      >
+        <StudioRoom
+          theme={props.theme}
+          onSelect={props.onSelect}
+          earbudsOpen={props.earbudsOpen}
+          reducedMotion={props.reducedMotion}
+        />
+      </StudioInteractionContext.Provider>
       <CameraRig {...props} />
       <Ready
         onReady={props.onReady}

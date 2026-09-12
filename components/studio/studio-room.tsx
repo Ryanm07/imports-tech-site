@@ -1,8 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import type { ThreeEvent } from "@react-three/fiber";
 import { BudsModel } from "./buds-model";
+import { InteractiveObject } from "./interactive-object";
 
 type Vector3 = [number, number, number];
 type Theme = "dark" | "light";
@@ -62,37 +61,6 @@ function Cylinder({
       <cylinderGeometry args={[topRadius, radius, height, 12]} />
       <meshStandardMaterial color={color} roughness={0.68} />
     </mesh>
-  );
-}
-
-function InteractiveObject({
-  id,
-  at,
-  rotation,
-  onSelect,
-  children,
-}: {
-  id: string;
-  at: Vector3;
-  rotation?: Vector3;
-  onSelect: (id: string) => void;
-  children: ReactNode;
-}) {
-  function select(event: ThreeEvent<MouseEvent>) {
-    event.stopPropagation();
-    if (event.delta >= 6) return;
-    onSelect(id);
-  }
-
-  return (
-    <group
-      name={`studio-object-${id}`}
-      position={at}
-      rotation={rotation}
-      onClick={select}
-    >
-      {children}
-    </group>
   );
 }
 
@@ -214,7 +182,7 @@ function Chair({ onSelect }: { onSelect: (id: string) => void }) {
 function RecordingKit({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <InteractiveObject
-      id="recording"
+      id="recording-rig"
       at={[2.15, 0, -1.4]}
       rotation={[0, -0.45, 0]}
       onSelect={onSelect}

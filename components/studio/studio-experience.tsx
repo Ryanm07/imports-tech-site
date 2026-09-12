@@ -22,11 +22,17 @@ import { STUDIO_ITEMS, type StudioItem } from "@/lib/studio-content";
 import { StudioIcon } from "./studio-icons";
 import { StudioPageScrollbar } from "./studio-page-scrollbar";
 import type { MovementInput } from "./studio-canvas";
-import { selectStudioQuality, type StudioQuality } from "@/lib/studio-quality";
+import {
+  QUALITY_ORDER,
+  canTryStudioUltra,
+  selectStudioQuality,
+  type StudioQuality,
+} from "@/lib/studio-quality";
 
 const StudioCanvas = lazy(() => import("./studio-canvas"));
 const THEME_KEY = "imports-tech:studio-theme:v1";
 const QUALITY_LABELS = {
+  ultra: "Cinemática",
   high: "Alta",
   medium: "Equilibrada",
   low: "Leve",
@@ -144,14 +150,32 @@ export function StudioExperience({
   const [qualityPreference, setQualityPreference] = useState<
     StudioQuality | "auto"
   >("auto");
-  const qualityCeiling = useRef<StudioQuality>("high");
+  const qualityCeiling = useRef<StudioQuality>("ultra");
+  const ultraApproved = useRef(false);
+  const ultraCandidateRef = useRef(false);
+  const [ultraEligible, setUltraEligible] = useState(false);
+  const [ultraCandidate, setUltraCandidate] = useState(false);
   const onDegrade = useCallback((next: StudioQuality) => {
-    const order: StudioQuality[] = ["high", "medium", "low", "basic"];
+    const order = QUALITY_ORDER;
+    ultraCandidateRef.current = false;
+    setUltraCandidate(false);
     if (order.indexOf(next) > order.indexOf(qualityCeiling.current))
       qualityCeiling.current = next;
     setQuality((current) =>
       order.indexOf(next) > order.indexOf(current) ? next : current,
     );
+  }, []);
+  const onUltraAssessed = useCallback((qualified: boolean) => {
+    if (!ultraCandidateRef.current) return;
+    ultraCandidateRef.current = false;
+    setUltraCandidate(false);
+    if (qualityCeiling.current !== "ultra") return;
+    if (qualified) {
+      ultraApproved.current = true;
+      setQuality("ultra");
+    } else {
+      qualityCeiling.current = "high";
+    }
   }, []);
   const [panel, setPanel] = useState<"objects" | "help" | "menu" | null>(null);
   const movement = useRef<MovementInput>({ forward: 0, right: 0 });
@@ -198,30 +222,57 @@ export function StudioExperience({
   useEffect(() => {
     const device = navigator as Navigator & {
       deviceMemory?: number;
-      connection?: EventTarget & { saveData?: boolean; effectiveType?: string };
+      connection?: EventTarget & {
+        saveData?: boolean;
+        effectiveType?: string;
+        downlink?: number;
+      };
     };
-    qualityCeiling.current = "high";
+    const pointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    qualityCeiling.current = "ultra";
+    ultraApproved.current = false;
     const sync = () => {
-      const requested =
-        qualityPreference === "auto"
-          ? selectStudioQuality({
-              cores: device.hardwareConcurrency,
-              memoryGB: device.deviceMemory,
-              saveData: device.connection?.saveData,
-              effectiveType: device.connection?.effectiveType,
-            })
-          : qualityPreference;
-      const order: StudioQuality[] = ["high", "medium", "low", "basic"];
-      setQuality(
+      const hints = {
+        cores: device.hardwareConcurrency,
+        memoryGB: device.deviceMemory,
+        saveData: device.connection?.saveData,
+        effectiveType: device.connection?.effectiveType,
+        downlinkMbps: device.connection?.downlink,
+        finePointer: pointer.matches,
+      };
+      const eligible = canTryStudioUltra(hints) && !reducedMotion;
+      setUltraEligible(eligible);
+      const auto =
+        qualityPreference === "auto" || qualityPreference === "ultra";
+      const requested = auto
+        ? eligible && ultraApproved.current
+          ? "ultra"
+          : selectStudioQuality(hints)
+        : qualityPreference;
+      const order = QUALITY_ORDER;
+      const limited =
         order.indexOf(requested) > order.indexOf(qualityCeiling.current)
           ? requested
-          : qualityCeiling.current,
-      );
+          : qualityCeiling.current;
+      setQuality(limited);
+      const candidate =
+        auto &&
+        eligible &&
+        !ultraApproved.current &&
+        qualityCeiling.current === "ultra" &&
+        limited === "high";
+      ultraCandidateRef.current = candidate;
+      setUltraCandidate(candidate);
     };
     sync();
     device.connection?.addEventListener("change", sync);
-    return () => device.connection?.removeEventListener("change", sync);
-  }, [qualityPreference]);
+    pointer.addEventListener("change", sync);
+    return () => {
+      ultraCandidateRef.current = false;
+      device.connection?.removeEventListener("change", sync);
+      pointer.removeEventListener("change", sync);
+    };
+  }, [qualityPreference, reducedMotion]);
 
   useEffect(() => {
     if (!mounted || ready || failed) return;
@@ -293,6 +344,8 @@ export function StudioExperience({
       data-studio-mode={state.mode}
       data-scene-ready={ready && !failed}
       data-studio-quality={quality}
+      data-ultra-eligible={ultraEligible}
+      data-ultra-assessing={ultraCandidate}
     >
       <a className="studio-skip" href="#studio-tools">
         Pular para os controles
@@ -314,6 +367,8 @@ export function StudioExperience({
                 onSelect={select}
                 quality={quality}
                 onDegrade={onDegrade}
+                ultraCandidate={ultraCandidate}
+                onUltraAssessed={onUltraAssessed}
               />
             </Suspense>
           </SceneBoundary>
@@ -545,6 +600,9 @@ export function StudioExperience({
                   }
                 >
                   <option value="auto">Automática</option>
+                  <option value="ultra" disabled={!ultraEligible}>
+                    Cinemática · avaliar desempenho
+                  </option>
                   <option value="high">Alta</option>
                   <option value="medium">Equilibrada</option>
                   <option value="low">Leve · cenário sem movimento</option>
@@ -553,6 +611,11 @@ export function StudioExperience({
                 <p>
                   Em uso: {QUALITY_LABELS[quality]}. O site reduz os efeitos se
                   precisar manter a navegação fluida.
+                </p>
+                <p>
+                  {ultraCandidate
+                    ? "Avaliando a fluidez para liberar o cenário cinematográfico."
+                    : "O modo cinematográfico acrescenta plasma detalhado e fragmentos do estúdio. Ele só é liberado em computadores compatíveis, após avaliar a fluidez."}
                 </p>
               </section>
               <section>

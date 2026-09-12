@@ -8,12 +8,19 @@ objetos clicáveis, lista acessível e barra lateral para alcançar os controles
 telas baixas. A escolha de iluminação é salva no dispositivo.
 
 O espaço ao redor tem um buraco negro no tema escuro e um buraco branco no claro,
-com plasma dourado e movimento suave em direções opostas. O fundo é procedural:
-um único passe no WebGL existente, sem texturas, vídeos ou modelos adicionais.
+com plasma dourado e movimento suave em direções opostas. O centro fica em uma
+posição fixa fora da parede traseira (`lib/cosmic-space.ts`). Raios reconstruídos
+com a câmera e sua projeção dão perspectiva ao horizonte e ao disco: girar,
+aproximar ou caminhar muda o enquadramento, sem prender o buraco a um canto da tela.
+O fundo é procedural, em um único passe no WebGL existente, sem texturas ou vídeos.
 
 A qualidade automática considera os sinais de memória, processador e conexão
 disponíveis no navegador e reduz os efeitos se os frames ficarem lentos:
 
+- **Cinemática:** plasma turbulento, distorção artística do céu e 72 fragmentos
+  das bordas externas do estúdio, até 45 FPS e DPR 1,75. A gravidade suavizada
+  atrai as peças no escuro; uma mola amortecida as devolve às posições originais
+  no claro. Uma única malha instanciada é carregada sob demanda nesse nível.
 - **Alta:** três camadas de estrelas, movimento até 30 FPS, DPR até 1,6.
 - **Equilibrada:** duas camadas, movimento até 24 FPS, DPR até 1,25.
 - **Leve:** cenário estático, uma camada de estrelas, sem sombras, DPR 1.
@@ -25,6 +32,17 @@ partida é equilibrado. Não há aumento automático após uma queda de desempen
 O painel de ajuda permite escolher outro nível. A animação pausa com a aba oculta
 ou os painéis abertos e respeita a preferência de movimento reduzido do sistema.
 Esses limites regulam o cenário; não são promessa de FPS em qualquer aparelho.
+
+O modo cinematográfico exige sinais de desktop com ponteiro preciso, pelo menos
+16 processadores lógicos, memória reportada de 8 GB, conexão classificada como
+4G com estimativa de pelo menos 8 Mbps, sem economia de dados ou movimento reduzido.
+Essas APIs fornecem estimativas e podem limitar a RAM reportada a 8 GB; o site não
+conhece a memória total nem identifica com certeza uma GPU potente. Quando faltam
+sinais, a cinemática permanece indisponível. Um candidato começa no nível alto,
+aquece por 45 frames e precisa sustentar uma janela de 90 frames próxima a 60 FPS
+antes da promoção. Quedas posteriores rebaixam a qualidade sem oscilar entre níveis.
+O efeito usa física simplificada para decoração e uma aproximação visual de lente,
+sem simulação relativística ou colisões com os equipamentos interativos.
 
 O Buds usa o GLB próprio; os demais modelos continuam provisórios. Modelagem fiel,
 materiais definitivos, clipes e a fotografia dos mil inscritos ficam para outra etapa.

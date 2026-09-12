@@ -1,16 +1,27 @@
-export type StudioQuality = "high" | "medium" | "low" | "basic";
+export const QUALITY_ORDER = [
+  "ultra",
+  "high",
+  "medium",
+  "low",
+  "basic",
+] as const;
+
+export type StudioQuality = (typeof QUALITY_ORDER)[number];
 
 export type StudioQualityHints = {
   cores?: number;
   memoryGB?: number;
   saveData?: boolean;
   effectiveType?: string;
+  finePointer?: boolean;
+  downlinkMbps?: number;
 };
 
 export const QUALITY_SETTINGS: Record<
   StudioQuality,
   { dpr: number; fps: number; stars: number; shadows: boolean }
 > = {
+  ultra: { dpr: 1.75, fps: 45, stars: 4, shadows: true },
   high: { dpr: 1.6, fps: 30, stars: 3, shadows: true },
   medium: { dpr: 1.25, fps: 24, stars: 2, shadows: true },
   low: { dpr: 1, fps: 0, stars: 1, shadows: false },
@@ -59,12 +70,54 @@ export function selectStudioQuality(hints: StudioQualityHints): StudioQuality {
 
 export function lowerStudioQuality(current: StudioQuality): StudioQuality {
   const next: Record<StudioQuality, StudioQuality> = {
+    ultra: "high",
     high: "medium",
     medium: "low",
     low: "basic",
     basic: "basic",
   };
   return next[current];
+}
+
+export function canTryStudioUltra(hints: StudioQualityHints): boolean {
+  // deviceMemory is commonly capped at 8 GB, so frame timing must provide
+  // the additional evidence before a desktop candidate can use ultra.
+  return (
+    validPositiveNumber(hints.cores) &&
+    Number.isInteger(hints.cores) &&
+    hints.cores >= 16 &&
+    validPositiveNumber(hints.memoryGB) &&
+    hints.memoryGB >= 8 &&
+    hints.finePointer === true &&
+    hints.saveData !== true &&
+    hints.effectiveType === "4g" &&
+    validPositiveNumber(hints.downlinkMbps) &&
+    hints.downlinkMbps >= 8
+  );
+}
+
+export function qualifiesForStudioUltra(
+  frameIntervalsMs: readonly number[],
+): boolean {
+  // Promotion needs an uninterrupted healthy sample. A stall or invalid frame
+  // must reject the trial, rather than disappear from the percentile window.
+  if (
+    frameIntervalsMs.length < 90 ||
+    frameIntervalsMs.some(
+      (interval) => !validPositiveNumber(interval) || interval > 100,
+    )
+  ) {
+    return false;
+  }
+
+  const samples = [...frameIntervalsMs].sort((a, b) => a - b);
+  const midpoint = Math.floor(samples.length / 2);
+  const median =
+    samples.length % 2 === 0
+      ? (samples[midpoint - 1] + samples[midpoint]) / 2
+      : samples[midpoint];
+  const p90 = samples[Math.ceil(samples.length * 0.9) - 1];
+  return median <= 18.5 && p90 <= 23;
 }
 
 export function assessFrameWindow(

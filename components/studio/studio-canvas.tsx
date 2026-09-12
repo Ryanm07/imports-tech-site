@@ -2,7 +2,15 @@
 /* eslint-disable react-hooks/immutability -- Three.js cameras, lights and the input ref are mutable engine objects; updates happen in effects/useFrame, never during React render. */
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useRef, type MutableRefObject } from "react";
+import {
+  Component,
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  type MutableRefObject,
+  type ReactNode,
+} from "react";
 import {
   Color,
   MathUtils,
@@ -22,6 +30,24 @@ import {
   type StudioTheme,
 } from "@/lib/studio-navigation";
 
+const CosmicDebris = lazy(() => import("./cosmic-debris"));
+
+class CosmicEffectsBoundary extends Component<
+  { children: ReactNode; onFailure: (quality: StudioQuality) => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFailure("high");
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 export type MovementInput = { forward: number; right: number };
 type Props = {
   theme: StudioTheme;
@@ -32,6 +58,8 @@ type Props = {
   earbudsOpen: boolean;
   quality: StudioQuality;
   onDegrade: (quality: StudioQuality) => void;
+  ultraCandidate: boolean;
+  onUltraAssessed: (qualified: boolean) => void;
   movement: MutableRefObject<MovementInput>;
   onSelect: (id: string) => void;
   onReady: () => void;
@@ -127,6 +155,8 @@ function CameraRig({
   | "earbudsOpen"
   | "quality"
   | "onDegrade"
+  | "ultraCandidate"
+  | "onUltraAssessed"
 >) {
   const { camera, gl, invalidate, size } = useThree();
   const framingScale = Math.max(1, 1.2 / (size.width / size.height));
@@ -326,7 +356,7 @@ function CameraRig({
     camera.position.z = next.z;
     gl.domElement.dataset.cameraPosition = `${next.x.toFixed(3)},${camera.position.y.toFixed(3)},${next.z.toFixed(3)}`;
     invalidate();
-  });
+  }, -2);
   return null;
 }
 
@@ -378,12 +408,24 @@ export default function StudioCanvas(props: Props) {
       <Lighting theme={props.theme} reducedMotion={props.reducedMotion} />
       <CosmicBackground
         theme={props.theme}
-        mode={props.mode}
         quality={props.quality}
         reducedMotion={props.reducedMotion}
         paused={props.paused}
         onDegrade={props.onDegrade}
+        ultraCandidate={props.ultraCandidate}
+        onUltraAssessed={props.onUltraAssessed}
       />
+      {props.quality === "ultra" && !props.reducedMotion && (
+        <CosmicEffectsBoundary onFailure={props.onDegrade}>
+          <Suspense fallback={null}>
+            <CosmicDebris
+              theme={props.theme}
+              paused={props.paused}
+              reducedMotion={props.reducedMotion}
+            />
+          </Suspense>
+        </CosmicEffectsBoundary>
+      )}
       <StudioInteractionContext.Provider
         value={{ enabled: !props.paused, reducedMotion: props.reducedMotion }}
       >

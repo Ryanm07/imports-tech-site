@@ -80,6 +80,7 @@ type Props = {
   resetKey: number;
   reducedMotion: boolean;
   earbudsOpen: boolean;
+  laptopOpen: boolean;
   quality: StudioQuality;
   onDegrade: (quality: StudioQuality) => void;
   ultraCandidate: boolean;
@@ -465,13 +466,14 @@ export default function StudioCanvas(props: Props) {
             reducedMotion: props.reducedMotion,
             walk: props.mode === "walk",
             economy: props.quality === "basic" || props.quality === "low",
-            boundsVersion: `${props.quality}:${props.earbudsOpen}`,
+            boundsVersion: `${props.quality}:${props.earbudsOpen}:${props.laptopOpen}`,
           }}
         >
           <StudioRoom
             theme={props.theme}
             onSelect={props.onSelect}
             earbudsOpen={props.earbudsOpen}
+            laptopOpen={props.laptopOpen}
             reducedMotion={props.reducedMotion}
             quality={props.quality}
           />

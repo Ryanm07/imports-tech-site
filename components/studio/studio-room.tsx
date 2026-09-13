@@ -1,6 +1,7 @@
 "use client";
 
 import { BudsModel } from "./buds-model";
+import { NitroModel } from "./nitro-model";
 import { InteractiveObject } from "./interactive-object";
 import type { StudioQuality } from "@/lib/studio-quality";
 
@@ -344,12 +345,14 @@ export function StudioRoom({
   theme,
   onSelect,
   earbudsOpen,
+  laptopOpen,
   reducedMotion,
   quality,
 }: {
   theme: Theme;
   onSelect: (id: string) => void;
   earbudsOpen: boolean;
+  laptopOpen: boolean;
   reducedMotion: boolean;
   quality: StudioQuality;
 }) {
@@ -552,33 +555,15 @@ export function StudioRoom({
 
       <InteractiveObject
         id="laptop"
-        at={[1.05, 0.83, -1.45]}
+        at={[1.05, 0.813, -1.45]}
         rotation={[0, -0.2, 0]}
         onSelect={onSelect}
       >
-        <Box
-          at={[0, 0.013, 0]}
-          size={[0.62, 0.035, 0.43]}
-          color="#343638"
-          metalness={0.4}
+        <NitroModel
+          open={laptopOpen}
+          reducedMotion={reducedMotion}
+          quality={quality}
         />
-        <Box at={[0, 0.034, -0.06]} size={[0.5, 0.008, 0.14]} color="#9a504e" />
-        <Box
-          at={[0, 0.034, 0.105]}
-          size={[0.16, 0.006, 0.085]}
-          color="#515557"
-        />
-        <group position={[0, 0.22, -0.234]} rotation={[-0.18, 0, 0]}>
-          <Box at={[0, 0, 0]} size={[0.62, 0.39, 0.026]} color="#783e3d" />
-          <Box
-            at={[0, 0.007, 0.017]}
-            size={[0.573, 0.342, 0.004]}
-            color="#423f47"
-            emissive="#695355"
-            intensity={light ? 0.2 : 0.5}
-            roughness={0.3}
-          />
-        </group>
       </InteractiveObject>
 
       <InteractiveObject

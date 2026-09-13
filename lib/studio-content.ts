@@ -50,8 +50,9 @@ export const STUDIO_ITEMS: StudioItem[] = [
     description: "O notebook preto e vermelho que marcou a trajetória.",
     details: [
       "O episódio passou de 200 mil visualizações. Foi um momento em que comecei a acreditar mais no caminho do canal.",
+      "Meu modelo é o AN515-54: Intel Core i5, GeForce GTX 1650, 8 GB de RAM, SSD de 128 GB e HD de 1 TB.",
     ],
-    // The exact model revision still needs to be checked before final modeling.
+    // Revision and configuration confirmed in the linked video's description.
     videoId: "Y1nStLptXY0",
   },
   {

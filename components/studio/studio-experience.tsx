@@ -139,6 +139,9 @@ export function StudioExperience({
   const [resetKey, setResetKey] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [earbudsOpen, setEarbudsOpen] = useState(false);
+  const [laptopOpen, setLaptopOpen] = useState(false);
+  const focusLidStory = useRef(false);
+  const lidStoryClose = useRef<HTMLButtonElement>(null);
   const {
     entry,
     quality,
@@ -170,7 +173,9 @@ export function StudioExperience({
     (item) => item.id === state.selectedItem,
   );
   const budsItem = STUDIO_ITEMS.find((item) => item.id === "earbuds")!;
+  const laptopItem = STUDIO_ITEMS.find((item) => item.id === "laptop")!;
   const showBudsStory = earbudsOpen && !panel && !activeItem;
+  const showLaptopStory = laptopOpen && !panel && !activeItem;
   const onReady = useCallback(() => setReady(true), []);
   const onFailure = useCallback(() => {
     setFailed(true);
@@ -219,12 +224,24 @@ export function StudioExperience({
       if (panel) {
         setPanel(null);
         panelTrigger.current?.focus();
-      } else if (earbudsOpen) setEarbudsOpen(false);
-      else dispatch({ type: "escape" });
+      } else if (earbudsOpen || laptopOpen) {
+        setEarbudsOpen(false);
+        setLaptopOpen(false);
+        (
+          viewport.current?.querySelector("canvas") ?? panelTrigger.current
+        )?.focus({ preventScroll: true });
+      } else dispatch({ type: "escape" });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panel, activeItem, earbudsOpen, heldId]);
+  }, [panel, activeItem, earbudsOpen, laptopOpen, heldId]);
+
+  useEffect(() => {
+    if (focusLidStory.current && (showBudsStory || showLaptopStory)) {
+      focusLidStory.current = false;
+      lidStoryClose.current?.focus({ preventScroll: true });
+    }
+  }, [showBudsStory, showLaptopStory]);
 
   useEffect(() => {
     if (panel)
@@ -234,6 +251,13 @@ export function StudioExperience({
   const select = useCallback((id: string) => {
     if (id === "earbuds") {
       setEarbudsOpen((open) => !open);
+      setLaptopOpen(false);
+      setPanel(null);
+      return;
+    }
+    if (id === "laptop") {
+      setLaptopOpen((open) => !open);
+      setEarbudsOpen(false);
       setPanel(null);
       return;
     }
@@ -253,6 +277,7 @@ export function StudioExperience({
     if (!objectActions.current?.pick(id)) return;
     setPanel(null);
     setEarbudsOpen(false);
+    setLaptopOpen(false);
     dispatch({ type: "select", id: null });
     window.requestAnimationFrame(() =>
       viewport.current?.querySelector("canvas")?.focus({ preventScroll: true }),
@@ -263,12 +288,14 @@ export function StudioExperience({
     if (id) {
       setPanel(null);
       setEarbudsOpen(false);
+      setLaptopOpen(false);
       dispatch({ type: "select", id: null });
     }
   }, []);
   function restoreStudio() {
     objectActions.current?.restore();
     setEarbudsOpen(false);
+    setLaptopOpen(false);
     setResetKey((value) => value + 1);
   }
   function changeMode() {
@@ -319,6 +346,7 @@ export function StudioExperience({
                 resetKey={resetKey}
                 reducedMotion={reducedMotion}
                 earbudsOpen={earbudsOpen}
+                laptopOpen={laptopOpen}
                 movement={movement}
                 onReady={onReady}
                 onFailure={onFailure}
@@ -392,7 +420,8 @@ export function StudioExperience({
         !activate3D &&
         !panel &&
         !activeItem &&
-        !showBudsStory && (
+        !showBudsStory &&
+        !showLaptopStory && (
           <section
             className="studio-static-entry"
             aria-label="Explorar com economia"
@@ -430,7 +459,12 @@ export function StudioExperience({
 
       <div
         className="studio-introduction"
-        aria-hidden={state.mode === "walk" || Boolean(panel) || showBudsStory}
+        aria-hidden={
+          state.mode === "walk" ||
+          Boolean(panel) ||
+          showBudsStory ||
+          showLaptopStory
+        }
       >
         <span className="studio-location">
           Imports Tech / Espaço de descobertas
@@ -466,11 +500,13 @@ export function StudioExperience({
             <button
               className="studio-icon-button"
               aria-label="Fechar informações do Buds e tampa"
+              ref={lidStoryClose}
               onClick={() => {
                 setEarbudsOpen(false);
-                viewport.current
-                  ?.querySelector("canvas")
-                  ?.focus({ preventScroll: true });
+                (
+                  viewport.current?.querySelector("canvas") ??
+                  panelTrigger.current
+                )?.focus({ preventScroll: true });
               }}
             >
               <StudioIcon name="close" />
@@ -514,6 +550,60 @@ export function StudioExperience({
           </p>
         </aside>
       )}
+      {showLaptopStory && (
+        <aside
+          className="studio-panel studio-buds-story"
+          aria-labelledby="laptop-story-title"
+        >
+          <div className="studio-panel-heading">
+            <span className="studio-buds-category">{laptopItem.category}</span>
+            <button
+              className="studio-icon-button"
+              aria-label="Fechar informações e tampa do notebook"
+              ref={lidStoryClose}
+              onClick={() => {
+                setLaptopOpen(false);
+                (
+                  viewport.current?.querySelector("canvas") ??
+                  panelTrigger.current
+                )?.focus({ preventScroll: true });
+              }}
+            >
+              <StudioIcon name="close" />
+            </button>
+          </div>
+          <h2 id="laptop-story-title">{laptopItem.title}</h2>
+          <p className="studio-buds-lead">{laptopItem.description}</p>
+          <section>
+            <h3>No Imports Tech</h3>
+            {laptopItem.details.map((detail) => (
+              <p key={detail}>{detail}</p>
+            ))}
+            {laptopItem.videoId && (
+              <a
+                className="studio-action"
+                href={`https://www.youtube.com/watch?v=${laptopItem.videoId}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <StudioIcon name="play" /> Assistir ao episódio{" "}
+                <StudioIcon name="arrow" />
+              </a>
+            )}
+          </section>
+          {state.mode === "walk" && interactionReady && (
+            <button
+              className="studio-action"
+              onClick={() => pickObject("laptop")}
+            >
+              Pegar notebook <StudioIcon name="person" />
+            </button>
+          )}
+          <p className="studio-buds-hint">
+            Clique novamente no notebook para fechar a tampa e voltar à bancada.
+          </p>
+        </aside>
+      )}
       {panel && (
         <aside
           ref={panelRef}
@@ -553,21 +643,32 @@ export function StudioExperience({
           {panel === "objects" && (
             <>
               <p className="studio-panel-intro">
-                Escolha um equipamento para conhecer sua história. No Buds 4
-                Pro, clique para abrir ou fechar a tampa.
+                Escolha um equipamento para conhecer sua história. No Buds 4 Pro
+                e no Acer Nitro 5, clique para abrir ou fechar a tampa.
               </p>
               <div className="studio-object-list">
                 {STUDIO_ITEMS.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => select(item.id)}
+                    onClick={() => {
+                      focusLidStory.current =
+                        (item.id === "laptop" && !laptopOpen) ||
+                        (item.id === "earbuds" && !earbudsOpen);
+                      select(item.id);
+                    }}
                     aria-label={
                       item.id === "earbuds"
                         ? `${earbudsOpen ? "Fechar" : "Abrir"} tampa do Buds 4 Pro`
-                        : undefined
+                        : item.id === "laptop"
+                          ? `${laptopOpen ? "Fechar" : "Abrir"} tampa do Acer Nitro 5`
+                          : undefined
                     }
                     aria-pressed={
-                      item.id === "earbuds" ? earbudsOpen : undefined
+                      item.id === "earbuds"
+                        ? earbudsOpen
+                        : item.id === "laptop"
+                          ? laptopOpen
+                          : undefined
                     }
                   >
                     <span>
@@ -650,89 +751,97 @@ export function StudioExperience({
         </aside>
       )}
 
-      {state.mode === "walk" && !panel && !activeItem && (
-        <div
-          className="studio-object-actions"
-          aria-label="Interação com objetos"
-        >
-          {heldId ? (
-            <>
+      {state.mode === "walk" &&
+        !panel &&
+        !activeItem &&
+        !showBudsStory &&
+        !showLaptopStory && (
+          <div
+            className="studio-object-actions"
+            aria-label="Interação com objetos"
+          >
+            {heldId ? (
+              <>
+                <button
+                  className="studio-action"
+                  onClick={() => objectActions.current?.throw()}
+                >
+                  Jogar <StudioIcon name="arrow" />
+                </button>
+                <button
+                  className="studio-action"
+                  onClick={() => objectActions.current?.drop()}
+                >
+                  Soltar
+                </button>
+              </>
+            ) : (
+              <p>
+                {interactionReady
+                  ? "Dois cliques para pegar · Toque para ver opções"
+                  : interactionFailed
+                    ? "As interações não carregaram. Você ainda pode explorar os objetos."
+                    : "Preparando interações…"}
+              </p>
+            )}
+          </div>
+        )}
+      {state.mode === "walk" &&
+        !panel &&
+        !activeItem &&
+        !showBudsStory &&
+        !showLaptopStory && (
+          <div className="studio-touch-pad" aria-label="Controles de movimento">
+            {[
+              {
+                label: "Mover para frente",
+                forward: 1,
+                right: 0,
+                position: "up",
+              },
+              {
+                label: "Mover para esquerda",
+                forward: 0,
+                right: -1,
+                position: "left",
+              },
+              {
+                label: "Mover para trás",
+                forward: -1,
+                right: 0,
+                position: "down",
+              },
+              {
+                label: "Mover para direita",
+                forward: 0,
+                right: 1,
+                position: "right",
+              },
+            ].map((direction) => (
               <button
-                className="studio-action"
-                onClick={() => objectActions.current?.throw()}
-              >
-                Jogar <StudioIcon name="arrow" />
-              </button>
-              <button
-                className="studio-action"
-                onClick={() => objectActions.current?.drop()}
-              >
-                Soltar
-              </button>
-            </>
-          ) : (
-            <p>
-              {interactionReady
-                ? "Dois cliques para pegar · Toque para ver opções"
-                : interactionFailed
-                  ? "As interações não carregaram. Você ainda pode explorar os objetos."
-                  : "Preparando interações…"}
-            </p>
-          )}
-        </div>
-      )}
-      {state.mode === "walk" && !panel && !activeItem && (
-        <div className="studio-touch-pad" aria-label="Controles de movimento">
-          {[
-            {
-              label: "Mover para frente",
-              forward: 1,
-              right: 0,
-              position: "up",
-            },
-            {
-              label: "Mover para esquerda",
-              forward: 0,
-              right: -1,
-              position: "left",
-            },
-            {
-              label: "Mover para trás",
-              forward: -1,
-              right: 0,
-              position: "down",
-            },
-            {
-              label: "Mover para direita",
-              forward: 0,
-              right: 1,
-              position: "right",
-            },
-          ].map((direction) => (
-            <button
-              key={direction.position}
-              className={`studio-direction studio-direction-${direction.position}`}
-              aria-label={direction.label}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                event.currentTarget.setPointerCapture(event.pointerId);
-                move(direction.forward, direction.right);
-              }}
-              onPointerUp={() => move(0, 0)}
-              onPointerCancel={() => move(0, 0)}
-              onLostPointerCapture={() => move(0, 0)}
-              onKeyDown={(event) => {
-                if (event.key === " " || event.key === "Enter")
+                key={direction.position}
+                className={`studio-direction studio-direction-${direction.position}`}
+                aria-label={direction.label}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.currentTarget.setPointerCapture(event.pointerId);
                   move(direction.forward, direction.right);
-              }}
-              onKeyUp={() => move(0, 0)}
-              onBlur={() => move(0, 0)}
-            >
-              <StudioIcon name="arrow" />
-            </button>
-          ))}
-        </div>
-      )}
+                }}
+                onPointerUp={() => move(0, 0)}
+                onPointerCancel={() => move(0, 0)}
+                onLostPointerCapture={() => move(0, 0)}
+                onKeyDown={(event) => {
+                  if (event.key === " " || event.key === "Enter")
+                    move(direction.forward, direction.right);
+                }}
+                onKeyUp={() => move(0, 0)}
+                onBlur={() => move(0, 0)}
+              >
+                <StudioIcon name="arrow" />
+              </button>
+            ))}
+          </div>
+        )}
 
       <footer className="studio-bottom">
         <div className="studio-footer-note">
@@ -824,6 +933,7 @@ export function StudioExperience({
           : "Modo apresentação."}{" "}
         Iluminação {state.theme === "light" ? "clara" : "escura"}.
         {earbudsOpen && " Tampa do Buds 4 Pro aberta."}
+        {laptopOpen && " Tampa do Acer Nitro 5 aberta."}
       </div>
       {activeItem && (
         <ObjectDetail

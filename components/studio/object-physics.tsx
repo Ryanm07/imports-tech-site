@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Box3, PerspectiveCamera, Vector3, type Group } from "three";
 import { createStudioPhysics } from "@/lib/studio-physics";
 import { createStudioGestures } from "@/lib/studio-gestures";
+import { NITRO_STUDIO_SCALE } from "@/lib/nitro-lid";
 import { ObjectTrails } from "./object-trails";
 import type { StudioMode, StudioTheme } from "@/lib/studio-navigation";
 import type { StudioQuality } from "@/lib/studio-quality";
@@ -73,6 +74,13 @@ export default function ObjectPhysics(props: Props) {
           scratch.center.set(0, 0.034, 0);
           group.localToWorld(scratch.center);
           scratch.target.set(0.17, 0.068, 0.15);
+        } else if (id === "laptop") {
+          // The base supports the notebook whether its screen is open or closed.
+          scratch.center.set(0, 0.011 * NITRO_STUDIO_SCALE, 0);
+          group.localToWorld(scratch.center);
+          scratch.target
+            .set(0.3634, 0.022, 0.255)
+            .multiplyScalar(NITRO_STUDIO_SCALE);
         }
         bindings.set(id, {
           group,

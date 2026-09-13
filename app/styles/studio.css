@@ -62,6 +62,119 @@
   outline: 2px solid var(--studio-accent);
   outline-offset: 3px;
 }
+.studio-quality-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-surface);
+  color: var(--studio-text);
+  font-size: 12px;
+}
+.studio-quality-button svg {
+  width: 18px;
+  height: 18px;
+}
+.studio-object-actions {
+  position: absolute;
+  right: 30px;
+  bottom: 115px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  max-width: 300px;
+}
+.studio-object-actions p {
+  font-size: 11px;
+  color: var(--studio-muted);
+  background: var(--studio-surface);
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--studio-line);
+}
+.studio-object-actions .studio-action {
+  margin: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: var(--studio-surface);
+  color: var(--studio-text);
+  border: 1px solid var(--studio-line);
+}
+.studio-static-entry {
+  position: absolute;
+  top: 30%;
+  right: 10%;
+  width: min(380px, 42%);
+  padding: 28px;
+  border: 1px solid var(--studio-line);
+  border-radius: 16px;
+  background: var(--studio-surface);
+}
+.studio-static-entry > svg {
+  color: var(--studio-accent);
+}
+.studio-static-entry h2 {
+  font-size: 24px;
+  margin: 18px 0 10px;
+}
+.studio-static-entry p {
+  color: var(--studio-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.studio-static-entry .studio-action {
+  width: 100%;
+  margin-top: 14px;
+}
+.studio-static-entry .studio-start-3d {
+  background: transparent;
+  color: var(--studio-accent);
+  border: 1px solid var(--studio-line);
+}
+@media (max-width: 700px) {
+  .studio-static-entry {
+    top: auto;
+    bottom: 135px;
+    left: 20px;
+    right: 20px;
+    width: auto;
+    padding: 20px;
+  }
+  .studio-static-entry h2 {
+    font-size: 21px;
+    margin-top: 10px;
+  }
+  .studio-static-entry p {
+    font-size: 12px;
+  }
+  .studio-quality-button {
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .studio-object-actions {
+    right: 18px;
+    bottom: 128px;
+    max-width: 145px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .studio-object-actions p {
+    font-size: 10px;
+    text-align: right;
+  }
+  .studio-walk-status {
+    max-width: calc(100% - 32px);
+    white-space: nowrap;
+  }
+  .studio-walk-status span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 .studio-vignette {
   position: absolute;
   inset: 0;

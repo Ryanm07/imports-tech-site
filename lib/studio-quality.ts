@@ -7,6 +7,22 @@ export const QUALITY_ORDER = [
 ] as const;
 
 export type StudioQuality = (typeof QUALITY_ORDER)[number];
+export type StudioQualityPreference = StudioQuality | "auto";
+
+export function shouldDeferStudio3D(
+  hints: StudioQualityHints,
+  preference: StudioQualityPreference,
+) {
+  return preference === "auto" && selectStudioQuality(hints) === "basic";
+}
+
+export function readStudioQualityPreference(
+  value: string | null,
+): StudioQualityPreference {
+  return QUALITY_ORDER.some((quality) => quality === value)
+    ? (value as StudioQuality)
+    : "auto";
+}
 
 export type StudioQualityHints = {
   cores?: number;
@@ -28,11 +44,115 @@ export const QUALITY_SETTINGS: Record<
   basic: { dpr: 1, fps: 0, stars: 0, shadows: false },
 };
 
+export const QUALITY_LABELS: Record<StudioQualityPreference, string> = {
+  auto: "Automática",
+  ultra: "Cinemática",
+  high: "Alta",
+  medium: "Equilibrada",
+  low: "Leve",
+  basic: "Máxima economia",
+};
+
+export type StudioQualityState = {
+  preference: StudioQualityPreference;
+  quality: StudioQuality;
+  ceiling: StudioQuality;
+  ultraApproved: boolean;
+  ultraEligible: boolean;
+  ultraCandidate: boolean;
+};
+
+export const initialStudioQualityState: StudioQualityState = {
+  preference: "auto",
+  quality: "medium",
+  ceiling: "ultra",
+  ultraApproved: false,
+  ultraEligible: false,
+  ultraCandidate: false,
+};
+
+type StudioQualityAction =
+  | {
+      type: "preference";
+      preference: StudioQualityPreference;
+      hints: StudioQualityHints;
+      reducedMotion: boolean;
+    }
+  | { type: "sync"; hints: StudioQualityHints; reducedMotion: boolean }
+  | { type: "degrade"; quality: StudioQuality }
+  | { type: "ultra-assessed"; qualified: boolean };
+
+export function studioQualityReducer(
+  state: StudioQualityState,
+  action: StudioQualityAction,
+): StudioQualityState {
+  if (action.type === "degrade") {
+    if (state.preference !== "auto") return state;
+    return {
+      ...state,
+      ultraCandidate: false,
+      ceiling:
+        QUALITY_ORDER.indexOf(action.quality) >
+        QUALITY_ORDER.indexOf(state.ceiling)
+          ? action.quality
+          : state.ceiling,
+      quality:
+        QUALITY_ORDER.indexOf(action.quality) >
+        QUALITY_ORDER.indexOf(state.quality)
+          ? action.quality
+          : state.quality,
+    };
+  }
+  if (action.type === "ultra-assessed") {
+    if (state.preference !== "auto" || !state.ultraCandidate) return state;
+    return {
+      ...state,
+      ultraCandidate: false,
+      ultraApproved: action.qualified,
+      quality:
+        action.qualified && state.ceiling === "ultra" ? "ultra" : state.quality,
+      ceiling: action.qualified ? state.ceiling : "high",
+    };
+  }
+
+  const current =
+    action.type === "preference"
+      ? { ...initialStudioQualityState, preference: action.preference }
+      : state;
+  const ultraEligible =
+    canTryStudioUltra(action.hints) && !action.reducedMotion;
+  const automatic = current.preference === "auto";
+  const requested =
+    automatic && ultraEligible && current.ultraApproved
+      ? "ultra"
+      : selectStudioQuality(action.hints, current.preference);
+  const quality =
+    !automatic ||
+    QUALITY_ORDER.indexOf(requested) > QUALITY_ORDER.indexOf(current.ceiling)
+      ? requested
+      : current.ceiling;
+  return {
+    ...current,
+    quality,
+    ultraEligible,
+    ultraCandidate:
+      automatic &&
+      ultraEligible &&
+      !current.ultraApproved &&
+      current.ceiling === "ultra" &&
+      quality === "high",
+  };
+}
+
 function validPositiveNumber(value: number | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-export function selectStudioQuality(hints: StudioQualityHints): StudioQuality {
+export function selectStudioQuality(
+  hints: StudioQualityHints,
+  preference: StudioQualityPreference = "auto",
+): StudioQuality {
+  if (preference !== "auto") return preference;
   const cores =
     validPositiveNumber(hints.cores) && Number.isInteger(hints.cores)
       ? hints.cores
@@ -80,8 +200,8 @@ export function lowerStudioQuality(current: StudioQuality): StudioQuality {
 }
 
 export function canTryStudioUltra(hints: StudioQualityHints): boolean {
-  // deviceMemory is commonly capped at 8 GB, so frame timing must provide
-  // the additional evidence before a desktop candidate can use ultra.
+  // Hardware reports are coarse and optional. This only gates automatic
+  // trials; an explicit quality selection does not require these signals.
   return (
     validPositiveNumber(hints.cores) &&
     Number.isInteger(hints.cores) &&

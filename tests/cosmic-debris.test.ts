@@ -5,20 +5,25 @@ import {
   createCosmicDebris,
   resetCosmicDebris,
 } from "../lib/cosmic-debris";
+import { HOLE_POSITION, HOLE_RADIUS } from "../lib/cosmic-space";
 
-const hole = [-2, 3.4, -9] as const;
-const radius = 1.05;
+const hole = HOLE_POSITION;
+const radius = HOLE_RADIUS;
 const distance = (a: readonly number[], b: readonly number[]) =>
   Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-test("debris layouts are deterministic and start assembled outside the studio", () => {
+test("debris starts along the outside front trim, leaving the studio opening unobstructed", () => {
   const simulation = createCosmicDebris(hole, radius);
   assert.deepEqual(simulation, createCosmicDebris(hole, radius));
   assert.equal(simulation.bodies.length, 72);
   for (const body of simulation.bodies) {
     assert.deepEqual(body.position, body.origin);
     assert.deepEqual(body.rotation, [0, 0, 0]);
-    assert.ok(body.origin[2] < -2.79);
+    assert.ok(body.origin[2] - body.size[2] / 2 >= 3.4);
+    assert.ok(
+      body.origin[1] + body.size[1] / 2 <= 0.05,
+      "trim stays at floor height instead of creating a wall across the opening",
+    );
     assert.ok(body.size.every((dimension) => dimension > 0));
   }
 });
@@ -40,7 +45,10 @@ test("gravity launches pieces in stages and attracts them without crossing the r
   for (let frame = 0; frame < 3600; frame++) {
     advanceCosmicDebris(simulation, "dark", 1 / 60);
     for (const body of simulation.bodies) {
-      assert.ok(body.position[2] < -2.79);
+      assert.ok(
+        body.position[2] >= 3.4,
+        "fragments travel away from the open front instead of across furniture",
+      );
       assert.ok(Math.hypot(...body.velocity) <= 2.800001);
       assert.ok(body.position.every(Number.isFinite));
     }
@@ -65,6 +73,12 @@ test("theme reversal retains positions and returns every captured piece to its e
   });
   for (let frame = 0; frame < 1500; frame++) {
     advanceCosmicDebris(simulation, "light", 1 / 45);
+    for (const body of simulation.bodies) {
+      assert.ok(
+        body.position[2] >= 3.4,
+        "returning fragments stay outside the studio",
+      );
+    }
   }
   for (const body of simulation.bodies) {
     assert.deepEqual(body.position, body.origin);

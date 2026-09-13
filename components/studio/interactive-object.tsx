@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -15,11 +16,15 @@ import {
   useThree,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { Box3, Sphere, type Group } from "three";
+import { Box3, Sphere, Vector3, type Group } from "three";
+import { ObjectInteractionContext } from "./object-interaction-context";
 
 export const StudioInteractionContext = createContext({
   enabled: true,
   reducedMotion: false,
+  walk: false,
+  economy: false,
+  boundsVersion: "",
 });
 
 // Decorative geometry must never capture the pointer or enlarge the click target.
@@ -28,19 +33,38 @@ const noRaycast = () => {};
 function HoverHalo({
   target,
   reducedMotion,
+  boundsVersion,
 }: {
   target: RefObject<Group | null>;
   reducedMotion: boolean;
+  boundsVersion: string;
 }) {
   const { scene, camera, invalidate } = useThree();
   const ring = useRef<Group>(null);
   const arc = useRef<Group>(null);
   const box = useRef(new Box3());
   const sphere = useRef(new Sphere());
+  const center = useRef(new Vector3());
+  useEffect(() => {
+    const measure = () => {
+      if (!target.current) return;
+      target.current.updateWorldMatrix(true, true);
+      box.current
+        .setFromObject(target.current)
+        .getBoundingSphere(sphere.current);
+      center.current.copy(sphere.current.center);
+      target.current.worldToLocal(center.current);
+      invalidate();
+    };
+    measure();
+    // Opening the lid changes bounds; measure again once that transition settles.
+    const settled = setTimeout(measure, 450);
+    return () => clearTimeout(settled);
+  }, [target, boundsVersion, invalidate]);
   useFrame((_, delta) => {
     if (!ring.current || !target.current) return;
-    box.current.setFromObject(target.current).getBoundingSphere(sphere.current);
-    ring.current.position.copy(sphere.current.center);
+    ring.current.position.copy(center.current);
+    target.current.localToWorld(ring.current.position);
     ring.current.quaternion.copy(camera.quaternion);
     const radius = Math.max(0.07, sphere.current.radius * 1.12);
     ring.current.scale.setScalar(radius);
@@ -102,9 +126,23 @@ export function InteractiveObject({
 }) {
   const group = useRef<Group>(null);
   const [hovered, setHovered] = useState(false);
-  const { enabled, reducedMotion } = useContext(StudioInteractionContext);
+  const { enabled, reducedMotion, walk, economy, boundsVersion } = useContext(
+    StudioInteractionContext,
+  );
+  const objects = useContext(ObjectInteractionContext);
   const { gl, invalidate } = useThree();
   const active = hovered && enabled;
+
+  useLayoutEffect(() => {
+    const object = group.current;
+    if (!objects || !object) return;
+    objects.objects.set(id, object);
+    invalidate();
+    return () => {
+      objects.objects.delete(id);
+      invalidate();
+    };
+  }, [id, objects, invalidate]);
 
   useEffect(() => {
     if (!active) return;
@@ -126,7 +164,8 @@ export function InteractiveObject({
     event.stopPropagation();
     if (!enabled || event.delta >= 6) return;
     setHovered(false);
-    onSelect(id);
+    if (walk && objects?.actions) objects.actions.click(id);
+    else onSelect(id);
   }
 
   return (
@@ -147,7 +186,13 @@ export function InteractiveObject({
       >
         {children}
       </group>
-      {active && <HoverHalo target={group} reducedMotion={reducedMotion} />}
+      {active && (
+        <HoverHalo
+          target={group}
+          reducedMotion={reducedMotion || economy}
+          boundsVersion={boundsVersion}
+        />
+      )}
     </>
   );
 }

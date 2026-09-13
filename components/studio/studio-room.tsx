@@ -2,6 +2,7 @@
 
 import { BudsModel } from "./buds-model";
 import { InteractiveObject } from "./interactive-object";
+import type { StudioQuality } from "@/lib/studio-quality";
 
 type Vector3 = [number, number, number];
 type Theme = "dark" | "light";
@@ -181,52 +182,61 @@ function Chair({ onSelect }: { onSelect: (id: string) => void }) {
 
 function RecordingKit({ onSelect }: { onSelect: (id: string) => void }) {
   return (
-    <InteractiveObject
-      id="recording-rig"
-      at={[2.15, 0, -1.4]}
-      rotation={[0, -0.45, 0]}
-      onSelect={onSelect}
-    >
-      <Cylinder
-        at={[0, 0.79, 0]}
-        radius={0.022}
-        height={1.45}
-        color="#565d5d"
-      />
-      {[0, 1, 2].map((leg) => (
-        <group key={leg} rotation={[0, (leg * Math.PI * 2) / 3, 0]}>
-          <Cylinder
-            at={[0, 0.28, 0.2]}
-            radius={0.018}
-            height={0.64}
-            rotation={[0.73, 0, 0]}
-            color="#424a4b"
-          />
-        </group>
-      ))}
-      <mesh position={[0, 1.49, 0]} castShadow>
-        <torusGeometry args={[0.3, 0.026, 8, 32]} />
-        <meshStandardMaterial
-          color="#efe9d8"
-          emissive="#e7dcc0"
-          emissiveIntensity={0.55}
-          roughness={0.6}
+    <>
+      <InteractiveObject
+        id="recording-rig"
+        at={[2.15, 0, -1.4]}
+        rotation={[0, -0.45, 0]}
+        onSelect={onSelect}
+      >
+        <Cylinder
+          at={[0, 0.79, 0]}
+          radius={0.022}
+          height={1.45}
+          color="#565d5d"
         />
-      </mesh>
-      <Box
-        at={[0, 1.5, 0]}
-        size={[0.135, 0.27, 0.026]}
-        color="#343638"
-        metalness={0.4}
-      />
-      <Box
-        at={[0, 1.5, 0.016]}
-        size={[0.118, 0.248, 0.003]}
-        color="#819390"
-        metalness={0.3}
-        roughness={0.24}
-      />
-    </InteractiveObject>
+        {[0, 1, 2].map((leg) => (
+          <group key={leg} rotation={[0, (leg * Math.PI * 2) / 3, 0]}>
+            <Cylinder
+              at={[0, 0.28, 0.2]}
+              radius={0.018}
+              height={0.64}
+              rotation={[0.73, 0, 0]}
+              color="#424a4b"
+            />
+          </group>
+        ))}
+        <mesh position={[0, 1.49, 0]} castShadow>
+          <torusGeometry args={[0.3, 0.026, 8, 32]} />
+          <meshStandardMaterial
+            color="#efe9d8"
+            emissive="#e7dcc0"
+            emissiveIntensity={0.55}
+            roughness={0.6}
+          />
+        </mesh>
+      </InteractiveObject>
+      <InteractiveObject
+        id="phone"
+        at={[2.15, 1.5, -1.4]}
+        rotation={[0, -0.45, 0]}
+        onSelect={onSelect}
+      >
+        <Box
+          at={[0, 0, 0]}
+          size={[0.135, 0.27, 0.026]}
+          color="#343638"
+          metalness={0.4}
+        />
+        <Box
+          at={[0, 0, 0.016]}
+          size={[0.118, 0.248, 0.003]}
+          color="#819390"
+          metalness={0.3}
+          roughness={0.24}
+        />
+      </InteractiveObject>
+    </>
   );
 }
 
@@ -335,11 +345,13 @@ export function StudioRoom({
   onSelect,
   earbudsOpen,
   reducedMotion,
+  quality,
 }: {
   theme: Theme;
   onSelect: (id: string) => void;
   earbudsOpen: boolean;
   reducedMotion: boolean;
+  quality: StudioQuality;
 }) {
   const light = theme === "light";
   const wall = light ? "#c6ccc3" : "#57635b";
@@ -575,7 +587,11 @@ export function StudioRoom({
         rotation={[0, 0.22, 0]}
         onSelect={onSelect}
       >
-        <BudsModel open={earbudsOpen} reducedMotion={reducedMotion} />
+        <BudsModel
+          open={earbudsOpen}
+          reducedMotion={reducedMotion}
+          quality={quality}
+        />
       </InteractiveObject>
 
       <InteractiveObject

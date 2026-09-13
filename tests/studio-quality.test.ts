@@ -6,7 +6,100 @@ import {
   qualifiesForStudioUltra,
   lowerStudioQuality,
   selectStudioQuality,
+  studioQualityReducer,
+  initialStudioQualityState,
+  shouldDeferStudio3D,
 } from "../lib/studio-quality";
+
+test("the weakest automatic entry avoids downloading 3D until requested, while manual choices start it", () => {
+  assert.equal(shouldDeferStudio3D({ saveData: true }, "auto"), true);
+  assert.equal(shouldDeferStudio3D({ cores: 2, memoryGB: 1 }, "auto"), true);
+  assert.equal(shouldDeferStudio3D({}, "auto"), false);
+  assert.equal(shouldDeferStudio3D({ saveData: true }, "basic"), false);
+  assert.equal(shouldDeferStudio3D({ saveData: true }, "ultra"), false);
+});
+
+test("manual cinematic quality overrides missing capability reports and data saving", () => {
+  assert.equal(selectStudioQuality({}, "ultra"), "ultra");
+  assert.equal(
+    selectStudioQuality(
+      { cores: 2, memoryGB: 1, saveData: true, effectiveType: "2g" },
+      "ultra",
+    ),
+    "ultra",
+  );
+});
+
+test("every manual tier is respected independently of automatic hardware detection", () => {
+  for (const preference of [
+    "basic",
+    "low",
+    "medium",
+    "high",
+    "ultra",
+  ] as const) {
+    assert.equal(
+      selectStudioQuality({ saveData: true }, preference),
+      preference,
+    );
+  }
+  assert.equal(selectStudioQuality({ saveData: true }, "auto"), "basic");
+});
+
+test("slow frames cannot silently downgrade a manually selected cinematic mode", () => {
+  const manual = studioQualityReducer(initialStudioQualityState, {
+    type: "preference",
+    preference: "ultra",
+    hints: { saveData: true },
+    reducedMotion: false,
+  });
+  const afterSlowFrames = studioQualityReducer(manual, {
+    type: "degrade",
+    quality: "high",
+  });
+  assert.equal(afterSlowFrames.quality, "ultra");
+  assert.equal(afterSlowFrames.preference, "ultra");
+  assert.equal(afterSlowFrames.ultraCandidate, false);
+});
+
+test("changing connection reports cannot reduce a manual preference after slow frames", () => {
+  let manual = studioQualityReducer(initialStudioQualityState, {
+    type: "preference",
+    preference: "high",
+    hints: {},
+    reducedMotion: false,
+  });
+  manual = studioQualityReducer(manual, { type: "degrade", quality: "low" });
+  manual = studioQualityReducer(manual, {
+    type: "sync",
+    hints: { memoryGB: 1, saveData: true },
+    reducedMotion: true,
+  });
+  assert.equal(manual.quality, "high");
+});
+
+test("switching back to automatic resumes hardware selection and adaptive reduction", () => {
+  let state = studioQualityReducer(initialStudioQualityState, {
+    type: "preference",
+    preference: "ultra",
+    hints: {},
+    reducedMotion: false,
+  });
+  state = studioQualityReducer(state, {
+    type: "preference",
+    preference: "auto",
+    hints: { cores: 8, memoryGB: 8 },
+    reducedMotion: false,
+  });
+  assert.equal(state.quality, "high");
+  state = studioQualityReducer(state, { type: "degrade", quality: "medium" });
+  state = studioQualityReducer(state, {
+    type: "sync",
+    hints: { cores: 16, memoryGB: 16 },
+    reducedMotion: false,
+  });
+  assert.equal(state.quality, "medium");
+});
 
 test("initial quality stays conservative unless both hardware signals support high quality", () => {
   assert.equal(selectStudioQuality({}), "medium");

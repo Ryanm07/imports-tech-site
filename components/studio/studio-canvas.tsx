@@ -7,7 +7,9 @@ import {
   Suspense,
   lazy,
   useEffect,
+  useMemo,
   useRef,
+  useState,
   type MutableRefObject,
   type ReactNode,
 } from "react";
@@ -23,6 +25,11 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { StudioRoom } from "./studio-room";
 import { StudioInteractionContext } from "./interactive-object";
 import { CosmicBackground } from "./cosmic-background";
+import {
+  ObjectInteractionContext,
+  type StudioObjectActions,
+  type StudioObjectBridge,
+} from "./object-interaction-context";
 import { QUALITY_SETTINGS, type StudioQuality } from "@/lib/studio-quality";
 import {
   walkStep,
@@ -31,6 +38,23 @@ import {
 } from "@/lib/studio-navigation";
 
 const CosmicDebris = lazy(() => import("./cosmic-debris"));
+const ObjectPhysics = lazy(() => import("./object-physics"));
+
+class InteractionBoundary extends Component<
+  { children: ReactNode; onFailure: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onFailure();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 class CosmicEffectsBoundary extends Component<
   { children: ReactNode; onFailure: (quality: StudioQuality) => void },
@@ -64,6 +88,10 @@ type Props = {
   onSelect: (id: string) => void;
   onReady: () => void;
   onFailure: () => void;
+  actionsRef: MutableRefObject<StudioObjectActions | null>;
+  onHeldChange: (id: string | null) => void;
+  onInteractionReady: (ready: boolean) => void;
+  onInteractionFailure: () => void;
 };
 
 function Lighting({
@@ -146,18 +174,7 @@ function CameraRig({
   resetKey,
   movement,
   reducedMotion,
-}: Omit<
-  Props,
-  | "theme"
-  | "onSelect"
-  | "onReady"
-  | "onFailure"
-  | "earbudsOpen"
-  | "quality"
-  | "onDegrade"
-  | "ultraCandidate"
-  | "onUltraAssessed"
->) {
+}: Pick<Props, "mode" | "paused" | "resetKey" | "movement" | "reducedMotion">) {
   const { camera, gl, invalidate, size } = useThree();
   const framingScale = Math.max(1, 1.2 / (size.width / size.height));
   const orbit = useRef<OrbitControls | null>(null);
@@ -387,6 +404,14 @@ function Ready({
 
 export default function StudioCanvas(props: Props) {
   const settings = QUALITY_SETTINGS[props.quality];
+  const bridge = useMemo<StudioObjectBridge>(
+    () => ({ objects: new Map(), actions: null }),
+    [],
+  );
+  const [physicsLoaded, setPhysicsLoaded] = useState(false);
+  useEffect(() => {
+    if (props.mode === "walk") setPhysicsLoaded(true);
+  }, [props.mode]);
   return (
     <Canvas
       frameloop="demand"
@@ -398,6 +423,10 @@ export default function StudioCanvas(props: Props) {
         alpha: false,
         powerPreference: "high-performance",
       }}
+      onPointerMissed={(event) => {
+        if (event.type === "click" && event.button === 0)
+          bridge.actions?.click(null);
+      }}
       fallback={
         <div className="studio-webgl-fallback">
           A visualização 3D não está disponível neste navegador. Explore pela
@@ -408,6 +437,7 @@ export default function StudioCanvas(props: Props) {
       <Lighting theme={props.theme} reducedMotion={props.reducedMotion} />
       <CosmicBackground
         theme={props.theme}
+        mode={props.mode}
         quality={props.quality}
         reducedMotion={props.reducedMotion}
         paused={props.paused}
@@ -415,27 +445,56 @@ export default function StudioCanvas(props: Props) {
         ultraCandidate={props.ultraCandidate}
         onUltraAssessed={props.onUltraAssessed}
       />
-      {props.quality === "ultra" && !props.reducedMotion && (
-        <CosmicEffectsBoundary onFailure={props.onDegrade}>
+      {props.mode === "walk" &&
+        props.quality === "ultra" &&
+        !props.reducedMotion && (
+          <CosmicEffectsBoundary onFailure={props.onDegrade}>
+            <Suspense fallback={null}>
+              <CosmicDebris
+                theme={props.theme}
+                paused={props.paused}
+                reducedMotion={props.reducedMotion}
+              />
+            </Suspense>
+          </CosmicEffectsBoundary>
+        )}
+      <ObjectInteractionContext.Provider value={bridge}>
+        <StudioInteractionContext.Provider
+          value={{
+            enabled: !props.paused,
+            reducedMotion: props.reducedMotion,
+            walk: props.mode === "walk",
+            economy: props.quality === "basic" || props.quality === "low",
+            boundsVersion: `${props.quality}:${props.earbudsOpen}`,
+          }}
+        >
+          <StudioRoom
+            theme={props.theme}
+            onSelect={props.onSelect}
+            earbudsOpen={props.earbudsOpen}
+            reducedMotion={props.reducedMotion}
+            quality={props.quality}
+          />
+        </StudioInteractionContext.Provider>
+      </ObjectInteractionContext.Provider>
+      {physicsLoaded && (
+        <InteractionBoundary onFailure={props.onInteractionFailure}>
           <Suspense fallback={null}>
-            <CosmicDebris
+            <ObjectPhysics
+              bridge={bridge}
+              actionsRef={props.actionsRef}
+              mode={props.mode}
               theme={props.theme}
+              quality={props.quality}
               paused={props.paused}
               reducedMotion={props.reducedMotion}
+              onHeldChange={props.onHeldChange}
+              onInteractionReady={props.onInteractionReady}
+              onSelect={props.onSelect}
             />
           </Suspense>
-        </CosmicEffectsBoundary>
+        </InteractionBoundary>
       )}
-      <StudioInteractionContext.Provider
-        value={{ enabled: !props.paused, reducedMotion: props.reducedMotion }}
-      >
-        <StudioRoom
-          theme={props.theme}
-          onSelect={props.onSelect}
-          earbudsOpen={props.earbudsOpen}
-          reducedMotion={props.reducedMotion}
-        />
-      </StudioInteractionContext.Provider>
       <CameraRig {...props} />
       <Ready
         onReady={props.onReady}

@@ -36,13 +36,14 @@ export function createCosmicDebris(
     return seed / 4294967296;
   };
   const bodies = Array.from({ length: 72 }, (_, index): CosmicFragment => {
-    // Trim outside the back wall: trajectories never pass through the equipment.
+    // Three strips along the open front's floor edge. Both attraction and
+    // reassembly stay outside the room, without hiding the entrance with trim.
     const row = Math.floor(index / 24);
     const column = index % 24;
     const origin: Point = [
       -3.4 + (column / 23) * 6.8,
-      row === 0 ? 3.145 : row === 1 ? 3.055 : -0.09,
-      row === 0 ? -2.805 : row === 1 ? -2.84 : -2.835,
+      row === 0 ? 0.014 : row === 1 ? -0.065 : -0.165,
+      row === 0 ? 3.475 : row === 1 ? 3.515 : 3.48,
     ];
     return {
       origin,
@@ -53,7 +54,7 @@ export function createCosmicDebris(
       spin: [random() - 0.5, random() - 0.5, random() - 0.5],
       size: [
         0.18 + random() * 0.075,
-        row === 0 ? 0.07 : row === 1 ? 0.095 : 0.18,
+        row === 0 ? 0.035 : row === 1 ? 0.1 : 0.09,
         row === 0 ? 0.13 : row === 1 ? 0.045 : 0.085,
       ],
       material: row === 0 ? 1 : column % 5 === 0 ? 2 : 0,
@@ -98,6 +99,7 @@ export function advanceCosmicDebris(
   const elapsed = Math.min(delta, MAX_FRAME_DELTA);
   const steps = Math.ceil(elapsed / MAX_SUBSTEP);
   const dt = elapsed / steps;
+  const darkDrag = Math.exp(-dt * 0.16);
   const { hole, bodies, captureRadius } = simulation;
 
   for (let step = 0; step < steps; step++) {
@@ -114,10 +116,15 @@ export function advanceCosmicDebris(
         const gravity = 18 / (distanceSquared + 1.8);
         // A small tangential force bends the path around the incoming axis.
         const planar = Math.max(Math.hypot(dx, dy), 0.4);
-        const swirl = 0.42 / (1 + distance * 0.35);
+        // Keep decorative curl weaker than attraction even on the longer
+        // route from the open front, so fragments cannot slingshot past it.
+        const swirl = Math.min(0.42 / (1 + distance * 0.35), gravity * 0.15);
         velocity[0] += ((dx / distance) * gravity - (dy / planar) * swirl) * dt;
         velocity[1] += ((dy / distance) * gravity + (dx / planar) * swirl) * dt;
         velocity[2] += (dz / distance) * gravity * dt;
+        velocity[0] *= darkDrag;
+        velocity[1] *= darkDrag;
+        velocity[2] *= darkDrag;
         const speed = Math.hypot(...velocity);
         for (let axis = 0; axis < 3; axis++) {
           const targetSpin = body.spin[axis] * (0.3 + speed * 0.6);

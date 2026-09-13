@@ -15,6 +15,7 @@ import {
 
 export function CosmicBackground({
   theme,
+  mode,
   quality,
   reducedMotion,
   paused,
@@ -23,6 +24,7 @@ export function CosmicBackground({
   onUltraAssessed,
 }: {
   theme: "light" | "dark";
+  mode: "overview" | "walk";
   quality: StudioQuality;
   reducedMotion: boolean;
   paused: boolean;
@@ -40,6 +42,7 @@ export function CosmicBackground({
       uHole: { value: new Vector3(...HOLE_POSITION) },
       uRadius: { value: HOLE_RADIUS },
       uUltra: { value: 0 },
+      uShowHole: { value: 0 },
       uTime: { value: 0 },
       uLight: { value: 0 },
       uLayers: { value: 1 },
@@ -91,7 +94,7 @@ export function CosmicBackground({
 
   useEffect(() => {
     invalidate();
-  }, [theme, quality, reducedMotion, invalidate]);
+  }, [theme, mode, quality, reducedMotion, invalidate]);
   useFrame((_, delta) => {
     if (document.hidden) return;
     const shader = material.current;
@@ -104,6 +107,7 @@ export function CosmicBackground({
       live.uProjectionInverse.value.copy(camera.projectionMatrixInverse);
       live.uLayers.value = settings.stars;
       live.uUltra.value = quality === "ultra" ? 1 : 0;
+      live.uShowHole.value = mode === "walk" ? 1 : 0;
       live.uLight.value += (light - live.uLight.value) * k;
       if (Math.abs(light - live.uLight.value) > 0.002) invalidate();
       if (active.current)

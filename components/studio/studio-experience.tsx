@@ -22,22 +22,12 @@ import { STUDIO_ITEMS, type StudioItem } from "@/lib/studio-content";
 import { StudioIcon } from "./studio-icons";
 import { StudioPageScrollbar } from "./studio-page-scrollbar";
 import type { MovementInput } from "./studio-canvas";
-import {
-  QUALITY_ORDER,
-  canTryStudioUltra,
-  selectStudioQuality,
-  type StudioQuality,
-} from "@/lib/studio-quality";
+import { useStudioQuality } from "./use-studio-quality";
+import { QualityControl } from "./quality-control";
+import type { StudioObjectActions } from "./object-interaction-context";
 
 const StudioCanvas = lazy(() => import("./studio-canvas"));
 const THEME_KEY = "imports-tech:studio-theme:v1";
-const QUALITY_LABELS = {
-  ultra: "Cinemática",
-  high: "Alta",
-  medium: "Equilibrada",
-  low: "Leve",
-  basic: "Padrão",
-};
 
 class SceneBoundary extends Component<
   { children: ReactNode; onFailure: () => void },
@@ -58,9 +48,11 @@ class SceneBoundary extends Component<
 function ObjectDetail({
   item,
   onClose,
+  onPick,
 }: {
   item: StudioItem;
   onClose: () => void;
+  onPick?: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -124,10 +116,11 @@ function ObjectDetail({
             Conhecer a história <StudioIcon name="arrow" />
           </Link>
         )}
-        <p className="studio-detail-note">
-          Este objeto usa uma forma provisória. O modelo detalhado e seus
-          efeitos entram na próxima etapa.
-        </p>
+        {onPick && (
+          <button className="studio-action" onClick={onPick}>
+            Pegar objeto <StudioIcon name="person" />
+          </button>
+        )}
       </div>
     </dialog>
   );
@@ -146,38 +139,29 @@ export function StudioExperience({
   const [resetKey, setResetKey] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [earbudsOpen, setEarbudsOpen] = useState(false);
-  const [quality, setQuality] = useState<StudioQuality>("medium");
-  const [qualityPreference, setQualityPreference] = useState<
-    StudioQuality | "auto"
-  >("auto");
-  const qualityCeiling = useRef<StudioQuality>("ultra");
-  const ultraApproved = useRef(false);
-  const ultraCandidateRef = useRef(false);
-  const [ultraEligible, setUltraEligible] = useState(false);
-  const [ultraCandidate, setUltraCandidate] = useState(false);
-  const onDegrade = useCallback((next: StudioQuality) => {
-    const order = QUALITY_ORDER;
-    ultraCandidateRef.current = false;
-    setUltraCandidate(false);
-    if (order.indexOf(next) > order.indexOf(qualityCeiling.current))
-      qualityCeiling.current = next;
-    setQuality((current) =>
-      order.indexOf(next) > order.indexOf(current) ? next : current,
-    );
-  }, []);
-  const onUltraAssessed = useCallback((qualified: boolean) => {
-    if (!ultraCandidateRef.current) return;
-    ultraCandidateRef.current = false;
-    setUltraCandidate(false);
-    if (qualityCeiling.current !== "ultra") return;
-    if (qualified) {
-      ultraApproved.current = true;
-      setQuality("ultra");
-    } else {
-      qualityCeiling.current = "high";
-    }
-  }, []);
-  const [panel, setPanel] = useState<"objects" | "help" | "menu" | null>(null);
+  const {
+    entry,
+    quality,
+    qualityPreference,
+    setQualityPreference,
+    ultraEligible,
+    ultraCandidate,
+    onDegrade,
+    onUltraAssessed,
+  } = useStudioQuality(reducedMotion);
+  const [activate3D, setActivate3D] = useState(false);
+  const sceneAllowed = entry === "3d" || activate3D;
+  const objectActions = useRef<StudioObjectActions | null>(null);
+  const [heldId, setHeldId] = useState<string | null>(null);
+  const [interactionReady, setInteractionReady] = useState(false);
+  const [interactionFailed, setInteractionFailed] = useState(false);
+  const onInteractionFailure = useCallback(
+    () => setInteractionFailed(true),
+    [],
+  );
+  const [panel, setPanel] = useState<
+    "objects" | "help" | "menu" | "quality" | null
+  >(null);
   const movement = useRef<MovementInput>({ forward: 0, right: 0 });
   const viewport = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -220,69 +204,18 @@ export function StudioExperience({
   }, [state.presentationTheme, mounted]);
 
   useEffect(() => {
-    const device = navigator as Navigator & {
-      deviceMemory?: number;
-      connection?: EventTarget & {
-        saveData?: boolean;
-        effectiveType?: string;
-        downlink?: number;
-      };
-    };
-    const pointer = window.matchMedia("(hover: hover) and (pointer: fine)");
-    qualityCeiling.current = "ultra";
-    ultraApproved.current = false;
-    const sync = () => {
-      const hints = {
-        cores: device.hardwareConcurrency,
-        memoryGB: device.deviceMemory,
-        saveData: device.connection?.saveData,
-        effectiveType: device.connection?.effectiveType,
-        downlinkMbps: device.connection?.downlink,
-        finePointer: pointer.matches,
-      };
-      const eligible = canTryStudioUltra(hints) && !reducedMotion;
-      setUltraEligible(eligible);
-      const auto =
-        qualityPreference === "auto" || qualityPreference === "ultra";
-      const requested = auto
-        ? eligible && ultraApproved.current
-          ? "ultra"
-          : selectStudioQuality(hints)
-        : qualityPreference;
-      const order = QUALITY_ORDER;
-      const limited =
-        order.indexOf(requested) > order.indexOf(qualityCeiling.current)
-          ? requested
-          : qualityCeiling.current;
-      setQuality(limited);
-      const candidate =
-        auto &&
-        eligible &&
-        !ultraApproved.current &&
-        qualityCeiling.current === "ultra" &&
-        limited === "high";
-      ultraCandidateRef.current = candidate;
-      setUltraCandidate(candidate);
-    };
-    sync();
-    device.connection?.addEventListener("change", sync);
-    pointer.addEventListener("change", sync);
-    return () => {
-      ultraCandidateRef.current = false;
-      device.connection?.removeEventListener("change", sync);
-      pointer.removeEventListener("change", sync);
-    };
-  }, [qualityPreference, reducedMotion]);
-
-  useEffect(() => {
-    if (!mounted || ready || failed) return;
+    if (!mounted || !sceneAllowed || ready || failed) return;
     const timer = window.setTimeout(onFailure, 20_000);
     return () => window.clearTimeout(timer);
-  }, [mounted, ready, failed, onFailure, sceneKey]);
+  }, [mounted, sceneAllowed, ready, failed, onFailure, sceneKey]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || activeItem) return;
+      if (heldId) {
+        objectActions.current?.drop();
+        return;
+      }
       if (panel) {
         setPanel(null);
         panelTrigger.current?.focus();
@@ -291,7 +224,7 @@ export function StudioExperience({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panel, activeItem, earbudsOpen]);
+  }, [panel, activeItem, earbudsOpen, heldId]);
 
   useEffect(() => {
     if (panel)
@@ -315,6 +248,28 @@ export function StudioExperience({
   function togglePanel(next: typeof panel, trigger: HTMLElement) {
     panelTrigger.current = trigger;
     setPanel((current) => (current === next ? null : next));
+  }
+  function pickObject(id: string) {
+    if (!objectActions.current?.pick(id)) return;
+    setPanel(null);
+    setEarbudsOpen(false);
+    dispatch({ type: "select", id: null });
+    window.requestAnimationFrame(() =>
+      viewport.current?.querySelector("canvas")?.focus({ preventScroll: true }),
+    );
+  }
+  const onHeldChange = useCallback((id: string | null) => {
+    setHeldId(id);
+    if (id) {
+      setPanel(null);
+      setEarbudsOpen(false);
+      dispatch({ type: "select", id: null });
+    }
+  }, []);
+  function restoreStudio() {
+    objectActions.current?.restore();
+    setEarbudsOpen(false);
+    setResetKey((value) => value + 1);
   }
   function changeMode() {
     setPanel(null);
@@ -344,6 +299,9 @@ export function StudioExperience({
       data-studio-mode={state.mode}
       data-scene-ready={ready && !failed}
       data-studio-quality={quality}
+      data-quality-preference={qualityPreference}
+      data-held-object={heldId || ""}
+      data-interaction-ready={interactionReady}
       data-ultra-eligible={ultraEligible}
       data-ultra-assessing={ultraCandidate}
     >
@@ -351,7 +309,7 @@ export function StudioExperience({
         Pular para os controles
       </a>
       <div className="studio-viewport" ref={viewport}>
-        {mounted && !failed && (
+        {mounted && sceneAllowed && !failed && (
           <SceneBoundary key={sceneKey} onFailure={onFailure}>
             <Suspense fallback={null}>
               <StudioCanvas
@@ -365,6 +323,10 @@ export function StudioExperience({
                 onReady={onReady}
                 onFailure={onFailure}
                 onSelect={select}
+                actionsRef={objectActions}
+                onHeldChange={onHeldChange}
+                onInteractionReady={setInteractionReady}
+                onInteractionFailure={onInteractionFailure}
                 quality={quality}
                 onDegrade={onDegrade}
                 ultraCandidate={ultraCandidate}
@@ -396,6 +358,15 @@ export function StudioExperience({
           </span>
         </Link>
         <div className="studio-header-actions">
+          <button
+            className="studio-quality-button"
+            onClick={(event) => togglePanel("quality", event.currentTarget)}
+            aria-expanded={panel === "quality"}
+            aria-controls="studio-panel"
+            aria-label="Escolher qualidade visual"
+          >
+            <StudioIcon name="orbit" /> <span>Qualidade</span>
+          </button>
           <span className="studio-stage">
             <i /> Base do estúdio
           </span>
@@ -411,12 +382,41 @@ export function StudioExperience({
         </div>
       </header>
 
-      {!ready && !failed && (
+      {!ready && !failed && (entry !== "static" || activate3D) && (
         <div className="studio-loading" role="status">
           <div className="studio-loading-mark" />
           <p>Preparando o estúdio…</p>
         </div>
       )}
+      {entry === "static" &&
+        !activate3D &&
+        !panel &&
+        !activeItem &&
+        !showBudsStory && (
+          <section
+            className="studio-static-entry"
+            aria-label="Explorar com economia"
+          >
+            <StudioIcon name="orbit" width="36" height="36" />
+            <h2>Explore no seu ritmo.</h2>
+            <p>
+              A versão leve começa pelas histórias. O estúdio 3D fica disponível
+              quando você quiser entrar.
+            </p>
+            <button
+              className="studio-action"
+              onClick={(event) => togglePanel("objects", event.currentTarget)}
+            >
+              Conhecer os objetos <StudioIcon name="grid" />
+            </button>
+            <button
+              className="studio-action studio-start-3d"
+              onClick={() => setActivate3D(true)}
+            >
+              Entrar no estúdio 3D <StudioIcon name="person" />
+            </button>
+          </section>
+        )}
       {failed && (
         <div className="studio-error" role="status">
           <StudioIcon name="orbit" width="36" height="36" />
@@ -445,9 +445,13 @@ export function StudioExperience({
       </div>
 
       {state.mode === "walk" && (
-        <div className="studio-walk-status">
+        <div className="studio-walk-status" aria-live="polite">
           <i />
-          <span>Exploração livre</span>
+          <span>
+            {heldId
+              ? `Segurando: ${STUDIO_ITEMS.find((item) => item.id === heldId)?.title || "objeto"}`
+              : "Exploração livre"}
+          </span>
           <kbd>Esc</kbd>
         </div>
       )}
@@ -497,6 +501,14 @@ export function StudioExperience({
               <StudioIcon name="arrow" />
             </a>
           </section>
+          {state.mode === "walk" && interactionReady && (
+            <button
+              className="studio-action"
+              onClick={() => pickObject("earbuds")}
+            >
+              Pegar Buds <StudioIcon name="person" />
+            </button>
+          )}
           <p className="studio-buds-hint">
             Clique novamente no estojo para fechar a tampa e voltar à bancada.
           </p>
@@ -512,7 +524,9 @@ export function StudioExperience({
               ? "Objetos do estúdio"
               : panel === "help"
                 ? "Como explorar"
-                : "Navegação"
+                : panel === "quality"
+                  ? "Qualidade visual"
+                  : "Navegação"
           }
         >
           <div className="studio-panel-heading">
@@ -521,7 +535,9 @@ export function StudioExperience({
                 ? "Pela bancada"
                 : panel === "help"
                   ? "Fique à vontade"
-                  : "Explore também"}
+                  : panel === "quality"
+                    ? "Do seu jeito"
+                    : "Explore também"}
             </h2>
             <button
               className="studio-icon-button"
@@ -586,38 +602,22 @@ export function StudioExperience({
               </div>
             </nav>
           )}
+          {panel === "quality" && (
+            <QualityControl
+              quality={quality}
+              preference={qualityPreference}
+              onPreferenceChange={setQualityPreference}
+              evaluating={ultraCandidate}
+            />
+          )}
           {panel === "help" && (
             <div className="studio-help">
-              <section className="studio-quality-control">
-                <label htmlFor="studio-quality">Qualidade visual</label>
-                <select
-                  id="studio-quality"
-                  value={qualityPreference}
-                  onChange={(event) =>
-                    setQualityPreference(
-                      event.target.value as StudioQuality | "auto",
-                    )
-                  }
-                >
-                  <option value="auto">Automática</option>
-                  <option value="ultra" disabled={!ultraEligible}>
-                    Cinemática · avaliar desempenho
-                  </option>
-                  <option value="high">Alta</option>
-                  <option value="medium">Equilibrada</option>
-                  <option value="low">Leve · cenário sem movimento</option>
-                  <option value="basic">Padrão · somente estúdio</option>
-                </select>
-                <p>
-                  Em uso: {QUALITY_LABELS[quality]}. O site reduz os efeitos se
-                  precisar manter a navegação fluida.
-                </p>
-                <p>
-                  {ultraCandidate
-                    ? "Avaliando a fluidez para liberar o cenário cinematográfico."
-                    : "O modo cinematográfico acrescenta plasma detalhado e fragmentos do estúdio. Ele só é liberado em computadores compatíveis, após avaliar a fluidez."}
-                </p>
-              </section>
+              <QualityControl
+                quality={quality}
+                preference={qualityPreference}
+                onPreferenceChange={setQualityPreference}
+                evaluating={ultraCandidate}
+              />
               <section>
                 <StudioIcon name="orbit" />
                 <h3>Olhe ao redor</h3>
@@ -639,9 +639,10 @@ export function StudioExperience({
                 <StudioIcon name="grid" />
                 <h3>Descubra os objetos</h3>
                 <p>
-                  Clique em um equipamento ou escolha pela lista. Escape fecha o
-                  conteúdo ou sai do modo livre. A iluminação pode ser ajustada
-                  a qualquer momento.
+                  No modo livre, um clique mostra a história. Dois cliques
+                  rápidos pegam o objeto; mais dois lançam na direção do olhar.
+                  No celular, toque e use Pegar, Jogar ou Soltar. Esc solta o
+                  objeto antes de sair. Restaurar estúdio traz tudo de volta.
                 </p>
               </section>
             </div>
@@ -649,6 +650,37 @@ export function StudioExperience({
         </aside>
       )}
 
+      {state.mode === "walk" && !panel && !activeItem && (
+        <div
+          className="studio-object-actions"
+          aria-label="Interação com objetos"
+        >
+          {heldId ? (
+            <>
+              <button
+                className="studio-action"
+                onClick={() => objectActions.current?.throw()}
+              >
+                Jogar <StudioIcon name="arrow" />
+              </button>
+              <button
+                className="studio-action"
+                onClick={() => objectActions.current?.drop()}
+              >
+                Soltar
+              </button>
+            </>
+          ) : (
+            <p>
+              {interactionReady
+                ? "Dois cliques para pegar · Toque para ver opções"
+                : interactionFailed
+                  ? "As interações não carregaram. Você ainda pode explorar os objetos."
+                  : "Preparando interações…"}
+            </p>
+          )}
+        </div>
+      )}
       {state.mode === "walk" && !panel && !activeItem && (
         <div className="studio-touch-pad" aria-label="Controles de movimento">
           {[
@@ -768,10 +800,10 @@ export function StudioExperience({
             <StudioIcon name={state.theme === "dark" ? "sun" : "moon"} />
           </button>
           <button
-            onClick={() => setResetKey((value) => value + 1)}
+            onClick={restoreStudio}
             disabled={!ready || failed}
-            aria-label="Restaurar câmera"
-            title="Restaurar câmera"
+            aria-label="Restaurar estúdio"
+            title="Restaurar estúdio e câmera"
           >
             <StudioIcon name="reset" />
           </button>
@@ -798,6 +830,11 @@ export function StudioExperience({
           key={activeItem.id}
           item={activeItem}
           onClose={closeDetail}
+          onPick={
+            state.mode === "walk" && interactionReady
+              ? () => pickObject(activeItem.id)
+              : undefined
+          }
         />
       )}
       <StudioPageScrollbar />

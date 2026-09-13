@@ -18,6 +18,7 @@ uniform float uTime;
 uniform float uLight;
 uniform float uLayers;
 uniform float uUltra;
+uniform float uShowHole;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -42,7 +43,7 @@ void main() {
   float inFront=step(0.0,along);
   float time=uTime;
   vec3 skyRay=ray;
-  if(uUltra>0.5 && along>0.0) {
+  if(uShowHole>0.5 && uUltra>0.5 && along>0.0) {
     // A local distortion around the horizon; not a general-relativity solver.
     float bend=0.12*exp(-abs(r-1.3)*1.8);
     skyRay=normalize(ray+normalize(toHole)*bend);
@@ -61,6 +62,7 @@ void main() {
   if(uLayers>3.5) s+=stars(sky,175.0,71.0)*0.24;
   col+=mix(vec3(0.65,0.75,0.96),vec3(0.17,0.14,0.08),uLight)*s;
 
+  if(uShowHole>0.5) {
   vec3 normal=normalize(vec3(0.08,1.0,0.24));
   vec3 axisX=normalize(cross(normal,vec3(0.0,0.0,1.0)));
   vec3 axisY=cross(normal,axisX);
@@ -114,6 +116,7 @@ void main() {
     col+=gold*pow(0.5+0.5*sin(angle*2.0+r*22.0-time*0.2),4.0)*exp(-abs(r-1.4)*5.0)*0.13;
   }
   col+=hot*uLight*exp(-r*1.3)*0.1*inFront;
+  }
   float vignette=1.0-smoothstep(0.15,0.9,length(vUv-0.5));
   col*=mix(0.78+0.22*vignette,1.0,uLight);
   gl_FragColor=vec4(col,1.0);

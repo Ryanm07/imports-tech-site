@@ -61,7 +61,7 @@ export const STUDIO_ITEMS: StudioItem[] = [
     category: "Bastidores",
     description: "Tripé, iluminação e o celular em posição de gravar.",
     details: [
-      "É aqui que o Galaxy S25 Ultra se junta ao tripé e à ring bar para os registros da bancada.",
+      "É aqui que o Galaxy S25 Ultra se junta ao tripé e à ring bar Ulanzi U200 para os registros da bancada.",
     ],
     videoId: "-dLf-zCO41A",
   },

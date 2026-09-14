@@ -13,5 +13,7 @@ coverage/
 .env*
 !.env.example
 *.log
+*.blend
+*.blend1
 tsconfig.tsbuildinfo
 .eslint-report.json

@@ -59,7 +59,7 @@ export const STUDIO_OBSTACLES = [
   { minX: -1.75, maxX: 1.75, minZ: -2.3, maxZ: -0.72 },
   { minX: -3.18, maxX: -1.92, minZ: -2.5, maxZ: -0.83 },
   { minX: -0.5, maxX: 0.5, minZ: -0.04, maxZ: 1.02 },
-  { minX: 1.86, maxX: 2.5, minZ: -1.8, maxZ: -0.92 },
+  { minX: 1.65, maxX: 2.7, minZ: -1.95, maxZ: -0.8 },
 ] as const;
 
 export function canStandAt({ x, z }: GroundPosition) {

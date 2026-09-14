@@ -81,6 +81,7 @@ type Props = {
   reducedMotion: boolean;
   earbudsOpen: boolean;
   laptopOpen: boolean;
+  recordingLightOn: boolean;
   quality: StudioQuality;
   onDegrade: (quality: StudioQuality) => void;
   ultraCandidate: boolean;
@@ -474,6 +475,7 @@ export default function StudioCanvas(props: Props) {
             onSelect={props.onSelect}
             earbudsOpen={props.earbudsOpen}
             laptopOpen={props.laptopOpen}
+            recordingLightOn={props.recordingLightOn}
             reducedMotion={props.reducedMotion}
             quality={props.quality}
           />

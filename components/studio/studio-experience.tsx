@@ -49,10 +49,14 @@ function ObjectDetail({
   item,
   onClose,
   onPick,
+  lightOn,
+  onToggleLight,
 }: {
   item: StudioItem;
   onClose: () => void;
   onPick?: () => void;
+  lightOn?: boolean;
+  onToggleLight?: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -116,6 +120,16 @@ function ObjectDetail({
             Conhecer a história <StudioIcon name="arrow" />
           </Link>
         )}
+        {onToggleLight && (
+          <button
+            className="studio-action"
+            onClick={onToggleLight}
+            aria-pressed={lightOn}
+          >
+            <StudioIcon name="sun" />{" "}
+            {lightOn ? "Apagar ring bar" : "Acender ring bar"}
+          </button>
+        )}
         {onPick && (
           <button className="studio-action" onClick={onPick}>
             Pegar objeto <StudioIcon name="person" />
@@ -140,6 +154,7 @@ export function StudioExperience({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [earbudsOpen, setEarbudsOpen] = useState(false);
   const [laptopOpen, setLaptopOpen] = useState(false);
+  const [recordingLightOn, setRecordingLightOn] = useState(false);
   const focusLidStory = useRef(false);
   const lidStoryClose = useRef<HTMLButtonElement>(null);
   const {
@@ -261,6 +276,7 @@ export function StudioExperience({
       setPanel(null);
       return;
     }
+    if (id === "recording-rig") setRecordingLightOn((on) => !on);
     if (STUDIO_ITEMS.some((item) => item.id === id))
       dispatch({ type: "select", id });
   }, []);
@@ -347,6 +363,7 @@ export function StudioExperience({
                 reducedMotion={reducedMotion}
                 earbudsOpen={earbudsOpen}
                 laptopOpen={laptopOpen}
+                recordingLightOn={recordingLightOn}
                 movement={movement}
                 onReady={onReady}
                 onFailure={onFailure}
@@ -644,7 +661,8 @@ export function StudioExperience({
             <>
               <p className="studio-panel-intro">
                 Escolha um equipamento para conhecer sua história. No Buds 4 Pro
-                e no Acer Nitro 5, clique para abrir ou fechar a tampa.
+                e no Acer Nitro 5, clique para abrir ou fechar a tampa. No kit
+                de gravação, clique para acender ou apagar a ring bar.
               </p>
               <div className="studio-object-list">
                 {STUDIO_ITEMS.map((item) => (
@@ -934,12 +952,19 @@ export function StudioExperience({
         Iluminação {state.theme === "light" ? "clara" : "escura"}.
         {earbudsOpen && " Tampa do Buds 4 Pro aberta."}
         {laptopOpen && " Tampa do Acer Nitro 5 aberta."}
+        {recordingLightOn && " Ring bar acesa."}
       </div>
       {activeItem && (
         <ObjectDetail
           key={activeItem.id}
           item={activeItem}
           onClose={closeDetail}
+          lightOn={recordingLightOn}
+          onToggleLight={
+            activeItem.id === "recording-rig"
+              ? () => setRecordingLightOn((on) => !on)
+              : undefined
+          }
           onPick={
             state.mode === "walk" && interactionReady
               ? () => pickObject(activeItem.id)
